@@ -31,6 +31,16 @@ const umlElements = computed(() => {
 })
 const pitfalls = computed(() => of('key_points').filter((i) => (i.payload as { pitfall?: boolean }).pitfall))
 
+/** F3 易错点过滤：只影响知识要点 tab 的可见列表 */
+const onlyPitfall = ref(false)
+const visiblePoints = computed(() =>
+  onlyPitfall.value ? pitfalls.value : of('key_points')
+)
+
+function visible(kind: ArtifactType) {
+  return kind === 'key_points' ? visiblePoints.value : of(kind)
+}
+
 function clock(ms: number) {
   const total = Math.floor(ms / 1000)
   return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
@@ -66,11 +76,14 @@ function clock(ms: number) {
       </template>
 
       <template v-else>
-        <p v-if="t.key === 'key_points' && pitfalls.length" class="pitfall-tip">
-          ⚠ 其中 {{ pitfalls.length }} 条命中易错点（讲师反复强调 / 当场纠错 / 演示错误写法）
-        </p>
-        <ul class="list">
-          <li v-for="item in of(t.key)" :key="item.id" @click="emit('select', item)">
+        <div v-if="t.key === 'key_points'" class="pbar">
+          <span v-if="pitfalls.length" class="pitfall-tip">
+            ⚠ {{ pitfalls.length }} 条命中易错点（讲师反复强调 / 当场纠错 / 演示错误写法）
+          </span>
+          <el-checkbox v-model="onlyPitfall" size="small">只看易错点（F3）</el-checkbox>
+        </div>
+        <ul v-if="visible(t.key).length" class="list">
+          <li v-for="item in visible(t.key)" :key="item.id" @click="emit('select', item)">
             <div class="line">
               <el-link type="primary" class="ts" @click.stop="emit('seek', item.anchor_ms)">{{ clock(item.anchor_ms) }}</el-link>
               <span class="txt">{{ item.content }}</span>
@@ -78,6 +91,7 @@ function clock(ms: number) {
             </div>
           </li>
         </ul>
+        <p v-else class="no-filter">没有符合筛选条件的条目</p>
       </template>
     </el-tab-pane>
   </el-tabs>
@@ -96,5 +110,7 @@ function clock(ms: number) {
 .block { margin-bottom: 12px; }
 .block-head { display: flex; justify-content: space-between; font-size: 13px; color: #606a7b; margin-bottom: 4px; }
 .code { margin: 0; padding: 10px; background: #12151c; color: #dbe1ea; border-radius: 6px; font-size: 12px; overflow: auto; }
+.pbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .pitfall-tip { color: #b45309; font-size: 13px; }
+.no-filter { margin: 8px 0; font-size: 13px; color: #8b95a7; }
 </style>
