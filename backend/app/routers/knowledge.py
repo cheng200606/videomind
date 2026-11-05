@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlmodel import Session, or_, select
 
 from app.db import get_session
-from app.enums import REVISION_TRANSITIONS, ArtifactType, RevisionState, TagTarget
+from app.enums import REVISION_TRANSITIONS, ArtifactType, Confidence, RevisionState, TagTarget
 from app.models import (
     Artifact,
     ConflictRecord,
@@ -202,15 +202,21 @@ def dismiss_ai_tag(tag_id: int, target_type: TagTarget, target_id: int, session:
 
 
 @router.get("/search")
-def search(tag: int | None = None, q: str | None = None,
+def search(tag: int | None = None, q: str | None = None, confidence: str | None = None,
            video_id: int | None = None, session: Session = Depends(get_session)):
-    """跨视频条目检索：标签过滤 + 关键词，不是语义检索（产品定义 §九 诚实边界）。"""
+    """跨视频条目检索：标签过滤 + 关键词 + 置信度，不是语义检索（产品定义 §九 诚实边界）。"""
     stmt = select(KnowledgeItem)
     if video_id:
         stmt = stmt.where(KnowledgeItem.video_id == video_id)
     if q:
         like = f"%{q}%"
         stmt = stmt.where(or_(KnowledgeItem.title.like(like), KnowledgeItem.content.like(like)))
+    if confidence:
+        try:
+            level = Confidence(confidence)
+        except ValueError:
+            raise HTTPException(422, "未知置信度，可选 explicit / inferred / low")
+        stmt = stmt.where(KnowledgeItem.confidence == level)
     if tag:
         bindings = session.exec(select(TagBinding).where(
             TagBinding.tag_id == tag, TagBinding.target_type == TagTarget.ITEM)).all()
