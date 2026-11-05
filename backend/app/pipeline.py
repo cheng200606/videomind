@@ -79,7 +79,8 @@ bus = ProgressBus()
 def _set_stage(session: Session, video: Video, stage: Stage, status: StageStatus, error: str = "") -> None:
     setattr(video, f"{stage.value}_status", status)
     if error:
-        video.error = error[:500]
+        # 多个阶段可能先后失败：累加而不是覆盖，失败定位以阶段状态为准
+        video.error = f"{video.error}\n{error}".strip()[:500]
     session.add(video)
     session.commit()
     bus.emit(video.batch_id, video.id, stage.value, status.value, error)
