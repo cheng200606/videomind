@@ -88,3 +88,23 @@
 - **程夏（组长）**：知识要点 tab 新增「只看易错点」过滤（F3，按 `payload.pitfall`），筛选无结果给占位文案
 - **程夏（组长）**：进度页新增「整批重跑」按钮，接通一直未接线的 `reparseBatch`（后端 v0.3 幂等保障不翻倍）
 - **程夏（组长）**：测试 12 → 23 例全绿——新增 `test_llm.py`（围栏大小写/前后闲话/垃圾输入、fallback 形状、无 Key 断言）、冲突锚点就近、标签采纳与驳回语义、HTTP 整批重跑幂等、全拒 422、置信度过滤；前端 vue-tsc / vitest / build 回归通过；uvicorn 冒烟（422 带原因、置信度 12 命中、真实后台重跑条目 14→14）通过
+
+---
+
+## [v0.5] — W2 收尾迭代 3：桌面发行版与自动更新（2026-11-06）
+
+### 目标：GitHub Release 可下载安装包，运行软件，内置自动更新（组长直推，按新规留痕）
+
+- **程夏（组长）**：后端产物化——新增 `backend/run_server.py` 桌面入口（环境变量先行：端口/数据目录/包内 fixtures，再 import app）；`app/main.py` 挂 SPA 同源路由（打包态读包内 `frontend_dist`，历史路由回落 index.html，注册顺序保证不吞 `/api`）
+- **程夏（组长）**：PyInstaller 打包后端 sidecar——`VideoMindBackend.spec` 入库（onedir，datas：tests/fixtures → app_fixtures、frontend/dist → frontend_dist，hiddenimports：uvicorn 全家），构建依赖单列 `requirements-build.txt`（pyinstaller 6.22.3）；打包产物独立验证：health / SPA 首页 / 历史路由 / 包内 fixture 四阶段解析 14 条目
+- **程夏（组长）**：新增 `desktop/` Electron 壳——main.js 选空闲端口 → 拉起 `resources/backend/VideoMindBackend.exe` → 轮询健康 → BrowserWindow 加载同源页面；单实例锁、进程随窗口退出、日志落 `%APPDATA%/VideoMind/data/logs`
+- **程夏（组长）**：内置自动更新——electron-updater 6.8.11 + electron-builder 26 的 GitHub Releases 通道（cheng200606/videomind），启动检查、autoDownload、autoInstallOnAppQuit，更新事件全量落 updater.log
+- **程夏（组长）**：NSIS 安装包构建与发布——`VideoMind-Setup-0.5.0.exe`（183MB，含后端 sidecar 与前端）+ latest.yml + blockmap 发布至 Release v0.5.0；Pillow 生成应用图标（desktop/resources/icon.ico）
+- **程夏（组长）**：v0.5.1 验证自动更新 E2E——静默安装 0.5.0 → 启动检测到 0.5.1 → **blockmap 差分下载仅 736KB**（全量 179MB）→ 优雅退出静默安装 → ProductVersion 升至 0.5.1.0；两个 Release 均已公开可下载
+- **程夏（组长）**：conftest 测试库一次性（标签采纳/驳回跨运行污染断言的根因修复，23 例保持全绿）；`.gitignore` 补 `desktop/release/`
+- **程夏（组长）**：构建网络策略——Electron 与 builder 二进制走 npmmirror 镜像（`ELECTRON_MIRROR` / `ELECTRON_BUILDER_BINARIES_MIRROR`），GitHub 只承担 Release 发布
+
+### 后续（v0.5.x 候选）
+
+- **C**：安装包代码签名（消除 SmartScreen 提示）；设置页 Key 配置写入数据目录 .env
+- **A**：桌面版关于页 / 更新进度条 UI
