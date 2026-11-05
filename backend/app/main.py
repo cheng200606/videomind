@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import sys
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -79,6 +79,10 @@ if _spa.is_dir() and (_spa / "index.html").exists():
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str = ""):
+        if full_path == "api" or full_path.startswith("api/"):
+            # catch-all 兜的是前端历史路由；拼错/不存在的 /api 路径要回 404 JSON，
+            # 回 index.html 会让调用方把 HTML 当响应体解析，掩盖真实错误
+            raise HTTPException(404, "接口不存在：请检查请求路径")
         target = _spa / full_path
         if full_path and target.is_file():
             return FileResponse(target)

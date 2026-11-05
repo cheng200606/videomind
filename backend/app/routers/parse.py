@@ -3,18 +3,21 @@
 import asyncio
 import json
 import queue
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
-from sqlmodel import Session, select
+from sqlmodel import Session, delete, select
 from sse_starlette.sse import EventSourceResponse
 
 from app.config import get_settings
 from app.db import engine, get_session
-from app.enums import STAGES, BatchStatus
+from app.enums import STAGES, BatchStatus, TagTarget
 from app.engines.base import available_asr, available_ocr
-from app.models import Segment, Video, VideoBatch
+from app.models import (
+    Artifact, ConflictRecord, Evidence, KnowledgeItem, Note, Revision, Segment, TagBinding, Video, VideoBatch
+)
 from app.pipeline import bus, parse_batch, retry_video
 
 router = APIRouter(prefix="/api", tags=["parse"])
@@ -47,6 +50,8 @@ async def create_batch(
     name: str = Form("未命名批次"),
     session: Session = Depends(get_session),
 ):
+    if len(name) > 80:
+        raise HTTPException(422, "批次名过长（不超过 80 字）")
     settings = get_settings()
     root = Path(settings.media_root)
     root.mkdir(parents=True, exist_ok=True)
@@ -56,24 +61,22 @@ async def create_batch(
     session.commit()
     session.refresh(batch)
 
-    seen: set[tuple[str, int]] = set()
+    seen: set[str] = set()
     rejected: list[dict] = []
     for upload in files:
         filename = Path(upload.filename or "").name
         if Path(filename).suffix.lower() not in _ALLOWED_SUFFIX:
             rejected.append({"filename": filename, "reason": "不支持的格式，可选 mp4/mov/mkv/avi/webm"})
             continue
+        if filename in seen:
+            # 落盘名统一是 {batch_id}_{filename}，同名文件再来一份只会覆盖/误删前一份——直接拒收
+            rejected.append({"filename": filename, "reason": "与批内已有文件同名"})
+            continue
+        seen.add(filename)
         dest = root / f"{batch.id}_{filename}"
-        size = 0
         with dest.open("wb") as fh:                     # 分块落盘，大视频不整读进内存
             while chunk := await upload.read(1024 * 1024):
                 fh.write(chunk)
-                size += len(chunk)
-        if (filename, size) in seen:                    # 批内同名同大小视为重复
-            dest.unlink(missing_ok=True)
-            rejected.append({"filename": filename, "reason": "与批内已有文件重复"})
-            continue
-        seen.add((filename, size))
 
         session.add(Video(batch_id=batch.id, path=str(dest)))
         batch.video_count += 1
@@ -124,6 +127,42 @@ def reparse_batch(batch_id: int, background: BackgroundTasks, session: Session =
     return {"ok": True}
 
 
+@router.delete("/batches/{batch_id}", status_code=204)
+def delete_batch(batch_id: int, session: Session = Depends(get_session)):
+    """删除批次：仅终态可删；级联清派生数据、视频行、标签绑定、上传文件与帧目录。
+
+    只动运行时数据，不改 ER 图口径（docs/产品定义.md §六的表一个不多一个不少）。
+    """
+    batch = session.get(VideoBatch, batch_id)
+    if batch is None:
+        raise HTTPException(404, "批次不存在")
+    if batch.status not in _TERMINAL:
+        raise HTTPException(409, "批次解析中，结束后才能删除")
+
+    videos = session.exec(select(Video).where(Video.batch_id == batch_id)).all()
+    for v in videos:
+        item_ids = session.exec(select(KnowledgeItem.id).where(KnowledgeItem.video_id == v.id)).all()
+        if item_ids:
+            session.exec(delete(Note).where(Note.item_id.in_(item_ids)))
+            session.exec(delete(Revision).where(Revision.item_id.in_(item_ids)))
+            session.exec(delete(Artifact).where(Artifact.item_id.in_(item_ids)))
+            session.exec(delete(ConflictRecord).where(ConflictRecord.item_id.in_(item_ids)))
+            session.exec(delete(TagBinding).where(
+                (TagBinding.target_type == TagTarget.ITEM) & (TagBinding.target_id.in_(item_ids))))
+            session.exec(delete(KnowledgeItem).where(KnowledgeItem.id.in_(item_ids)))
+        session.exec(delete(Evidence).where(Evidence.video_id == v.id))
+        session.exec(delete(Segment).where(Segment.video_id == v.id))
+        session.exec(delete(TagBinding).where(
+            (TagBinding.target_type == TagTarget.VIDEO) & (TagBinding.target_id == v.id)))
+        shutil.rmtree(Path(get_settings().media_root) / "frames" / str(v.id), ignore_errors=True)
+    for v in videos:
+        Path(v.path).unlink(missing_ok=True)
+    session.exec(delete(Video).where(Video.batch_id == batch_id))
+    session.delete(batch)
+    session.commit()
+    return None
+
+
 @router.post("/videos/{video_id}/retry")
 def retry(video_id: int, background: BackgroundTasks, session: Session = Depends(get_session)):
     """单条重试，不重跑整批（用例 3）。"""
@@ -143,27 +182,40 @@ def retry(video_id: int, background: BackgroundTasks, session: Session = Depends
 async def progress(batch_id: int):
     """批次进度 SSE。FastAPI 只有显式指定 EventSourceResponse 才走 text/event-stream 分支，
     否则生成器端点按 application/jsonl 输出，浏览器 EventSource 直接收不到。"""
-    q = bus.subscribe()
-    try:
-        # 订阅前批次可能已经跑完（进度页刷新后重连），先探测终态，否则流只会空转 ping
-        with Session(engine) as probe:
-            batch = probe.get(VideoBatch, batch_id)
-        if batch is not None and batch.status in _TERMINAL:
-            yield {"event": "stage", "data": json.dumps(_terminal_event(batch), ensure_ascii=False)}
-            return
-        while True:
-            try:
-                event = await asyncio.to_thread(q.get, True, 20)
-            except queue.Empty:
-                yield {"event": "ping", "data": "{}"}
-                continue
-            if event["batch_id"] != batch_id:
-                continue
-            yield {"event": "stage", "data": json.dumps(event, ensure_ascii=False)}
-            if event["stage"] == "batch" and event["status"] in _TERMINAL_VALUES:
-                break
-    finally:
-        bus.unsubscribe(q)
+    with Session(engine) as probe:
+        batch = probe.get(VideoBatch, batch_id)
+    if batch is None:
+        # 404 必须在开流前抛：生成器里的异常发生在响应已开始之后，Starlette 无法再改状态码
+        raise HTTPException(404, "批次不存在")
+
+    async def _stream():
+        q = bus.subscribe()
+        try:
+            # 订阅前批次可能已经跑完（进度页刷新后重连），先探测终态，否则流只会空转 ping
+            if batch.status in _TERMINAL:
+                yield {"event": "stage", "data": json.dumps(_terminal_event(batch), ensure_ascii=False)}
+                return
+            while True:
+                try:
+                    event = await asyncio.to_thread(q.get, True, 20)
+                except queue.Empty:
+                    # 订阅瞬间批次恰好跑完的窗口：超时先复探一次终态再发 ping，不留空转流
+                    with Session(engine) as reprobe:
+                        latest = reprobe.get(VideoBatch, batch_id)
+                    if latest is not None and latest.status in _TERMINAL:
+                        yield {"event": "stage", "data": json.dumps(_terminal_event(latest), ensure_ascii=False)}
+                        return
+                    yield {"event": "ping", "data": "{}"}
+                    continue
+                if event["batch_id"] != batch_id:
+                    continue
+                yield {"event": "stage", "data": json.dumps(event, ensure_ascii=False)}
+                if event["stage"] == "batch" and event["status"] in _TERMINAL_VALUES:
+                    break
+        finally:
+            bus.unsubscribe(q)
+
+    return EventSourceResponse(_stream())
 
 
 @router.get("/videos/{video_id}")

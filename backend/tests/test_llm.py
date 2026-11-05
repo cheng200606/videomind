@@ -42,7 +42,7 @@ def test_fallback_draft_shapes_without_key():
     assert draft.chapters, "fallback 也要切出章节，切片不能中断"
     assert draft.items, "长句应被选为条目"
     assert all(i.confidence.value == "explicit" for i in draft.items)
-    assert draft.tags == ["待标注"]
+    assert draft.tags == ["视频讲解"], "兜底标签名应可读，不该把「待标注」原样绑到条目上"
 
 
 def test_no_key_in_test_env():

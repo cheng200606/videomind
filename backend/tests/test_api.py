@@ -201,3 +201,80 @@ def test_sse_progress_streams_terminal_state(client: TestClient, tmp_path: Path)
     last = events[-1]
     assert last["stage"] == "batch" and last["status"] == "succeeded"
     assert last["batch_id"] == batch_id
+
+
+def test_upload_same_name_twice_keeps_first_file_intact(client: TestClient, tmp_path: Path):
+    """批内同名文件拒收第二条，且不能破坏第一条的落盘文件。
+
+    旧实现把两条同名文件写进同一目标路径，去重分支删除时连带删掉首条——
+    Video 行指向已消失的文件，转写必然 WinError 2。
+    """
+    src = tmp_path / "same_name.mp4"
+    src.write_bytes(b"\x00" * 64)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "同名批次"},
+                        files=[("files", ("same_name.mp4", fh, "video/mp4")),
+                               ("files", ("same_name.mp4", fh, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    data = r.json()
+    assert data["video_count"] == 1
+    assert [x["reason"] for x in data["rejected"]] == ["与批内已有文件同名"]
+
+    batch = client.get(f"/api/batches/{data['id']}").json()
+    assert batch["status"] == "succeeded", batch
+    assert Path(batch["videos"][0]["path"]).exists(), "首条文件的落盘文件必须还在"
+
+
+def test_sse_unknown_batch_is_404(client: TestClient):
+    """订阅不存在的批次要 404，而不是返回一条只发 ping 的空流让前端挂死。"""
+    assert client.get("/api/batches/99999/progress").status_code == 404
+
+
+def test_unknown_api_path_returns_404_json(client: TestClient):
+    """未知 /api 路径不许被 SPA catch-all 吞成 index.html——调用方会把 HTML 当响应体解析。"""
+    r = client.get("/api/definitely-not-a-route")
+    assert r.status_code == 404
+    assert r.headers["content-type"].startswith("application/json")
+
+
+def test_batch_name_too_long_rejected(client: TestClient, tmp_path: Path):
+    src = tmp_path / "name_len.mp4"
+    src.write_bytes(b"\x00" * 16)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "长" * 81},
+                        files=[("files", ("name_len.mp4", fh, "video/mp4"))])
+    assert r.status_code == 422 and "批次名过长" in r.json()["detail"]
+
+
+def test_delete_batch_cascades(client: TestClient, tmp_path: Path):
+    """终态批次可删：条目/证据/片段/绑定/上传文件一并清掉，Tag 本体跨视频共享保留。"""
+    src = tmp_path / "todelete.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "待删批次"},
+                        files=[("files", ("todelete.mp4", fh, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    batch_id = r.json()["id"]
+    batch = client.get(f"/api/batches/{batch_id}").json()
+    vid = batch["videos"][0]["id"]
+    video_path = Path(batch["videos"][0]["path"])
+    assert client.get(f"/api/videos/{vid}/items").json()
+
+    assert client.delete(f"/api/batches/{batch_id}").status_code == 204
+    assert client.get(f"/api/batches/{batch_id}").status_code == 404
+    assert client.get(f"/api/videos/{vid}").status_code == 404
+    assert not video_path.exists(), "上传文件要随批次一起清掉"
+    assert client.get("/api/tags").json(), "Tag 本体跨视频共享，不随批次删除"
+
+
+def test_export_markdown_chinese_labels(client: TestClient, tmp_path: Path):
+    """导出文稿面向中文读者：状态/置信度枚举不直接上稿。"""
+    src = tmp_path / "export_label.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "导出中文批次"},
+                        files=[("files", ("export_label.mp4", fh, "video/mp4"))])
+    batch_id = r.json()["id"]
+    md = client.get(f"/api/batches/{batch_id}/export.md").text
+    assert "成功" in md and "succeeded" not in md
+    assert "（明述）" in md or "（推断）" in md

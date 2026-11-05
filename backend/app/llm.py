@@ -161,5 +161,6 @@ def fallback_draft(transcript: list[tuple[int, int, str]]) -> StructuredDraft:
         DraftItem(title=t[:24], content=t, confidence=Confidence.EXPLICIT, anchor_ms=s, quote=t)
         for s, e, t in transcript[:12] if len(t) >= 12
     ]
-    tags = ["自动章节"] if not items else ["待标注"]
+    # 兜底没有可提炼的主题词，给一个说得通的通用标签；字面量「待标注」绑到条目上只会制造噪音
+    tags = ["自动章节"] if not items else ["视频讲解"]
     return StructuredDraft(one_line=chunks[0][:60], chapters=chapters, items=items, tags=tags)

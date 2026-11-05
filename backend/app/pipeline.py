@@ -308,7 +308,8 @@ def parse_batch(session: Session, batch: VideoBatch) -> None:
 
     videos = session.exec(select(Video).where(Video.batch_id == batch.id)).all()
     for video in videos:
-        bus.emit(batch.id, video.id, "batch", "video_start", video.path)
+        # 事件流面向使用者，只给文件名——本机绝对路径不该上 UI
+        bus.emit(batch.id, video.id, "batch", "video_start", Path(video.path).name)
         parse_video(session, video)
 
     statuses = [v.status for v in videos]

@@ -3,13 +3,26 @@
 产物含 UML 草稿（mermaid）、总结、要点、代码块与逐条溯源；导出物在 GitHub 上可直接渲染。
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 from sqlmodel import Session, select
 
-from app.enums import ArtifactType, RevisionState, TagTarget
+from app.enums import ArtifactType, Confidence, RevisionState, TagTarget, VideoStatus
 from app.models import Artifact, ConflictRecord, Evidence, KnowledgeItem, Note, Revision, Tag, TagBinding, Video, VideoBatch
+
+# 导出文稿面向中文读者：枚举原值（succeeded / explicit / confirmed…）一律映射成中文
+_VIDEO_STATUS = {
+    VideoStatus.PENDING: "等待", VideoStatus.RUNNING: "解析中", VideoStatus.SUCCEEDED: "成功",
+    VideoStatus.PARTIAL: "部分成功", VideoStatus.FAILED: "失败",
+}
+_CONFIDENCE = {
+    Confidence.EXPLICIT: "明述", Confidence.INFERRED: "推断", Confidence.LOW: "低置信",
+}
+_REVISION = {
+    RevisionState.DRAFT: "草稿", RevisionState.PENDING_CONFIRM: "待确认",
+    RevisionState.CONFIRMED: "已确认", RevisionState.REVISED: "已修订",
+}
 
 
 def ts(ms: int) -> str:
@@ -45,7 +58,7 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
         raise KeyError(f"批次 {batch_id} 不存在")
 
     videos = session.exec(select(Video).where(Video.batch_id == batch.id)).all()
-    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    now = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")
     out: list[str] = [
         f"# {batch.name} · 视频知识结构化文稿",
         "",
@@ -59,7 +72,7 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
     ]
     for v in videos:
         tags = "、".join(_tag_names(session, TagTarget.VIDEO, v.id)) or "-"
-        out.append(f"| `{Path(v.path).name}` | {ts(v.duration_ms)} | {v.status.value} | {tags} |")
+        out.append(f"| `{Path(v.path).name}` | {ts(v.duration_ms)} | {_VIDEO_STATUS[v.status]} | {tags} |")
     out.append("")
 
     for v in videos:
@@ -88,7 +101,7 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
             pitfalls = [i for i in points if _payload(session, i).get("pitfall")]
             out += ["**知识要点**", ""]
             for i in points:
-                line = f"- `[{ts(i.anchor_ms)}]` {i.content}（{i.confidence.value}）"
+                line = f"- `[{ts(i.anchor_ms)}]` {i.content}（{_CONFIDENCE[i.confidence]}）"
                 if i in pitfalls:
                     line = f"- ⚠ `[{ts(i.anchor_ms)}]` {i.content}（讲师强调/纠错处）"
                 out.append(line)
@@ -127,7 +140,7 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
             for r in confirmed:
                 item = session.get(KnowledgeItem, r.item_id)
                 title = item.title if item else f"条目 #{r.item_id}"
-                out.append(f"- {r.edited_at:%Y-%m-%d %H:%M} · {r.editor} · {title} · {r.state.value}")
+                out.append(f"- {r.edited_at:%Y-%m-%d %H:%M} · {r.editor} · {title} · {_REVISION[r.state]}")
             out.append("")
 
     return "\n".join(out)
