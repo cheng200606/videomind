@@ -1,0 +1,10 @@
+# 可选重引擎 · 只在真要跑 ASR/OCR 时安装；不装也能跑通整条切片（MockAsr / RapidOcr 走轻量路径）
+# 与 app/engines 下的实现类一一对应
+
+yueying==0.2.1        # MIT  ★主路径：本地视频 -> 带时间戳转写 + 关键帧 + contact sheet（离线免 key）
+                      #      锁版本理由：2026-09 新上传、单一维护者，接口不稳；docs/交付与排期.md 风险 5
+funasr==1.4.21        # MIT  备选 ASR：paraformer-zh 字级时间戳，权重走 ModelScope（规避风险 #9 外网）
+                      #      依赖 torch，体积大，只在本机显存够时装
+paddleocr==3.7.0      # Apache-2.0 备选 OCR：与 RapidOCR 构成 OcrEngine 的两个实现，让"双通道策略"有码可证
+rapidocr==3.10.0      # Apache-2.0 ★主 OCR：PaddleOCR 模型转 ONNX，CPU 可跑，Docker 里不拖 paddle
+onnxruntime==1.31.1   # MIT  rapidocr 的推理后端

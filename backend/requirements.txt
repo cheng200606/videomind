@@ -1,0 +1,20 @@
+# VideoMind 后端依赖 · 全部 permissive 许可（MIT / Apache-2.0 / BSD），与仓库 MIT 兼容
+# 装法：python -m venv .venv && .venv\Scripts\pip install -r requirements.txt
+# 重引擎（funasr / paddleocr）单列在 requirements-engines.txt，非必装
+
+fastapi==0.162.0              # MIT  Web 框架 + 自动 OpenAPI（答辩可展示接口文档）
+uvicorn[standard]==0.54.0     # BSD-3 ASGI 服务器
+sse-starlette==3.6.0          # BSD-3 批次进度 SSE 推送（替代 WebSocket，省前端状态管理）
+sqlmodel==0.0.48              # MIT  ER 图 9-10 表 -> ORM，一个类既是表又是 schema
+pymysql==1.2.3                # MIT  MySQL 驱动
+redis==8.1.0                  # BSD-3 解析结果缓存（对应风险 #6「全部预解析+缓存」）
+pydantic==2.14.2              # MIT  产物 schema = OutputSchemaStrategy 的契约
+pydantic-settings==2.16.2     # MIT  配置从环境变量读，API Key 不入库（CONTRIBUTING 红线 2）
+python-multipart==0.0.33      # Apache-2.0 批量上传 multipart 解析
+httpx==0.28.1                 # BSD-3  DeepSeek 客户端与健康检查
+                              #        不用 openai SDK + instructor：二者都依赖 jiter，
+                              #        而 jiter 0.18.0 只发到 win_amd64/cp313，本机 Python 3.14 装不上
+imagehash==4.3.2              # BSD-2  关键帧感知哈希去重，减少 OCR 与 LLM token
+Pillow==13.0.0                # MIT-CMU imagehash 的图像后端
+
+pytest==9.2.0                 # MIT  切片自检（tests/test_pipeline.py），W5 出截图前先跑一遍

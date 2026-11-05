@@ -1,0 +1,42 @@
+{
+  "name": "videomind-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VideoMind 视析 前端 · 垂直切片",
+  "_usage": {
+    "说明": "npm 会忽略未知字段；这里登记每个依赖的用途与许可，作为「复用了哪些开源项目」的可追溯证据",
+    "vue": "MIT · 视图层",
+    "vite": "MIT · 构建与 dev server（proxy 到 FastAPI）",
+    "element-plus": "MIT · 表格/抽屉/标签/进度条，页 4 的骨架不自己造",
+    "pinia": "MIT · 批次与 SSE 进度状态",
+    "vue-router": "MIT · 六个视图路由",
+    "axios": "MIT · REST 客户端",
+    "md-editor-v3": "MIT · 页 7 笔记编辑 + Markdown 预览（自带工具栏，省一整块工时）",
+    "mermaid": "MIT · 页 6 UML 草稿渲染，节点可点回证据；导出的 .md 在 GitHub 原生可渲",
+    "播放器": "故意不引 Video.js / xgplayer —— 溯源跳转用原生 <video> + 自绘刻度条（EvidenceTimeline.vue），零依赖、零调试成本；要更花哨再换 xgplayer(MIT)",
+    "typescript": "MIT · 类型检查",
+    "vitest": "MIT · 组件与 api 层单测"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "axios": "^1.21.0",
+    "element-plus": "^2.14.7",
+    "md-editor-v3": "^7.1.0",
+    "mermaid": "^12.3.0",
+    "pinia": "^4.1.0",
+    "vue": "^3.5.45",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.10",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0",
+    "vue-tsc": "^3.3.14"
+  }
+}
