@@ -80,7 +80,7 @@
 
 ## 六、协作方式
 
-- 分支模型：`main` 受保护 → `feature/<name>-<topic>` → PR 合并，**禁止直推 main**
+- 分支模型：`feature/<name>-<topic>` → PR → **`develop`（集成测试分支）** → 每周版本冻结 → `main`；**禁止直推 main 与 develop**
 - 提交信息：Conventional Commits（如 `feat(design): 类图新增 OutputSchemaStrategy 抽象`）
 - **变更记录逐版本、逐人署名，禁止合注**（见 `CHANGELOG.md`）
 - 图源文件（draw.io / PlantUML）入库，SVG 为导出物
