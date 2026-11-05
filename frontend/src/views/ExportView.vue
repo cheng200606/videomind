@@ -10,12 +10,19 @@ const id = Number(route.params.id)
 
 const md = ref('')
 const loading = ref(true)
+const error = ref('')
 
 async function load() {
   loading.value = true
+  error.value = ''
   try {
     const resp = await fetch(exportUrl(id))
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
     md.value = await resp.text()
+  } catch (err) {
+    // 不把错误文本当文稿渲染进预览
+    md.value = ''
+    error.value = err instanceof Error ? err.message : String(err)
   } finally {
     loading.value = false
   }
@@ -37,6 +44,7 @@ onMounted(load)
       title="导出的 UML 草稿为 Mermaid 源码，提交到 GitHub 后可原生渲染；/api/batches/{id}/structured 是给外部插件只读消费的结构化快照。" />
 
     <el-skeleton v-if="loading" :rows="12" animated />
+    <el-alert v-else-if="error" type="error" :closable="false" show-icon :title="`文稿生成失败：${error}`" />
     <MdPreview v-else :model-value="md" id="batch-preview" class="paper" />
   </div>
 </template>

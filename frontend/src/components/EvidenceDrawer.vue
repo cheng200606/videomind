@@ -12,9 +12,10 @@ const emit = defineEmits<{
 
 const CHANNEL: Record<string, string> = { asr: '语音通道（听到的）', ocr: '画面通道（看到的）', both: '语音 + 画面' }
 
-/** yueying 的关键帧落在 media_root 下时才可经 /media 静态挂载访问 */
+/** 后端已把帧复制进 media_root，frame_path 是 /media 开头的 URL；历史绝对路径退回按文件名解析 */
 const frameUrl = computed(() => {
   const p = props.item?.evidence?.frame_path ?? ''
+  if (p.startsWith('/media/')) return p
   const name = p.split(/[\\/]/).pop()
   return name && p.includes('media') ? `/media/${name}` : ''
 })

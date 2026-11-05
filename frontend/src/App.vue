@@ -1,17 +1,12 @@
 <script setup lang="ts">
-import { onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
-import { useBatchStore } from './stores/batch'
 
 const route = useRoute()
-const store = useBatchStore()
 
 const nav = [
   { name: 'library', label: '视频库' },
   { name: 'upload', label: '批量上传' }
 ]
-
-onBeforeUnmount(() => store.stopProgress())
 </script>
 
 <template>

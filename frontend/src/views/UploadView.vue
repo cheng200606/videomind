@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import type { UploadUserFile } from 'element-plus'
+import type { UploadRawFile, UploadUserFile } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
@@ -27,7 +27,8 @@ onMounted(async () => {
 })
 
 async function submit() {
-  const files = fileList.value.map((f) => f.raw).filter((f): f is File => !!f)
+  // el-upload 的 raw 是带 uid 的 UploadRawFile（File 的子类型），类型收窄后正好传给 createBatch
+  const files = fileList.value.map((f) => f.raw).filter((f): f is UploadRawFile => !!f)
   if (!files.length) {
     ElMessage.warning('先选择至少一条本地视频')
     return
@@ -35,7 +36,10 @@ async function submit() {
   busy.value = true
   try {
     await setEngines({ asr: asr.value, ocr: ocr.value, output_schemas: schemas.value })
-    const { id } = await createBatch(name.value.trim() || '未命名批次', files)
+    const { id, rejected } = await createBatch(name.value.trim() || '未命名批次', files)
+    if (rejected.length) {
+      ElMessage.warning(`已跳过 ${rejected.length} 个文件：${rejected.map((r) => `${r.filename}（${r.reason}）`).join('、')}`)
+    }
     router.push(`/batches/${id}`)
   } catch (err) {
     ElMessage.error(`上传失败：${err instanceof Error ? err.message : err}`)

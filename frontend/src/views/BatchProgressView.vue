@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue'
+import { onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { retryVideo } from '../api/client'
-import type { Stage, StageStatus } from '../api/types'
+import type { Stage, StageStatus, VideoState } from '../api/types'
 import { useBatchStore } from '../stores/batch'
 
 const route = useRoute()
@@ -26,6 +26,13 @@ const STATUS_TYPE: Record<StageStatus, 'info' | 'primary' | 'success' | 'danger'
 const id = Number(route.params.id)
 onMounted(() => void store.open(id))
 watch(() => route.params.id, (v) => v && store.open(Number(v)))
+// SSE 连接跟着进度页走：离开页面就断开，别挂在根组件上泄漏
+onUnmounted(() => store.stopProgress())
+
+/** 表格插槽里的 row 是 any，经这里转成有类型的索引，避免以 any 下标撞 Record */
+function statusOf(row: VideoState, stage: Stage): StageStatus {
+  return row.stages[stage]
+}
 
 /** 单条重试：只重置这一条的四个阶段，不动整批（用例 3） */
 function retry(videoId: number) {
@@ -64,8 +71,8 @@ function retry(videoId: number) {
         align="center"
       >
         <template #default="{ row }">
-          <el-tag size="small" :type="STATUS_TYPE[row.stages[key as Stage]]" disable-transitions>
-            {{ STATUS_TEXT[row.stages[key as Stage]] }}
+          <el-tag size="small" :type="STATUS_TYPE[statusOf(row, key as Stage)]" disable-transitions>
+            {{ STATUS_TEXT[statusOf(row, key as Stage)] }}
           </el-tag>
         </template>
       </el-table-column>
