@@ -40,7 +40,7 @@ function clock(ms: number) {
 <template>
   <el-tabs v-model="active" class="panel">
     <el-tab-pane v-for="t in TABS" :key="t.key" :name="t.key" :label="`${t.label} (${of(t.key).length})`">
-      <el-empty v-if="!of(t.key).length" description="该产物未生成（可在设置页切换默认产物集）" />
+      <el-empty v-if="!of(t.key).length" description="该产物未生成（可在上传页「解析参数」里切换默认产物集）" />
 
       <template v-else-if="t.key === 'uml_draft'">
         <MermaidView :code="of(t.key)[0].content" />

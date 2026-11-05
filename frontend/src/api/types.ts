@@ -67,6 +67,8 @@ export interface TagInfo {
   name: string
   suggested_by_ai: boolean
   bindings: number
+  /** 请求带 target 参数时返回：该标签是否绑定在目标上 */
+  bound?: boolean
 }
 
 export interface StageEvent {

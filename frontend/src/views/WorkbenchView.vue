@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { addNote, getItems, getTranscript, getVideo, mediaUrl } from '../api/client'
-import type { Item, Mark, VideoMeta } from '../api/types'
+import { addNote, bindTag, dismissTag, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
+import type { Item, Mark, TagInfo, VideoMeta } from '../api/types'
 import ArtifactPanel from '../components/ArtifactPanel.vue'
 import EvidenceDrawer from '../components/EvidenceDrawer.vue'
 import EvidenceTimeline from '../components/EvidenceTimeline.vue'
@@ -15,6 +15,9 @@ const videoId = Number(route.params.id)
 const video = ref<VideoMeta | null>(null)
 const items = ref<Item[]>([])
 const transcript = ref<{ start_ms: number; end_ms: number; text: string }[]>([])
+const tags = ref<TagInfo[]>([])
+const newTag = ref('')
+const loadError = ref('')
 const selected = ref<Item | null>(null)
 const drawer = ref(false)
 const player = ref<InstanceType<typeof EvidenceTimeline> | null>(null)
@@ -30,10 +33,22 @@ const marks = computed<Mark[]>(() => [
   ...items.value.filter((i) => i.type === 'key_points').map((i) => ({ ms: i.anchor_ms, label: i.title, kind: 'item' as const }))
 ])
 
+async function loadTags() {
+  tags.value = (await listTags('video', videoId)).filter((t) => t.bound)
+}
+
 onMounted(async () => {
-  video.value = await getVideo(videoId)
-  items.value = await getItems(videoId)
-  transcript.value = await getTranscript(videoId)
+  try {
+    // 三个接口本来互不依赖，并行拉比串行省一半白屏时间
+    const [v, its, trs] = await Promise.all([
+      getVideo(videoId), getItems(videoId), getTranscript(videoId), loadTags()
+    ])
+    video.value = v
+    items.value = its
+    transcript.value = trs
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : String(err)
+  }
 })
 
 function seek(ms: number) {
@@ -49,6 +64,25 @@ async function noteFromSelected() {
   if (!selected.value) return
   await addNote(selected.value.id, `关于「${selected.value.title}」：`, selected.value.anchor_ms)
   router.push(`/notes/${selected.value.id}`)
+}
+
+/** B5 两层标签的人工侧：AI 建议可采纳/驳回，也可手动绑定新标签（video 级） */
+async function adoptTag(t: TagInfo) {
+  await bindTag(t.name, 'video', videoId)
+  await loadTags()
+}
+
+async function dismissTagChip(t: TagInfo) {
+  await dismissTag(t.id, 'video', videoId)
+  await loadTags()
+}
+
+async function addTag() {
+  const name = newTag.value.trim()
+  if (!name) return
+  await bindTag(name, 'video', videoId)
+  newTag.value = ''
+  await loadTags()
 }
 </script>
 
@@ -92,11 +126,27 @@ async function noteFromSelected() {
         <h3 class="t">结构化产物</h3>
         <el-button size="small" :disabled="!selected" @click="noteFromSelected">从选中条目建笔记</el-button>
       </div>
+      <div class="tagbar">
+        <span v-if="!tags.length" class="tag-hint">暂无标签：AI 解析后会给视频级建议，也可手动绑定</span>
+        <el-tag
+          v-for="t in tags"
+          :key="t.id"
+          size="small"
+          :type="t.suggested_by_ai ? 'warning' : 'info'"
+          class="tchip"
+        >
+          {{ t.name }}<template v-if="t.suggested_by_ai"> · AI 建议</template>
+          <el-link v-if="t.suggested_by_ai" type="primary" class="op" @click="adoptTag(t)">采纳</el-link>
+          <el-link type="danger" class="op" @click="dismissTagChip(t)">驳回</el-link>
+        </el-tag>
+        <el-input v-model="newTag" size="small" placeholder="加标签，回车绑定" class="tag-input" @keyup.enter="addTag" />
+      </div>
       <ArtifactPanel :items="items" @select="select" @seek="seek" />
     </div>
 
     <EvidenceDrawer v-model="drawer" :item="selected" @seek="seek" />
   </div>
+  <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`工作台加载失败：${loadError}`" />
   <el-skeleton v-else :rows="8" animated />
 </template>
 
@@ -112,4 +162,9 @@ async function noteFromSelected() {
 .gist { color: #8b95a7; font-size: 12px; }
 .tip { font-size: 12px; color: #8b95a7; margin-top: 10px; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
+.tagbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 4px; }
+.tchip { height: auto; padding: 3px 8px; }
+.op { margin-left: 6px; font-size: 11px; vertical-align: baseline; }
+.tag-input { width: 120px; }
+.tag-hint { font-size: 12px; color: #8b95a7; }
 </style>

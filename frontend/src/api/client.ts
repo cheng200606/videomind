@@ -20,11 +20,11 @@ export async function listBatches(): Promise<BatchSummary[]> {
   return data
 }
 
-export async function createBatch(name: string, files: File[]): Promise<{ id: number }> {
+export async function createBatch(name: string, files: File[]): Promise<{ id: number; rejected: { filename: string; reason: string }[] }> {
   const form = new FormData()
   form.append('name', name)
   files.forEach((f) => form.append('files', f))
-  const { data } = await http.post<{ id: number }>('/batches', form)
+  const { data } = await http.post<{ id: number; rejected: { filename: string; reason: string }[] }>('/batches', form)
   return data
 }
 
@@ -82,8 +82,10 @@ export async function revise(itemId: number, state?: RevisionState, content = ''
   await http.post(`/items/${itemId}/revision`, { state, content, editor: 'local' })
 }
 
-export async function listTags(): Promise<TagInfo[]> {
-  const { data } = await http.get<TagInfo[]>('/tags')
+/** target 参数：只看某个视频/条目的标签（工作台标签条用 bound 标记渲染） */
+export async function listTags(targetType?: 'video' | 'item', targetId?: number): Promise<TagInfo[]> {
+  const params = targetType && targetId != null ? { target_type: targetType, target_id: targetId } : {}
+  const { data } = await http.get<TagInfo[]>('/tags', { params })
   return data
 }
 
