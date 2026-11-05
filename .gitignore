@@ -27,6 +27,8 @@ node_modules/
 dist/
 build/
 .vite/
+# 桌面版 electron-builder 输出（安装包/更新产物不入库，走 GitHub Release）
+desktop/release/
 *.log
 npm-debug.log*
 yarn-error.log*

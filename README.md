@@ -118,6 +118,14 @@
 - AI 生成内容（字幕、代码块、知识点、UML 草稿、总结）**识别结果仅供参考**，不保证 100% 正确
 - 课程评分标准等他人材料不在本仓库中
 
-## 九、许可
+## 九、桌面版下载（自动更新）
+
+**[下载最新安装包 →](https://github.com/cheng200606/videomind/releases/latest)** 双击 `VideoMind-Setup-x.x.x.exe` 安装，免配置、免 API Key，内置演示样例即可完整体验。
+
+- 应用启动时自动检查更新，发现新版本**差分下载**（blockmap 增量），退出后静默安装
+- 数据目录 `%APPDATA%\VideoMind\data`，日志在同目录 `logs/`（backend.log / updater.log）
+- 源码构建：`backend/` 跑 `pyinstaller VideoMindBackend.spec` → `desktop/` 跑 `npm run dist`（详见 `desktop/` 与 CHANGELOG v0.5）
+
+## 十、许可
 
 MIT License — 见 [LICENSE](LICENSE)。
