@@ -99,9 +99,18 @@ def _chat(messages: list[dict]) -> str:
 
 
 def _parse(text: str) -> StructuredDraft:
-    """剥掉偶尔出现的 ```json 围栏（不挑语言标记大小写，容错围栏前的文字），再用 Pydantic 卡字段类型。"""
-    body = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", text.strip())
-    body = re.sub(r"```\s*$", "", body)
+    """剥掉偶尔出现的 ```json 围栏，再用 Pydantic 卡字段类型。
+
+    优先取全文任意位置的围栏块（不挑语言标记大小写、容错围栏前后的闲话）；
+    没围栏时退回剥首尾标记——DeepSeek 偶尔会带「以下是结果：」之类的前缀。
+    """
+    body = text.strip()
+    fenced = re.search(r"```(?:[a-zA-Z0-9_-]+)?\s*(.+?)\s*```", body, re.IGNORECASE | re.DOTALL)
+    if fenced:
+        body = fenced.group(1)
+    else:
+        body = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", body)
+        body = re.sub(r"```\s*$", "", body)
     return StructuredDraft.model_validate(json.loads(body))
 
 
