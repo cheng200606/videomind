@@ -9,6 +9,7 @@ import threading
 from dataclasses import asdict
 from datetime import datetime, timezone
 
+from sqlalchemy import delete
 from sqlmodel import Session, select
 
 from app import cache
@@ -30,6 +31,7 @@ from app.models import (
     ConflictRecord,
     Evidence,
     KnowledgeItem,
+    Note,
     Revision,
     Segment,
     Tag,
@@ -86,12 +88,34 @@ def _transcript_rows(session: Session, video_id: int) -> list[tuple[int, int, st
     return [(r.start_ms, r.end_ms, r.text) for r in rows]
 
 
+def _clear_video_data(session: Session, video_id: int) -> None:
+    """重跑前清空上次解析的派生数据，保证重试 / 整批重解析幂等，不产生重复条目。
+
+    删除顺序按外键依赖：绑定与子表在前，KnowledgeItem 在 Note 之后，Evidence/Segment 最后。
+    Tag 本体跨视频共享，保留；条目上的 Note 随条目一起清（锚点指向的条目已不存在）。
+    """
+    item_ids = session.exec(select(KnowledgeItem.id).where(KnowledgeItem.video_id == video_id)).all()
+    if item_ids:
+        session.exec(delete(TagBinding).where(
+            TagBinding.target_type == TagTarget.ITEM, TagBinding.target_id.in_(item_ids)))
+        session.exec(delete(ConflictRecord).where(ConflictRecord.item_id.in_(item_ids)))
+        session.exec(delete(Revision).where(Revision.item_id.in_(item_ids)))
+        session.exec(delete(Artifact).where(Artifact.item_id.in_(item_ids)))
+        session.exec(delete(Note).where(Note.item_id.in_(item_ids)))
+        session.exec(delete(KnowledgeItem).where(KnowledgeItem.video_id == video_id))
+    session.exec(delete(Evidence).where(Evidence.video_id == video_id))
+    session.exec(delete(Segment).where(Segment.video_id == video_id))
+    session.commit()
+
+
 def parse_video(session: Session, video: Video, settings: Settings | None = None) -> Video:
     settings = settings or get_settings()
     video.status = VideoStatus.RUNNING
     video.error = ""
     session.add(video)
     session.commit()
+
+    _clear_video_data(session, video.id)   # 幂等入口：重试/重跑不残留上次的转写与条目
 
     asr: AsrEngine = build_asr(settings.asr_engine)
     ocr: OcrEngine | None = build_ocr(settings.ocr_engine)

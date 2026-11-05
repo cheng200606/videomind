@@ -80,6 +80,22 @@ def test_retry_single_video_does_not_touch_batch(video: Video):
         assert again.transcribe_status == StageStatus.DONE
 
 
+def test_reparse_is_idempotent_no_duplicate_rows(video: Video):
+    """重试 / 整批重跑必须清空上次派生数据，否则转写与条目翻倍，导出也跟着重复。"""
+    with Session(engine) as session:
+        v = session.get(Video, video.id)
+        parse_video(session, v)
+        seg_first = len(session.exec(select(Segment).where(Segment.video_id == v.id)).all())
+        items_first = len(session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == v.id)).all())
+
+        parse_video(session, v)   # 同一条视频重跑一次
+
+        assert len(session.exec(select(Segment).where(Segment.video_id == v.id)).all()) == seg_first
+        items_second = session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == v.id)).all()
+        assert len(items_second) == items_first
+        assert len(session.exec(select(Evidence).where(Evidence.video_id == v.id)).all()) == items_first
+
+
 def test_revision_state_machine_rejects_illegal_jump(video: Video):
     from fastapi import HTTPException
     from app.routers.knowledge import revise, RevisionIn
