@@ -74,3 +74,7 @@ samples/
 Thumbs.db
 desktop.ini
 ~$*
+
+# 本地测试产物（浏览器自动化截图 / playwright-cli 快照）
+output/
+.playwright-cli/
