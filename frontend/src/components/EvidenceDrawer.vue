@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Item } from '../api/types'
+import type { ItemDetail } from '../api/types'
 import ConfidenceTag from './ConfidenceTag.vue'
 
-const props = defineProps<{ item: Item | null; modelValue: boolean }>()
+const props = defineProps<{ item: ItemDetail | null; modelValue: boolean }>()
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
   (e: 'seek', ms: number): void
@@ -41,6 +41,19 @@ function clock(ms: number) {
       <h4 class="title">{{ item.title }}</h4>
       <p class="content">{{ item.content }}</p>
 
+      <el-alert
+        v-if="item.conflicts.length"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="conflict"
+        title="检出前后不一致（F2 教学一致性校验，识别结果仅供参考）"
+      >
+        <div v-for="(c, i) in item.conflicts" :key="i" class="conflict-line">
+          {{ c.description }}（{{ c.source_a }} ↔ {{ c.source_b }}）
+        </div>
+      </el-alert>
+
       <template v-if="item.evidence">
         <el-divider content-position="left">溯源</el-divider>
         <div class="row"><span class="k">时间点</span>
@@ -69,6 +82,8 @@ function clock(ms: number) {
 .title { margin: 0; font-size: 16px; }
 .content { margin: 0; line-height: 1.7; }
 .quote { margin: 0; padding: 10px 12px; background: #f6f7f9; border-left: 3px solid #3d6fd6; color: #444; }
+.conflict { margin: 2px 0; }
+.conflict-line { font-size: 12px; line-height: 1.6; }
 .frame { width: 100%; border-radius: 6px; }
 .missing-tip { font-size: 12px; color: #a5adba; }
 .disclaimer { font-size: 12px; color: #a5adba; margin-top: 6px; }

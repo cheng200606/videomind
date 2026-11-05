@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { addNote, bindTag, dismissTag, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
-import type { Item, Mark, TagInfo, VideoMeta } from '../api/types'
+import { addNote, bindTag, dismissTag, getItem, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
+import type { Item, ItemDetail, Mark, TagInfo, VideoMeta } from '../api/types'
 import ArtifactPanel from '../components/ArtifactPanel.vue'
 import EvidenceDrawer from '../components/EvidenceDrawer.vue'
 import EvidenceTimeline from '../components/EvidenceTimeline.vue'
@@ -18,7 +18,7 @@ const transcript = ref<{ start_ms: number; end_ms: number; text: string }[]>([])
 const tags = ref<TagInfo[]>([])
 const newTag = ref('')
 const loadError = ref('')
-const selected = ref<Item | null>(null)
+const selected = ref<ItemDetail | null>(null)
 const drawer = ref(false)
 const player = ref<InstanceType<typeof EvidenceTimeline> | null>(null)
 
@@ -56,8 +56,14 @@ function seek(ms: number) {
 }
 
 function select(item: Item) {
-  selected.value = item
+  // 空详情占位让抽屉立即打开，冲突（F2）/修订/笔记随后由详情接口补齐
+  selected.value = { ...item, conflicts: [], revisions: [], notes: [] }
   drawer.value = true
+  void getItem(item.id)
+    .then((detail) => {
+      if (selected.value?.id === item.id) selected.value = detail
+    })
+    .catch(() => { /* 冲突信息拉不到不影响证据展示 */ })
 }
 
 async function noteFromSelected() {
