@@ -1,0 +1,62 @@
+# ── 课程材料与他人文件（不公开）──────────────────────────────
+# 评分标准原文属课程材料，不入库；课程最终交付的 Word 可正常入库
+20260920.软件工程作业成绩单.docx
+
+# 个人发展规划类文档（含毕设/考研/求职规划），仅团队本地保留，不公开
+课题深化路线_课程到毕设到论文.md
+选题收敛_VLM基准与链路双主线.md
+选题调研_现状分析与替代方向.md
+
+# AI 协作规约：本地随环境分发（含个人规划引用），不入公开仓库
+AGENTS.md
+
+# 其他工具的记忆目录
+.workbuddy/
+
+# ── 依赖与构建产物 ───────────────────────────────────────────
+node_modules/
+dist/
+build/
+.vite/
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ── Python ───────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# ── 密钥与本地配置 ───────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.local
+secrets.json
+config.local.*
+
+# ── 解析产物与大文件（版权素材一律不入库）─────────────────────
+media/
+data/frames/
+data/cache/
+data/outputs/
+data/tmp/
+samples/
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.webm
+
+# ── IDE / 系统 ───────────────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+~$*
