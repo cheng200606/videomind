@@ -85,7 +85,7 @@ async function submit() {
 
     <p class="note">
       平台只处理你本机的文件：不留存、不下载、不分发任何第三方视频内容。
-      同名同大小的文件在批内会被判重复并跳过。
+      批内同名文件会被判重复并跳过（保留第一份）。
     </p>
 
     <el-button type="primary" :loading="busy" @click="submit">开始解析</el-button>
@@ -93,7 +93,7 @@ async function submit() {
 </template>
 
 <style scoped>
-.box { max-width: 720px; }
+.box { max-width: 720px; margin: 0 auto; }
 .params { display: flex; gap: 8px; flex-wrap: wrap; }
 .p { width: 168px; }
 .wide { width: 320px; }

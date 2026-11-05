@@ -5,6 +5,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { addNote, getItem, revise, updateNote } from '../api/client'
+import { REVISION_LABEL, REVISION_TRANSITIONS, REVISION_TYPE, clock, fmtDateTime } from '../api/labels'
 import type { ItemDetail, RevisionState } from '../api/types'
 import ConfidenceTag from '../components/ConfidenceTag.vue'
 
@@ -24,17 +25,25 @@ const FLOW: { state: RevisionState; label: string }[] = [
   { state: 'draft', label: '退回草稿' }
 ]
 
-function clock(ms: number) {
-  const total = Math.floor(ms / 1000)
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+/** 非法跳转按钮直接禁用，不再点了之后靠后端 422 弹错 */
+function allowed(next: RevisionState): boolean {
+  return (REVISION_TRANSITIONS[state.value] ?? []).includes(next)
 }
 
+const loadError = ref('')
+
 async function load() {
-  const data = await getItem(itemId)
-  detail.value = data
-  const note = data.notes[0]
-  noteId.value = note?.id ?? null
-  draft.value = note?.content ?? ''
+  loadError.value = ''
+  try {
+    const data = await getItem(itemId)
+    detail.value = data
+    const note = data.notes[0]
+    noteId.value = note?.id ?? null
+    draft.value = note?.content ?? ''
+  } catch (err) {
+    // 直达 URL / 条目被随批次删除时不再永远骨架屏
+    loadError.value = err instanceof Error ? err.message : '条目加载失败'
+  }
 }
 onMounted(load)
 
@@ -101,19 +110,23 @@ function insertAnchor() {
     <el-card class="history" shadow="never">
       <template #header><b>讲义状态与版本记录</b></template>
       <div class="state">
-        当前：<el-tag size="small">{{ state }}</el-tag>
+        当前：<el-tag size="small" :type="REVISION_TYPE[state] ?? 'info'">{{ REVISION_LABEL[state] ?? state }}</el-tag>
         <div class="flows">
-          <el-button v-for="f in FLOW" :key="f.state" size="small" @click="move(f.state)">{{ f.label }}</el-button>
+          <el-button
+            v-for="f in FLOW" :key="f.state" size="small"
+            :disabled="!allowed(f.state)" @click="move(f.state)"
+          >{{ f.label }}</el-button>
         </div>
       </div>
       <el-timeline class="tl">
-        <el-timeline-item v-for="r in detail.revisions" :key="r.id" :timestamp="r.edited_at.slice(0, 16)" placement="top">
-          <div>{{ r.state }} · {{ r.editor }}</div>
+        <el-timeline-item v-for="r in detail.revisions" :key="r.id" :timestamp="fmtDateTime(r.edited_at)" placement="top">
+          <div>{{ REVISION_LABEL[r.state] ?? r.state }} · {{ r.editor }}</div>
           <div class="snap">{{ r.snapshot.slice(0, 60) }}{{ r.snapshot.length > 60 ? '…' : '' }}</div>
         </el-timeline-item>
       </el-timeline>
     </el-card>
   </div>
+  <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`笔记加载失败：${loadError}`" />
   <el-skeleton v-else :rows="8" animated />
 </template>
 

@@ -1,10 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { getBatch, listBatches, openProgress } from '@/api/client'
+import { TERMINAL_BATCH_STATUSES, getBatch, listBatches, openProgress } from '@/api/client'
 import type { BatchState, BatchSummary, StageEvent } from '@/api/types'
-
-const FINISHED = ['succeeded', 'partial', 'failed']
 
 export const useBatchStore = defineStore('batch', () => {
   const batches = ref<BatchSummary[]>([])
@@ -27,7 +25,7 @@ export const useBatchStore = defineStore('batch', () => {
     events.value = []
     close = openProgress(id, (e) => {
       events.value.push(e)
-      if (e.stage === 'batch' && FINISHED.includes(e.status)) {
+      if (e.stage === 'batch' && (TERMINAL_BATCH_STATUSES as readonly string[]).includes(e.status)) {
         void getBatch(id).then((b) => { current.value = b })
       }
     })

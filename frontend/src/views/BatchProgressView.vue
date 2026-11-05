@@ -4,25 +4,15 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { reparseBatch, retryVideo } from '../api/client'
+import {
+  EVENT_STAGE_LABEL, STAGE_LABEL, STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, fmtTime
+} from '../api/labels'
 import type { Stage, StageStatus, VideoState } from '../api/types'
 import { useBatchStore } from '../stores/batch'
 
 const route = useRoute()
 const router = useRouter()
 const store = useBatchStore()
-
-const STAGE_LABEL: Record<Stage, string> = {
-  transcribe: '① ASR 转写',
-  visual: '② 画面 OCR',
-  structure: '③ LLM 结构化',
-  artifact: '④ 产物落库'
-}
-const STATUS_TEXT: Record<StageStatus, string> = {
-  pending: '等待', running: '进行中', done: '完成', failed: '失败', skipped: '降级跳过'
-}
-const STATUS_TYPE: Record<StageStatus, 'info' | 'primary' | 'success' | 'danger' | 'warning'> = {
-  pending: 'info', running: 'primary', done: 'success', failed: 'danger', skipped: 'warning'
-}
 
 const id = Number(route.params.id)
 onMounted(() => void store.open(id))
@@ -52,8 +42,13 @@ async function reparseAll() {
 }
 
 /** 单条重试：只重置这一条的四个阶段，不动整批（用例 3） */
-function retry(videoId: number) {
-  void retryVideo(videoId)
+async function retry(videoId: number) {
+  try {
+    await retryVideo(videoId)
+    ElMessage.success('已提交单条重试，进度见下方事件流')
+  } catch (err) {
+    ElMessage.error(`重试失败：${err instanceof Error ? err.message : err}`)
+  }
 }
 </script>
 
@@ -61,7 +56,7 @@ function retry(videoId: number) {
   <div v-if="store.current">
     <div class="head">
       <h2>{{ store.current.name }}</h2>
-      <el-tag :type="store.current.status === 'succeeded' ? 'success' : 'info'">{{ store.current.status }}</el-tag>
+      <el-tag :type="STATUS_TYPE[store.current.status] ?? 'info'">{{ STATUS_LABEL[store.current.status] ?? store.current.status }}</el-tag>
       <el-button size="small" @click="router.push(`/batches/${id}/export`)">导出批次文稿</el-button>
       <el-button size="small" :loading="rerunning" @click="reparseAll">整批重跑</el-button>
     </div>
@@ -89,8 +84,8 @@ function retry(videoId: number) {
         align="center"
       >
         <template #default="{ row }">
-          <el-tag size="small" :type="STATUS_TYPE[statusOf(row, key as Stage)]" disable-transitions>
-            {{ STATUS_TEXT[statusOf(row, key as Stage)] }}
+          <el-tag size="small" :type="STAGE_STATUS_TYPE[statusOf(row, key as Stage)]" disable-transitions>
+            {{ STAGE_STATUS_LABEL[statusOf(row, key as Stage)] }}
           </el-tag>
         </template>
       </el-table-column>
@@ -107,8 +102,11 @@ function retry(videoId: number) {
     <el-card class="stream" shadow="never">
       <template #header><b>解析事件流</b><span class="muted">（SSE 实时推送）</span></template>
       <div v-for="(e, i) in store.events.slice(-12)" :key="i" class="evt">
-        <span class="muted">{{ e.ts }}</span>
-        <el-tag size="small" :type="STATUS_TYPE[e.status as StageStatus] ?? 'info'">{{ e.stage }} · {{ e.status }}</el-tag>
+        <span class="muted">{{ fmtTime(e.ts) }}</span>
+        <el-tag size="small" :type="STAGE_STATUS_TYPE[e.status as StageStatus] ?? 'info'">
+          {{ EVENT_STAGE_LABEL[e.stage] ?? e.stage }} ·
+          {{ STAGE_STATUS_LABEL[e.status] ?? STATUS_LABEL[e.status] ?? e.status }}
+        </el-tag>
         <span>{{ e.message }}</span>
       </div>
       <el-empty v-if="!store.events.length" description="暂无事件" :image-size="60" />

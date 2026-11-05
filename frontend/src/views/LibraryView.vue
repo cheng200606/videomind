@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { listTags, search } from '../api/client'
-import type { Item, TagInfo } from '../api/types'
+import { deleteBatch, listTags, search } from '../api/client'
+import { ARTIFACT_LABEL, STATUS_LABEL, STATUS_TYPE, clock } from '../api/labels'
+import type { BatchSummary, Item, TagInfo } from '../api/types'
 import { useBatchStore } from '../stores/batch'
 import ConfidenceTag from '../components/ConfidenceTag.vue'
 
@@ -34,9 +36,22 @@ async function runSearch() {
   }
 }
 
-function clock(ms: number) {
-  const total = Math.floor(ms / 1000)
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
+/** 删除只清运行时数据（后端级联），解析中的批次按钮已禁用 */
+async function removeBatch(b: BatchSummary) {
+  try {
+    await ElMessageBox.confirm(`删除批次「${b.name}」？解析产物与上传文件将一并清除。`, '删除批次', {
+      type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消'
+    })
+  } catch {
+    return
+  }
+  try {
+    await deleteBatch(b.id)
+    ElMessage.success('批次已删除')
+    await store.refreshList()
+  } catch (err) {
+    ElMessage.error(`删除失败：${err instanceof Error ? err.message : err}`)
+  }
 }
 </script>
 
@@ -69,7 +84,9 @@ function clock(ms: number) {
           @row-click="(r: Item) => router.push(`/videos/${r.video_id}`)"
         >
           <el-table-column prop="title" label="条目" min-width="220" />
-          <el-table-column prop="type" label="类型" width="110" />
+          <el-table-column label="类型" width="110">
+            <template #default="{ row }">{{ ARTIFACT_LABEL[row.type as string] ?? row.type }}</template>
+          </el-table-column>
           <el-table-column label="置信度" width="96">
             <template #default="{ row }"><ConfidenceTag :confidence="row.confidence" /></template>
           </el-table-column>
@@ -88,15 +105,16 @@ function clock(ms: number) {
       <el-card v-for="b in store.batches" :key="b.id" class="card" shadow="hover">
         <div class="name">{{ b.name }}</div>
         <div class="line">
-          <el-tag size="small" :type="b.status === 'succeeded' ? 'success' : b.status === 'failed' ? 'danger' : 'info'">
-            {{ b.status }}
-          </el-tag>
+          <el-tag size="small" :type="STATUS_TYPE[b.status] ?? 'info'">{{ STATUS_LABEL[b.status] ?? b.status }}</el-tag>
           <span>{{ b.video_count }} 条</span>
         </div>
         <div class="line muted">{{ new Date(b.created_at).toLocaleString() }}</div>
         <div class="acts">
           <el-button size="small" @click="router.push(`/batches/${b.id}`)">解析进度</el-button>
           <el-button size="small" @click="router.push(`/batches/${b.id}/export`)">导出文稿</el-button>
+          <el-button size="small" type="danger" plain :disabled="b.status === 'running'" @click="removeBatch(b)">
+            删除
+          </el-button>
         </div>
       </el-card>
     </div>

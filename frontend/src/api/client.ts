@@ -37,6 +37,10 @@ export async function reparseBatch(id: number): Promise<void> {
   await http.post(`/batches/${id}/parse`)
 }
 
+export async function deleteBatch(id: number): Promise<void> {
+  await http.delete(`/batches/${id}`)
+}
+
 export async function retryVideo(id: number): Promise<void> {
   await http.post(`/videos/${id}/retry`)
 }
@@ -117,8 +121,18 @@ export function exportUrl(batchId: number): string {
   return `/api/batches/${batchId}/export.md`
 }
 
+/** 与 stores/batch.ts 共用：终态批次不再订阅 */
+export const TERMINAL_BATCH_STATUSES = ['succeeded', 'partial', 'failed'] as const
+
 export function openProgress(batchId: number, onEvent: (e: StageEvent) => void): () => void {
   const source = new EventSource(`/api/batches/${batchId}/progress`)
-  source.addEventListener('stage', (ev: MessageEvent) => onEvent(JSON.parse(ev.data) as StageEvent))
+  source.addEventListener('stage', (ev: MessageEvent) => {
+    const e = JSON.parse(ev.data) as StageEvent
+    onEvent(e)
+    // 服务端推完终态就收流；EventSource 默认 ~3s 自动重连，不主动 close 会无限重复收终态
+    if (e.stage === 'batch' && (TERMINAL_BATCH_STATUSES as readonly string[]).includes(e.status)) {
+      source.close()
+    }
+  })
   return () => source.close()
 }

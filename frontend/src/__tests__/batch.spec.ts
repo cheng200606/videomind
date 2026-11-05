@@ -11,7 +11,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/api/client', () => ({
   getBatch: mocks.getBatch,
   listBatches: vi.fn(),
-  openProgress: mocks.openProgress
+  openProgress: mocks.openProgress,
+  // store 里判终态用的常量，mock 必须同步导出
+  TERMINAL_BATCH_STATUSES: ['succeeded', 'partial', 'failed']
 }))
 
 import { useBatchStore } from '@/stores/batch'

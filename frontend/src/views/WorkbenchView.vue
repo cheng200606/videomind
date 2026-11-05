@@ -157,7 +157,12 @@ async function addTag() {
 </template>
 
 <style scoped>
-.workbench { display: grid; grid-template-columns: 280px minmax(360px, 1fr) 420px; gap: 14px; align-items: start; }
+/* 三列弹性收缩：1280 默认窗宽不溢出，窄窗按断点单列堆叠（产物列不可见是此前实测缺陷） */
+.workbench { display: grid; grid-template-columns: minmax(220px, 300px) minmax(320px, 1fr) minmax(320px, 420px); gap: 14px; align-items: start; }
+@media (max-width: 1080px) {
+  .workbench { grid-template-columns: 1fr; }
+  .col { min-height: auto; }
+}
 .col { background: #fff; border: 1px solid #e6e8eb; border-radius: 8px; padding: 12px; min-height: 70vh; }
 .t { font-size: 13px; color: #606a7b; margin: 6px 0 8px; }
 .outline { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; }

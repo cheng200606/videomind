@@ -38,4 +38,7 @@ html, body, #app { height: 100%; margin: 0; }
 .hint { padding: 12px 16px; font-size: 12px; color: #6f7a8c; }
 .main { background: #f5f6f8; }
 .el-menu { border-right: none; background: transparent; }
+/* 非激活菜单项提高对比度：深底上默认色读不清（实测截图确认） */
+.side .el-menu-item { color: #b7c0d0; }
+.side .el-menu-item:hover { background: rgba(255, 255, 255, 0.06); color: #e6ebf3; }
 </style>
