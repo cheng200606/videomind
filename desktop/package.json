@@ -1,0 +1,21 @@
+{
+  "name": "videomind-desktop",
+  "productName": "VideoMind",
+  "version": "0.5.1",
+  "private": true,
+  "description": "VideoMind 视析 桌面版：Electron 壳 + PyInstaller 打包的 FastAPI 后端 sidecar",
+  "main": "main.js",
+  "author": "cheng200606",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "dist:publish": "electron-builder --win nsis --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "devDependencies": {
+    "electron": "^45.2.3",
+    "electron-builder": "^26.18.0"
+  }
+}

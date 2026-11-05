@@ -1,0 +1,39 @@
+# electron-builder 配置：NSIS 安装包 + GitHub Releases 更新通道
+appId: com.videomind.desktop
+productName: VideoMind
+copyright: MIT License · VideoMind 视析（软件工程课程项目）
+
+directories:
+  output: release
+  buildResources: resources
+
+files:
+  - main.js
+  - package.json
+
+# PyInstaller 的 onedir 产物整目录塞进 resources/backend，主进程按 resources/backend/VideoMindBackend.exe 拉起
+extraResources:
+  - from: ../backend/dist/VideoMindBackend
+    to: backend
+    filter:
+      - "**/*"
+
+publish:
+  provider: github
+  owner: cheng200606
+  repo: videomind
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  artifactName: VideoMind-Setup-${version}.${ext}
+  createDesktopShortcut: always
+  shortcutName: VideoMind 视析

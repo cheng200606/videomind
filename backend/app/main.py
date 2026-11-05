@@ -1,9 +1,11 @@
 from contextlib import asynccontextmanager
 import json
 from pathlib import Path
+import sys
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import engines  # noqa: F401  导入即把引擎实现注册进 base 的注册表
@@ -62,3 +64,22 @@ app.include_router(delivery.router)
 @app.get("/api/health")
 def health():
     return {"ok": True, "asr": _settings.asr_engine, "ocr": _settings.ocr_engine}
+
+
+# 桌面版（PyInstaller）把前端 dist 打进包里同源服务，源码开发时本地 npm run build 后也可直连。
+# 必须注册在所有 /api 路由之后：前端历史路由（/videos/3 等）回落 index.html。
+def _spa_root() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "frontend_dist"
+    return Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+
+_spa = _spa_root()
+if _spa.is_dir() and (_spa / "index.html").exists():
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    def spa(full_path: str = ""):
+        target = _spa / full_path
+        if full_path and target.is_file():
+            return FileResponse(target)
+        return FileResponse(_spa / "index.html")
