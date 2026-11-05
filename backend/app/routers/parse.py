@@ -57,9 +57,11 @@ async def create_batch(
     session.refresh(batch)
 
     seen: set[tuple[str, int]] = set()
+    rejected: list[dict] = []
     for upload in files:
         filename = Path(upload.filename or "").name
         if Path(filename).suffix.lower() not in _ALLOWED_SUFFIX:
+            rejected.append({"filename": filename, "reason": "不支持的格式，可选 mp4/mov/mkv/avi/webm"})
             continue
         dest = root / f"{batch.id}_{filename}"
         size = 0
@@ -69,6 +71,7 @@ async def create_batch(
                 size += len(chunk)
         if (filename, size) in seen:                    # 批内同名同大小视为重复
             dest.unlink(missing_ok=True)
+            rejected.append({"filename": filename, "reason": "与批内已有文件重复"})
             continue
         seen.add((filename, size))
 
@@ -79,7 +82,7 @@ async def create_batch(
     session.refresh(batch)
 
     background.add_task(_run_batch, batch.id)
-    return {"id": batch.id, "name": batch.name, "video_count": batch.video_count}
+    return {"id": batch.id, "name": batch.name, "video_count": batch.video_count, "rejected": rejected}
 
 
 @router.get("/batches")
