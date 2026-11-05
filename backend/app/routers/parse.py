@@ -3,6 +3,7 @@
 import asyncio
 import json
 import queue
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
@@ -19,6 +20,16 @@ from app.pipeline import bus, parse_batch, retry_video
 router = APIRouter(prefix="/api", tags=["parse"])
 
 _ALLOWED_SUFFIX = {".mp4", ".mov", ".mkv", ".avi", ".webm"}
+_TERMINAL = (BatchStatus.SUCCEEDED, BatchStatus.PARTIAL, BatchStatus.FAILED)
+_TERMINAL_VALUES = tuple(s.value for s in _TERMINAL)
+
+
+def _terminal_event(batch: VideoBatch) -> dict:
+    """给「订阅前批次已结束」的重连者补一条终态事件，字段形状与 ProgressBus.emit 一致。"""
+    return {
+        "batch_id": batch.id, "video_id": None, "stage": "batch", "status": batch.status.value,
+        "message": "", "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }
 
 
 def _run_batch(batch_id: int) -> None:
@@ -119,10 +130,18 @@ def retry(video_id: int, background: BackgroundTasks, session: Session = Depends
     return {"ok": True}
 
 
-@router.get("/batches/{batch_id}/progress")
+@router.get("/batches/{batch_id}/progress", response_class=EventSourceResponse)
 async def progress(batch_id: int):
+    """批次进度 SSE。FastAPI 只有显式指定 EventSourceResponse 才走 text/event-stream 分支，
+    否则生成器端点按 application/jsonl 输出，浏览器 EventSource 直接收不到。"""
     q = bus.subscribe()
     try:
+        # 订阅前批次可能已经跑完（进度页刷新后重连），先探测终态，否则流只会空转 ping
+        with Session(engine) as probe:
+            batch = probe.get(VideoBatch, batch_id)
+        if batch is not None and batch.status in _TERMINAL:
+            yield {"event": "stage", "data": json.dumps(_terminal_event(batch), ensure_ascii=False)}
+            return
         while True:
             try:
                 event = await asyncio.to_thread(q.get, True, 20)
@@ -132,8 +151,7 @@ async def progress(batch_id: int):
             if event["batch_id"] != batch_id:
                 continue
             yield {"event": "stage", "data": json.dumps(event, ensure_ascii=False)}
-            if event["stage"] == "batch" and event["status"] in (
-                BatchStatus.SUCCEEDED.value, BatchStatus.PARTIAL.value, BatchStatus.FAILED.value):
+            if event["stage"] == "batch" and event["status"] in _TERMINAL_VALUES:
                 break
     finally:
         bus.unsubscribe(q)
@@ -169,8 +187,8 @@ def engines():
 
 
 @router.put("/settings/engines")
-def set_engines(body: dict, session: Session = Depends(get_session)):
-    """页 11 设置页：OCR 引擎切换 + 默认产物集；校验后直接改运行时配置对象。"""
+def set_engines(body: dict):
+    """页 11 设置页：OCR 引擎切换 + 默认产物集；校验后改运行时配置。"""
     settings = get_settings()
     if "asr" in body:
         if body["asr"] not in available_asr():
