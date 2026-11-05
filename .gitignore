@@ -20,6 +20,7 @@ AGENTS.md
 # 其他工具的记忆目录
 .workbuddy/
 .qoder/
+.zcode/
 
 # ── 依赖与构建产物 ───────────────────────────────────────────
 node_modules/
@@ -54,6 +55,9 @@ data/frames/
 data/cache/
 data/outputs/
 data/tmp/
+# 后端运行时目录：SQLite 库、上传落盘、缓存、引擎设置快照，整目录不入库
+backend/data/
+backend/tests/.pytest_tmp/
 samples/
 *.mp4
 *.mkv
