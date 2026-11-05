@@ -77,6 +77,12 @@ async def create_batch(
 
         session.add(Video(batch_id=batch.id, path=str(dest)))
         batch.video_count += 1
+    if batch.video_count == 0:
+        # 一条有效视频都没有：不落空批次，把每个文件被拒的原因直接带回前端
+        session.delete(batch)
+        session.commit()
+        reason = "；".join(f"{r['filename']}（{r['reason']}）" for r in rejected) or "未收到有效文件"
+        raise HTTPException(422, f"没有可解析的视频：{reason}")
     session.add(batch)
     session.commit()
     session.refresh(batch)
