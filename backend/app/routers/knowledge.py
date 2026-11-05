@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from sqlmodel import Session, or_, select
 
@@ -61,10 +61,11 @@ def _brief(session: Session, item: KnowledgeItem) -> dict:
 
 
 @router.get("/videos/{video_id}/items")
-def video_items(video_id: int, type: str | None = None, session: Session = Depends(get_session)):
+def video_items(video_id: int, item_type: str | None = Query(None, alias="type"),
+                session: Session = Depends(get_session)):
     stmt = select(KnowledgeItem).where(KnowledgeItem.video_id == video_id)
-    if type:
-        stmt = stmt.where(KnowledgeItem.type == ArtifactType(type))
+    if item_type:
+        stmt = stmt.where(KnowledgeItem.type == ArtifactType(item_type))
     items = session.exec(stmt.order_by(KnowledgeItem.ordinal)).all()
     return [_brief(session, i) for i in items]
 
@@ -128,6 +129,8 @@ def revise(item_id: int, body: RevisionIn, session: Session = Depends(get_sessio
     if body.state is not None and body.state not in REVISION_TRANSITIONS[current]:
         raise HTTPException(422, f"不允许的状态跳转：{current.value} → {body.state.value}")
     target = body.state or current
+    if body.state is None and not body.content:
+        raise HTTPException(422, "无可留痕的变更：要么给 state 跳状态，要么给 content 改内容")
 
     if body.content:
         item.content = body.content
@@ -139,12 +142,17 @@ def revise(item_id: int, body: RevisionIn, session: Session = Depends(get_sessio
 
 
 @router.get("/tags")
-def list_tags(session: Session = Depends(get_session)):
-    return [
-        {"id": t.id, "name": t.name, "suggested_by_ai": t.suggested_by_ai,
-         "bindings": len(session.exec(select(TagBinding).where(TagBinding.tag_id == t.id)).all())}
-        for t in session.exec(select(Tag)).all()
-    ]
+def list_tags(target_type: TagTarget | None = Query(None), target_id: int | None = Query(None),
+              session: Session = Depends(get_session)):
+    """标签清单；带 target 参数时附加 bound 标记，工作台用它渲染当前视频/条目的标签条。"""
+    out = []
+    for t in session.exec(select(Tag)).all():
+        bindings = session.exec(select(TagBinding).where(TagBinding.tag_id == t.id)).all()
+        bound = (target_type is not None and target_id is not None
+                 and any(b.target_type == target_type and b.target_id == target_id for b in bindings))
+        out.append({"id": t.id, "name": t.name, "suggested_by_ai": t.suggested_by_ai,
+                    "bindings": len(bindings), "bound": bound})
+    return out
 
 
 class TagBindIn(BaseModel):
@@ -155,13 +163,24 @@ class TagBindIn(BaseModel):
 
 @router.post("/tags/bind", status_code=201)
 def bind_tag(body: TagBindIn, session: Session = Depends(get_session)):
-    tag = session.exec(select(Tag).where(Tag.name == body.name.strip())).first()
+    """人工绑定标签。对 AI 已建议的绑定再绑一次视为「采纳」，标签转为人工确认。"""
+    name = body.name.strip()
+    if not name:
+        raise HTTPException(422, "标签名不能为空")
+    tag = session.exec(select(Tag).where(Tag.name == name)).first()
     if tag is None:
-        tag = Tag(name=body.name.strip(), suggested_by_ai=False)
+        tag = Tag(name=name, suggested_by_ai=False)   # 人工新建的标签不算 AI 建议
         session.add(tag)
         session.commit()
         session.refresh(tag)
-    session.add(TagBinding(tag_id=tag.id, target_type=body.target_type, target_id=body.target_id))
+    exists = session.exec(select(TagBinding).where(
+        TagBinding.tag_id == tag.id, TagBinding.target_type == body.target_type,
+        TagBinding.target_id == body.target_id)).first()
+    if exists is None:
+        session.add(TagBinding(tag_id=tag.id, target_type=body.target_type, target_id=body.target_id))
+    elif tag.suggested_by_ai:
+        tag.suggested_by_ai = False   # 采纳：AI 建议经人工确认，不再以「建议」身份示人
+        session.add(tag)
     session.commit()
     return {"id": tag.id}
 

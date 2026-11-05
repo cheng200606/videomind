@@ -6,6 +6,7 @@
 
 import json
 import os
+import re
 
 import httpx
 from pydantic import BaseModel, Field
@@ -98,10 +99,9 @@ def _chat(messages: list[dict]) -> str:
 
 
 def _parse(text: str) -> StructuredDraft:
-    """剥掉偶尔出现的 ```json 围栏，再用 Pydantic 卡字段类型。"""
-    body = text
-    if body.startswith("```"):
-        body = body.split("```", 2)[1].removeprefix("json").strip()
+    """剥掉偶尔出现的 ```json 围栏（不挑语言标记大小写，容错围栏前的文字），再用 Pydantic 卡字段类型。"""
+    body = re.sub(r"^```[a-zA-Z0-9_-]*\s*", "", text.strip())
+    body = re.sub(r"```\s*$", "", body)
     return StructuredDraft.model_validate(json.loads(body))
 
 
