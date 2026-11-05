@@ -96,6 +96,68 @@ def test_full_slice_over_http(client: TestClient, tmp_path: Path):
     assert structured["videos"] and structured["disclaimer"]
 
 
+def test_upload_all_rejected_is_422(client: TestClient, tmp_path: Path):
+    """所有文件都被拒时不落空批次：422 并带回每个文件的原因。"""
+    txt = tmp_path / "note.txt"
+    txt.write_text("not a video", encoding="utf-8")
+    with txt.open("rb") as ft:
+        r = client.post("/api/batches", data={"name": "全拒批次"},
+                        files=[("files", ("note.txt", ft, "text/plain"))])
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    assert "没有可解析的视频" in detail and "note.txt" in detail
+
+
+def test_tag_bind_adopt_and_dismiss(client: TestClient, tmp_path: Path):
+    """B5 人机协同：AI 建议标签再绑一次=采纳（转人工确认），驳回=解除绑定。"""
+    src = tmp_path / "vue3_lecture.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "标签语义批次"},
+                        files=[("files", ("vue3_lecture.mp4", fh, "video/mp4"))])
+    vid = client.get(f"/api/batches/{r.json()['id']}").json()["videos"][0]["id"]
+
+    params = {"target_type": "video", "target_id": vid}
+    bound = [t for t in client.get("/api/tags", params=params).json() if t["bound"]]
+    assert bound, "解析落库的视频级标签应绑定当前视频"
+    assert all(t["suggested_by_ai"] for t in bound), "未人工确认前都是 AI 建议"
+
+    adopted = client.post("/api/tags/bind",
+                          json={"name": bound[0]["name"], "target_type": "video", "target_id": vid})
+    assert adopted.status_code == 201
+    after = {t["id"]: t for t in client.get("/api/tags", params=params).json()}
+    assert after[bound[0]["id"]]["suggested_by_ai"] is False, "采纳后不再以「建议」身份示人"
+    assert after[bound[0]["id"]]["bound"] is True, "采纳不解除绑定"
+
+    assert client.post(f"/api/tags/{bound[0]['id']}/dismiss", params=params).status_code == 200
+    after2 = {t["id"]: t for t in client.get("/api/tags", params=params).json()}
+    assert after2[bound[0]["id"]]["bound"] is False, "驳回应解除绑定"
+
+
+def test_reparse_batch_is_idempotent_over_http(client: TestClient, tmp_path: Path):
+    """整批重跑走 HTTP 后台任务后条目数不翻倍（配套 pipeline 幂等修复）。"""
+    src = tmp_path / "vue3_lecture.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "重跑幂等批次"},
+                        files=[("files", ("vue3_lecture.mp4", fh, "video/mp4"))])
+    batch_id = r.json()["id"]
+    vid = client.get(f"/api/batches/{batch_id}").json()["videos"][0]["id"]
+    items_first = len(client.get(f"/api/videos/{vid}/items").json())
+
+    assert client.post(f"/api/batches/{batch_id}/parse").status_code == 200
+    # TestClient 会在响应返回后同步执行 BackgroundTasks，无需轮询
+    assert client.get(f"/api/batches/{batch_id}").json()["status"] == "succeeded"
+    assert len(client.get(f"/api/videos/{vid}/items").json()) == items_first
+
+
+def test_search_confidence_filter(client: TestClient):
+    """F4 置信度过滤：合法值返回列表，非法值 422。"""
+    assert isinstance(client.get("/api/search", params={"confidence": "explicit"}).json(), list)
+    assert isinstance(client.get("/api/search", params={"confidence": "inferred"}).json(), list)
+    assert client.get("/api/search", params={"confidence": "不存在"}).status_code == 422
+
+
 def test_missing_batch_is_404(client: TestClient):
     assert client.get("/api/batches/987654").status_code == 404
     assert client.get("/api/batches/987654/export.md").status_code == 404

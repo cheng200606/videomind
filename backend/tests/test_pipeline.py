@@ -1,15 +1,17 @@
 """垂直切片自检：不装任何引擎也能跑通「转写 → 结构化 → 产物 → 落库 → 导出」。"""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from sqlmodel import Session, select
 
+from app.artifacts import ItemDraft
 from app.db import engine, init_db
-from app.enums import ArtifactType, RevisionState, StageStatus, VideoStatus
+from app.enums import ArtifactType, Confidence, RevisionState, StageStatus, VideoStatus
 from app.export import build_batch_markdown
-from app.models import Artifact, Evidence, KnowledgeItem, Segment, Video, VideoBatch
-from app.pipeline import parse_video, retry_video
+from app.models import Artifact, ConflictRecord, Evidence, KnowledgeItem, Segment, Video, VideoBatch
+from app.pipeline import _persist, parse_video, retry_video
 from app.routers.knowledge import _brief
 
 
@@ -121,3 +123,24 @@ def test_brief_exposes_evidence_shape_for_frontend(video: Video):
 
     assert set(data) >= {"id", "type", "anchor_ms", "confidence", "evidence", "payload", "video_name"}
     assert data["evidence"]["channel"] in ("asr", "ocr", "both")
+
+
+def test_conflict_record_anchors_to_nearest_item(video: Video):
+    """F2 冲突记录应挂在离 source_a 时间点最近的条目上，而不是随手挂第一条。"""
+    drafts = [
+        ItemDraft(type=ArtifactType.KEY_POINTS, title="条目A", content="内容A",
+                  confidence=Confidence.EXPLICIT, anchor_ms=1000, ordinal=0, quote="原话A"),
+        ItemDraft(type=ArtifactType.KEY_POINTS, title="条目B", content="内容B",
+                  confidence=Confidence.EXPLICIT, anchor_ms=60000, ordinal=1, quote="原话B"),
+    ]
+    conflicts = [SimpleNamespace(source_a_ms=55000, source_b_ms=2000, description="先讲A后改成B")]
+
+    with Session(engine) as session:
+        _persist(session, session.get(Video, video.id), drafts, conflicts, [])
+
+        items = session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == video.id)).all()
+        nearest = next(i for i in items if i.anchor_ms == 60000)
+        record = session.exec(select(ConflictRecord).where(
+            ConflictRecord.item_id == nearest.id)).first()
+        assert record is not None
+        assert record.description == "先讲A后改成B"
