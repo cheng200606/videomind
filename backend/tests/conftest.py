@@ -14,3 +14,6 @@ os.environ["OCR_ENGINE"] = "none"
 os.environ["DEEPSEEK_API_KEY"] = ""
 os.environ["REDIS_URL"] = ""
 os.environ["VMIND_FIXTURE_DIR"] = str(_HERE / "fixtures")
+
+# 引擎设置会持久化到 data/settings.json 并在 lifespan 读回；先清掉上次运行残留，保证测试封闭
+(_WORK / "settings.json").unlink(missing_ok=True)

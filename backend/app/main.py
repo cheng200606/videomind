@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+import json
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -17,8 +18,23 @@ Path(_settings.media_root).mkdir(parents=True, exist_ok=True)
 Path(_settings.cache_root).mkdir(parents=True, exist_ok=True)
 
 
+def _load_saved_settings() -> None:
+    """读回上次运行保存的引擎设置（PUT /settings/engines 落盘的 data/settings.json），重启不丢。"""
+    path = Path(_settings.media_root).parent / "settings.json"
+    if not path.exists():
+        return
+    try:
+        saved = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    for attr in ("asr_engine", "ocr_engine", "output_schemas"):
+        if isinstance(saved.get(attr), str):
+            setattr(_settings, attr, saved[attr])
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _load_saved_settings()
     init_db()
     yield
 

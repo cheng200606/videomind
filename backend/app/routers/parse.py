@@ -189,9 +189,24 @@ def engines():
     }
 
 
+def _save_engine_settings() -> None:
+    """页 11 设置页持久化：写入 data/settings.json，重启由 main.py lifespan 读回。
+
+    只落三个可改字段，不新增 ER 表——避免动 ER 图口径（docs/产品定义.md §六）。
+    """
+    settings = get_settings()
+    path = Path(settings.media_root).parent / "settings.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({
+        "asr_engine": settings.asr_engine,
+        "ocr_engine": settings.ocr_engine,
+        "output_schemas": settings.output_schemas,
+    }, ensure_ascii=False), encoding="utf-8")
+
+
 @router.put("/settings/engines")
 def set_engines(body: dict):
-    """页 11 设置页：OCR 引擎切换 + 默认产物集；校验后改运行时配置。"""
+    """页 11 设置页：OCR 引擎切换 + 默认产物集；校验后改运行时配置并持久化。"""
     settings = get_settings()
     if "asr" in body:
         if body["asr"] not in available_asr():
@@ -208,4 +223,5 @@ def set_engines(body: dict):
         if unknown:
             raise HTTPException(422, f"未知产物类型 {unknown}")
         settings.output_schemas = ",".join(body["output_schemas"])
+    _save_engine_settings()
     return engines()
