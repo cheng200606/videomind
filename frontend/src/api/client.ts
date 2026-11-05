@@ -97,7 +97,7 @@ export async function dismissTag(tagId: number, targetType: 'video' | 'item', ta
   await http.post(`/tags/${tagId}/dismiss`, null, { params: { target_type: targetType, target_id: targetId } })
 }
 
-export async function search(params: { tag?: number; q?: string; video_id?: number }): Promise<Item[]> {
+export async function search(params: { tag?: number; q?: string; confidence?: string; video_id?: number }): Promise<Item[]> {
   const { data } = await http.get<Item[]>('/search', { params })
   return data
 }

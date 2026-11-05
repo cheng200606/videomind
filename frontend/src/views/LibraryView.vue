@@ -14,10 +14,11 @@ onMounted(() => {
   void listTags().then((t) => (tags.value = t))
 })
 
-/** B6 跨视频检索：标签过滤 + 关键词，不是语义检索（产品定义 §九 诚实边界） */
+/** B6 跨视频检索：标签过滤 + 关键词 + 置信度，不是语义检索（产品定义 §九 诚实边界） */
 const tags = ref<TagInfo[]>([])
 const tagId = ref<number | undefined>()
 const keyword = ref('')
+const conf = ref<string | undefined>()
 const results = ref<Item[]>([])
 const searched = ref(false)
 const searching = ref(false)
@@ -26,7 +27,7 @@ const expanded = ref<string[]>([])
 async function runSearch() {
   searching.value = true
   try {
-    results.value = await search({ tag: tagId.value, q: keyword.value.trim() || undefined })
+    results.value = await search({ tag: tagId.value, q: keyword.value.trim() || undefined, confidence: conf.value || undefined })
     searched.value = true
   } finally {
     searching.value = false
@@ -51,6 +52,11 @@ function clock(ms: number) {
         <div class="srow">
           <el-select v-model="tagId" clearable placeholder="按标签过滤" class="sel">
             <el-option v-for="t in tags" :key="t.id" :label="t.name" :value="t.id" />
+          </el-select>
+          <el-select v-model="conf" clearable placeholder="置信度（F4）" class="cfd">
+            <el-option label="明述" value="explicit" />
+            <el-option label="推断" value="inferred" />
+            <el-option label="低置信" value="low" />
           </el-select>
           <el-input v-model="keyword" clearable placeholder="关键词，如 ref / 生命周期" class="kw" @keyup.enter="runSearch" />
           <el-button type="primary" :loading="searching" @click="runSearch">检索</el-button>
@@ -103,6 +109,7 @@ function clock(ms: number) {
 .search { margin-bottom: 16px; }
 .srow { display: flex; gap: 8px; margin-bottom: 10px; }
 .sel { width: 200px; }
+.cfd { width: 130px; }
 .kw { width: 260px; }
 .rt :deep(tbody tr) { cursor: pointer; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
