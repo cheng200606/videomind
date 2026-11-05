@@ -5,9 +5,11 @@
 """
 
 import queue
+import shutil
 import threading
 from dataclasses import asdict
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy import delete
 from sqlmodel import Session, select
@@ -88,6 +90,40 @@ def _transcript_rows(session: Session, video_id: int) -> list[tuple[int, int, st
     return [(r.start_ms, r.end_ms, r.text) for r in rows]
 
 
+def _localize_frames(video_id: int, frames: list[KeyFrame]) -> list[KeyFrame]:
+    """把引擎产出的关键帧复制进 media_root/frames/{video_id}/，返回稳定路径。
+
+    输入输出都是本机绝对路径（画面通道 OCR 还要直接读文件）；入库时经 _media_url
+    转成 /media URL。yueying 默认把帧写在临时目录，不复制的话 /media 不可达，
+    进程重启后缓存里的旧路径也会失效。缓存里存的即这里的稳定路径。
+    """
+    if not frames:
+        return frames
+    root = Path(get_settings().media_root) / "frames" / str(video_id)
+    root.mkdir(parents=True, exist_ok=True)
+    out: list[KeyFrame] = []
+    for i, frame in enumerate(frames):
+        src = Path(frame.path)
+        if not src.exists():
+            continue   # 缓存命中但帧文件已被清理：丢这一帧，画面通道会自行降级
+        dest = root / f"frame_{frame.ms}_{i}{src.suffix.lower() or '.jpg'}"
+        if not dest.exists():
+            shutil.copyfile(src, dest)
+        out.append(KeyFrame(ms=frame.ms, path=str(dest)))
+    return out
+
+
+def _media_url(frame_path: str, settings: Settings) -> str:
+    """media_root 下的绝对路径 → /media URL；不在 media_root 下则返回空，前端按无帧处理。"""
+    if not frame_path:
+        return ""
+    try:
+        rel = Path(frame_path).resolve().relative_to(Path(settings.media_root).resolve())
+    except ValueError:
+        return ""
+    return f"/media/{rel.as_posix()}"
+
+
 def _clear_video_data(session: Session, video_id: int) -> None:
     """重跑前清空上次解析的派生数据，保证重试 / 整批重解析幂等，不产生重复条目。
 
@@ -138,6 +174,10 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
             )
         else:
             result = asr.transcribe(video.path)
+
+        # 关键帧复制进 media_root 后再落缓存：临时目录的帧 /media 不可达，重启后旧路径也会失效
+        result.frames = _localize_frames(video.id, result.frames)
+        if not hit:
             cache.put(cache_key, asdict(result))
 
         for seg in result.segments:
@@ -197,13 +237,14 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
 
 def _persist(session: Session, video: Video, drafts: list[ItemDraft],
              conflicts, tags: list[str]) -> None:
+    settings = get_settings()
     for d in drafts:
         evidence = Evidence(
             video_id=video.id,
             start_ms=d.anchor_ms,
             end_ms=min(d.anchor_ms + 5000, video.duration_ms or d.anchor_ms + 5000),
             quote=d.quote,
-            frame_path=d.frame_path,
+            frame_path=_media_url(d.frame_path, settings),
             channel=d.channel,
         )
         session.add(evidence)
@@ -224,9 +265,13 @@ def _persist(session: Session, video: Video, drafts: list[ItemDraft],
         for name in d.tags:
             _bind_tag(session, TagTarget.ITEM, item.id, name, suggested_by_ai=True)
 
-    for c in conflicts:
-        target = session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == video.id)).first()
-        if target:
+    if conflicts:
+        # 冲突记录挂到离 source_a 时间点最近的条目上，而不是随手挂在第一条
+        items = session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == video.id)).all()
+        for c in conflicts:
+            if not items:
+                break
+            target = min(items, key=lambda it: abs(it.anchor_ms - c.source_a_ms))
             session.add(ConflictRecord(
                 item_id=target.id, source_a=f"{c.source_a_ms}ms", source_b=f"{c.source_b_ms}ms",
                 description=c.description))
