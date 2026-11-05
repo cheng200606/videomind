@@ -50,3 +50,26 @@
 - **C**：可行性分析章初稿 + 辅图 1 技术路线图
 
 > 模板：每人只写自己的条目，逐条署名，不合注。
+
+---
+
+## [v0.3] — W2 收尾开发冲刺（2026-11-05/06）
+
+### 垂直切片阻断修复（组长直推，按新规留痕；commit 9dadcaf..a75f0c6）
+
+- **程夏（组长）**：`.gitignore` 补 `backend/data/`（运行时库/上传落盘/缓存/设置快照）、`backend/tests/.pytest_tmp/`、`.zcode/`——运行时数据与工具目录不入库（红线 1 加固）
+- **程夏（组长）**：修复 SSE 进度端点——路由补 `response_class=EventSourceResponse`（此前输出 application/jsonl，浏览器 EventSource 收不到），订阅先探测批次终态，页面刷新重连即补推终态并收流，不再空转 ping
+- **程夏（组长）**：解析幂等——`parse_video` 入口按外键依赖清空该视频上次派生数据，重试/整批重跑不再使转写与条目翻倍；补重跑两次行数不翻倍断言
+- **程夏（组长）**：证据帧可达——关键帧统一复制进 `media_root/frames/{video_id}/` 再落缓存，`Evidence.frame_path` 存 `/media` URL（此前真实引擎的帧写在临时目录，前端不可达、重启后缓存路径失效）；冲突记录改挂离 source_a 时间点最近的条目
+- **程夏（组长）**：引擎设置持久化——`PUT /api/settings/engines` 落盘 `data/settings.json`，lifespan 启动读回，重启不丢（不新增 ER 表）
+- **程夏（组长）**：上传反馈——响应带回 rejected 清单（格式不支持/批内重复），前端弹提示，非法文件不再静默丢弃
+- **程夏（组长）**：后端小修四处——LLM 代码围栏剥离正则化（容错大小写与前置文字）；`GET /tags` 支持目标过滤返回 bound 标记；标签再绑一次视为「采纳」；讲义修订空跳转 422 拒绝；`type` 参数改别名不遮蔽内建
+- **程夏（组长）**：前端工具链修正——typescript 由 7.0.2（Go 原生版，无 lib/tsc JS API）降到 6.0.3 兼容 vue-tsc 3.3.14；tsconfig 移除已弃用 baseUrl；`package-lock.json` 首次入库；补 @vue/test-utils 与 jsdom，vitest 环境接入 vite.config
+- **程夏（组长）**：前端补 B5/B6 入口——视频库页新增「跨视频检索」折叠区（标签+关键词过滤条目，点行跳工作台）；工作台产物面板新增标签条（AI 建议可采纳/驳回、手动绑定）；工作台三接口并行加载并补失败错误态
+- **程夏（组长）**：前端小修——SSE 连接生命周期挂到进度页 onUnmounted（原挂在根组件泄漏）；导出页检查 resp.ok 给错误态；证据抽屉直读 /media 帧 URL；el-upload 类型按 UploadRawFile 收窄；空产物文案改指上传页解析参数区
+- **程夏（组长）**：测试补齐——后端新增 SSE 终态流与上传 rejected 断言（12 例全绿）；前端新增 vitest 单测 8 例（client URL 拼装 / ConfidenceTag 三档映射 / 批次 store 终态刷新），`npm run test` 首次真实通过；`npm run build`（vue-tsc + vite）与本地 uvicorn+vite 冒烟全链路验证通过
+
+### 待交付（不动原排期）
+
+- **B**：W4 解析链路 demo——`yueying==0.2.1 → DeepSeek → 结构化 JSON`，2 条视频跑通 + 2 种产物（本冲刺未装重引擎、未配 Key，全链路走 mock/fallback 兜底）
+- **A / C**：W3 图与章节交付物按原任务卡推进
