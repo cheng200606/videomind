@@ -103,7 +103,8 @@
 
 ## 七、协作方式（详见 CONTRIBUTING.md）
 
-- 分支模型：`feature/<姓名>-<topic>` → PR → **`develop`（集成测试分支）** → 每周版本冻结 → `main`；**禁止直推 main 与 develop**
+- 分支模型：`feature/<姓名>-<topic>` → PR → **`develop`（集成测试分支）** → 每周版本冻结 → `main`
+- **权限（GitHub 分支保护 + CODEOWNERS 已强制）**：组员禁止直推 `develop` / `main`，PR 必须由**组长 Approve** 才能合并；组长可直推，但要在 `CHANGELOG.md` 留痕
 - 提交信息：Conventional Commits（如 `feat(design): 类图新增 OutputSchemaStrategy 抽象`）
 - **变更记录逐版本、逐人署名，禁止合注**；每次 PR 合并后由提交人自己补录本人条目
 - 图源文件（draw.io / PlantUML）入库，导出物必须是 SVG 矢量，禁止 PNG 代替结构图
