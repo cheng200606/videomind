@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { retryVideo } from '../api/client'
+import { reparseBatch, retryVideo } from '../api/client'
 import type { Stage, StageStatus, VideoState } from '../api/types'
 import { useBatchStore } from '../stores/batch'
 
@@ -34,6 +35,22 @@ function statusOf(row: VideoState, stage: Stage): StageStatus {
   return row.stages[stage]
 }
 
+const rerunning = ref(false)
+/** 整批重跑：后端已幂等（先清派生数据再逐条解析），单条失败不拖批 */
+async function reparseAll() {
+  rerunning.value = true
+  try {
+    await reparseBatch(id)
+    ElMessage.success('已开始整批重跑，进度见下方事件流')
+    // 原批次大概率已终态、SSE 流已收：重新拉快照并订阅
+    await store.open(id)
+  } catch (err) {
+    ElMessage.error(`重跑失败：${err instanceof Error ? err.message : err}`)
+  } finally {
+    rerunning.value = false
+  }
+}
+
 /** 单条重试：只重置这一条的四个阶段，不动整批（用例 3） */
 function retry(videoId: number) {
   void retryVideo(videoId)
@@ -46,6 +63,7 @@ function retry(videoId: number) {
       <h2>{{ store.current.name }}</h2>
       <el-tag :type="store.current.status === 'succeeded' ? 'success' : 'info'">{{ store.current.status }}</el-tag>
       <el-button size="small" @click="router.push(`/batches/${id}/export`)">导出批次文稿</el-button>
+      <el-button size="small" :loading="rerunning" @click="reparseAll">整批重跑</el-button>
     </div>
 
     <el-alert
