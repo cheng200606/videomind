@@ -10,7 +10,16 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # 桌面版按交付设计只内置 mock ASR / OCR none；真实引擎是源码环境的可选依赖，
+    # 不能让 PyInstaller 把 rapidocr/onnxruntime/yueying 等整条重依赖链塞进安装包。
+    excludes=[
+        'yueying', 'faster_whisper', 'ctranslate2', 'av', 'tokenizers', 'huggingface_hub', 'hf_xet',
+        'rapidocr', 'onnxruntime', 'cv2', 'numpy', 'scipy', 'shapely', 'pyclipper', 'PIL', 'imagehash',
+        'funasr', 'torch', 'torchaudio', 'paddle', 'paddleocr', 'paddlepaddle',
+        'mcp', 'mcp_types', 'httpx2', 'httpcore2', 'cryptography', 'pyjwt', 'jsonschema',
+        'yt_dlp', 'imageio_ffmpeg', 'requests', 'tqdm', 'colorlog', 'omegaconf', 'fsspec',
+        'filelock', 'flatbuffers', 'protobuf', 'win32', 'pywintypes',
+    ],
     noarchive=False,
     optimize=0,
 )
