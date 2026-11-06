@@ -1,6 +1,7 @@
 import axios from 'axios'
 import type {
-  BatchState, BatchSummary, EngineSettings, Item, ItemDetail, RevisionState, StageEvent, TagInfo, VideoMeta
+  BatchState, BatchSummary, EngineSettings, Item, ItemDetail, ModelSettings, ModelSettingsInput,
+  ModelTestResult, RevisionState, StageEvent, TagInfo, VideoMeta
 } from './types'
 
 const http = axios.create({ baseURL: '/api', timeout: 60000 })
@@ -20,11 +21,22 @@ export async function listBatches(): Promise<BatchSummary[]> {
   return data
 }
 
-export async function createBatch(name: string, files: File[]): Promise<{ id: number; rejected: { filename: string; reason: string }[] }> {
+export async function createBatch(
+  name: string,
+  files: File[],
+  onProgress?: (percent: number) => void
+): Promise<{ id: number; rejected: { filename: string; reason: string }[] }> {
   const form = new FormData()
   form.append('name', name)
   files.forEach((f) => form.append('files', f))
-  const { data } = await http.post<{ id: number; rejected: { filename: string; reason: string }[] }>('/batches', form)
+  const { data } = await http.post<{ id: number; rejected: { filename: string; reason: string }[] }>(
+    '/batches', form, {
+      // 上传大视频不能套 60s REST 超时；进度只在浏览器给出 total 时更新
+      timeout: 0,
+      onUploadProgress: (e) => {
+        if (e.total) onProgress?.(Math.min(100, Math.round((e.loaded / e.total) * 100)))
+      }
+    })
   return data
 }
 
@@ -113,6 +125,21 @@ export async function getEngines(): Promise<EngineSettings> {
 
 export async function setEngines(body: Partial<Record<'asr' | 'ocr' | 'output_schemas', unknown>>): Promise<EngineSettings> {
   const { data } = await http.put<EngineSettings>('/settings/engines', body)
+  return data
+}
+
+export async function getModelSettings(): Promise<ModelSettings> {
+  const { data } = await http.get<ModelSettings>('/settings/model')
+  return data
+}
+
+export async function setModelSettings(body: ModelSettingsInput): Promise<ModelSettings> {
+  const { data } = await http.put<ModelSettings>('/settings/model', body)
+  return data
+}
+
+export async function testModelSettings(): Promise<ModelTestResult> {
+  const { data } = await http.post<ModelTestResult>('/settings/model/test')
   return data
 }
 

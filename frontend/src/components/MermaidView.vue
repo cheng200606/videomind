@@ -6,7 +6,18 @@ const props = defineProps<{ code: string }>()
 const host = ref<HTMLElement | null>(null)
 const failed = ref('')
 
-mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' })
+mermaid.initialize({
+  startOnLoad: false,
+  securityLevel: 'strict',
+  theme: 'base',
+  themeVariables: {
+    primaryColor: '#eef3fd',
+    primaryTextColor: '#1f2937',
+    primaryBorderColor: '#3d6fd6',
+    lineColor: '#3d6fd6',
+    fontSize: '13px'
+  }
+})
 
 let seq = 0
 
@@ -40,6 +51,6 @@ watch(() => props.code, render)
 
 <style scoped>
 .wrap { display: flex; flex-direction: column; gap: 8px; }
-.diagram { overflow: auto; background: #fff; border: 1px solid #e6e8eb; border-radius: 6px; padding: 8px; min-height: 120px; }
-.raw { font-size: 11px; color: #8b95a7; white-space: pre-wrap; margin: 0; }
+.diagram { overflow: auto; background: #fff; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 6px; padding: 8px; min-height: 120px; }
+.raw { font-size: 11px; color: var(--vm-muted, #5f6b7d); white-space: pre-wrap; margin: 0; }
 </style>

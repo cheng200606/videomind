@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { clock, pct } from '../api/labels'
 import type { Mark } from '../api/types'
 
 const props = defineProps<{
@@ -12,10 +13,12 @@ const emit = defineEmits<{ (e: 'time', ms: number): void }>()
 
 const video = ref<HTMLVideoElement | null>(null)
 const current = ref(0)
+const mediaDuration = ref(0)
+const videoError = ref('')
 
 /** 不引播放器库：进度条上的证据刻度自绘，溯源跳转就是 video.currentTime 一次赋值 */
-const total = computed(() => props.durationMs || (video.value?.duration ?? 0) * 1000 || 1)
-const percent = computed(() => Math.min(100, (current.value / total.value) * 100))
+const total = computed(() => props.durationMs || mediaDuration.value || 1)
+const percent = computed(() => pct(current.value, total.value))
 
 function seek(ms: number) {
   if (!video.value) return
@@ -30,10 +33,24 @@ function onTimeUpdate() {
   emit('time', ms)
 }
 
+function onLoadedMetadata() {
+  mediaDuration.value = (video.value?.duration ?? 0) * 1000
+}
+
+function onVideoError() {
+  videoError.value = '该文件无法在浏览器播放（或为测试占位文件）；转写与证据仍可走查。'
+}
+
 function onTrackClick(ev: MouseEvent) {
   const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect()
   seek(((ev.clientX - rect.left) / rect.width) * total.value)
 }
+
+watch(() => props.src, () => {
+  videoError.value = ''
+  mediaDuration.value = 0
+  current.value = 0
+})
 
 defineExpose({ seek })
 onBeforeUnmount(() => video.value?.pause())
@@ -41,24 +58,37 @@ onBeforeUnmount(() => video.value?.pause())
 
 <template>
   <div class="player">
-    <video ref="video" :src="src" controls class="screen" @timeupdate="onTimeUpdate" />
+    <div class="screen-wrap">
+      <video
+        ref="video"
+        :src="src"
+        controls
+        class="screen"
+        @timeupdate="onTimeUpdate"
+        @loadedmetadata="onLoadedMetadata"
+        @error="onVideoError"
+      />
+      <div v-if="videoError" class="video-error">{{ videoError }}</div>
+    </div>
 
     <div class="track" @click="onTrackClick">
       <div class="played" :style="{ width: percent + '%' }" />
       <button
         v-for="(m, i) in marks"
         :key="i"
+        type="button"
         class="tick"
         :class="m.kind ?? 'item'"
-        :style="{ left: (m.ms / total) * 100 + '%' }"
+        :style="{ left: pct(m.ms, total) + '%' }"
         :title="m.label"
+        :aria-label="`跳转到 ${clock(m.ms)}：${m.label}`"
         @click.stop="seek(m.ms)"
       />
       <div class="head" :style="{ left: percent + '%' }" />
     </div>
 
     <div class="meta">
-      <span class="now">{{ (current / 1000).toFixed(1) }}s</span>
+      <span class="now">{{ clock(current) }}</span>
       <span class="legend">刻度 = 结论在原片中的时间点，点击跳转</span>
     </div>
   </div>
@@ -66,14 +96,21 @@ onBeforeUnmount(() => video.value?.pause())
 
 <style scoped>
 .player { background: #12151c; border-radius: 8px; padding: 12px; }
+.screen-wrap { position: relative; }
 .screen { width: 100%; max-height: 62vh; display: block; border-radius: 6px; background: #000; }
+.video-error {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.72); color: #e5e7eb; padding: 20px; text-align: center;
+  border-radius: 6px; font-size: 13px; line-height: 1.7;
+}
 .track { position: relative; height: 26px; margin-top: 10px; background: #2a3040; border-radius: 13px; cursor: pointer; }
-.played { position: absolute; inset: 0 auto 0 0; background: #3d6fd6; border-radius: 13px; }
+.played { position: absolute; inset: 0 auto 0 0; background: var(--el-color-primary, #3d6fd6); border-radius: 13px; }
 .head { position: absolute; top: 3px; width: 4px; height: 20px; margin-left: -2px; background: #fff; border-radius: 2px; }
 .tick { position: absolute; top: 5px; width: 8px; height: 16px; padding: 0; border: none; border-radius: 3px; cursor: pointer; transform: translateX(-4px); }
+.tick:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .tick.chapter { background: #f0a202; }
 .tick.item { background: #6ee7b7; }
 .tick.evidence { background: #f87171; }
-.meta { display: flex; justify-content: space-between; margin-top: 8px; color: #98a2b3; font-size: 12px; }
+.meta { display: flex; justify-content: space-between; margin-top: 8px; color: #b7c0d0; font-size: 12px; gap: 10px; flex-wrap: wrap; }
 .now { font-variant-numeric: tabular-nums; color: #e5e7eb; }
 </style>

@@ -1,0 +1,31 @@
+/* 全局视觉 token：统一自绘蓝与 Element Plus 主色，提高弱化文字对比度。 */
+:root {
+  --el-color-primary: #3d6fd6;
+  --el-color-primary-light-3: #6f95e3;
+  --el-color-primary-light-5: #9eb7eb;
+  --el-color-primary-light-7: #c5d4f5;
+  --el-color-primary-light-8: #dbe5fa;
+  --el-color-primary-light-9: #eef3fd;
+  --el-color-primary-dark-2: #3159ab;
+
+  --el-text-color-primary: #1f2937;
+  --el-text-color-regular: #4b5563;
+  --el-text-color-secondary: #5f6b7d;
+  --el-text-color-placeholder: #7a8598;
+  --el-border-color-light: #e6e8eb;
+  --el-bg-color-page: #f5f6f8;
+
+  --vm-text: #1f2937;
+  --vm-text-secondary: #4b5563;
+  --vm-muted: #5f6b7d;
+  --vm-border: #e6e8eb;
+  --vm-bg: #f5f6f8;
+  --vm-quote-bg: #f6f7f9;
+  --vm-code-bg: #12151c;
+  --vm-sidebar: #1f2430;
+}
+
+body {
+  color: var(--vm-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+}

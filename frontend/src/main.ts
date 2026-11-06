@@ -3,6 +3,7 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 import 'md-editor-v3/lib/style.css'
 import 'md-editor-v3/lib/preview.css'
+import './styles/theme.css'
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 

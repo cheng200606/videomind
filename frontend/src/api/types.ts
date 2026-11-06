@@ -37,6 +37,8 @@ export interface ItemDetail extends Item {
 export interface VideoState {
   id: number
   path: string
+  file_name?: string
+  media_url?: string
   duration_ms: number
   status: VideoStatus
   error: string
@@ -85,6 +87,33 @@ export interface EngineSettings {
   ocr: { current: string; available: string[] }
   output_schemas: string[]
   cache_enabled: boolean
+}
+
+export type ModelProvider = 'deepseek' | 'custom'
+export type ModelSource = 'saved' | 'env' | 'default'
+
+export interface ModelSettings {
+  provider: ModelProvider
+  base_url: string
+  model: string
+  has_key: boolean
+  source: ModelSource
+}
+
+export interface ModelSettingsInput {
+  provider: ModelProvider
+  base_url: string
+  model: string
+  api_key?: string
+  clear_api_key?: boolean
+}
+
+export interface ModelTestResult {
+  ok: boolean
+  latency_ms: number
+  model: string
+  message?: string
+  error?: string
 }
 
 /** 播放器刻度：一条结论在原片中的位置 */

@@ -2,18 +2,20 @@
 import { ElMessage } from 'element-plus'
 import { MdEditor } from 'md-editor-v3'
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { addNote, getItem, revise, updateNote } from '../api/client'
-import { REVISION_LABEL, REVISION_TRANSITIONS, REVISION_TYPE, clock, fmtDateTime } from '../api/labels'
+import { EDITOR_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, REVISION_TYPE, clock, fmtDateTime } from '../api/labels'
 import type { ItemDetail, RevisionState } from '../api/types'
 import ConfidenceTag from '../components/ConfidenceTag.vue'
 
 const route = useRoute()
+const router = useRouter()
 const itemId = Number(route.params.id)
 
 const detail = ref<ItemDetail | null>(null)
 const noteId = ref<number | null>(null)
+const noteCount = ref(0)
 const draft = ref('')
 const busy = ref(false)
 
@@ -37,9 +39,12 @@ async function load() {
   try {
     const data = await getItem(itemId)
     detail.value = data
-    const note = data.notes[0]
+    // 深链可指定 note；否则编辑最新一条（后端已按 id 排序）
+    const wanted = Number(route.query.note)
+    const note = data.notes.find((n) => n.id === wanted) ?? data.notes.at(-1)
     noteId.value = note?.id ?? null
     draft.value = note?.content ?? ''
+    noteCount.value = data.notes.length
   } catch (err) {
     // 直达 URL / 条目被随批次删除时不再永远骨架屏
     loadError.value = err instanceof Error ? err.message : '条目加载失败'
@@ -83,7 +88,14 @@ function insertAnchor() {
 </script>
 
 <template>
-  <div v-if="detail" class="notes">
+  <div v-if="detail">
+    <div class="crumb">
+      <el-link @click="router.push('/')">视频库</el-link>
+      <span>/</span>
+      <el-link @click="router.push(`/videos/${detail.video_id}`)">知识工作台</el-link>
+      <span>/</span><span>笔记</span>
+    </div>
+    <div class="notes">
     <el-card class="src" shadow="never">
       <template #header><b>来源条目</b></template>
       <div class="row">
@@ -102,6 +114,14 @@ function insertAnchor() {
         <b>笔记</b>
         <el-button size="small" class="anchor-btn" @click="insertAnchor">插入时间锚点</el-button>
       </template>
+      <el-alert
+        v-if="noteCount > 1"
+        type="info"
+        :closable="false"
+        show-icon
+        class="multi"
+        :title="`该条目有 ${noteCount} 条笔记，当前编辑最新一条；保存不会合并历史笔记。`"
+      />
       <MdEditor v-model="draft" :toolbars-exclude="['github', 'save', 'prettier']" />
       <el-button type="primary" :loading="busy" @click="save">保存笔记</el-button>
       <p class="muted">笔记绑定条目时间点，支持从笔记跳回原片（用例「笔记与时间锚点」）。</p>
@@ -120,28 +140,38 @@ function insertAnchor() {
       </div>
       <el-timeline class="tl">
         <el-timeline-item v-for="r in detail.revisions" :key="r.id" :timestamp="fmtDateTime(r.edited_at)" placement="top">
-          <div>{{ REVISION_LABEL[r.state] ?? r.state }} · {{ r.editor }}</div>
+          <div>{{ REVISION_LABEL[r.state] ?? r.state }} · {{ EDITOR_LABEL[r.editor] ?? r.editor }}</div>
           <div class="snap">{{ r.snapshot.slice(0, 60) }}{{ r.snapshot.length > 60 ? '…' : '' }}</div>
         </el-timeline-item>
       </el-timeline>
     </el-card>
+    </div>
   </div>
-  <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`笔记加载失败：${loadError}`" />
+  <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`笔记加载失败：${loadError}`">
+    <el-button size="small" @click="router.push('/')">返回视频库</el-button>
+  </el-alert>
   <el-skeleton v-else :rows="8" animated />
 </template>
 
 <style scoped>
+.crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--vm-muted, #5f6b7d); flex-wrap: wrap; }
 .notes { display: grid; grid-template-columns: 320px minmax(420px, 1fr) 280px; gap: 14px; align-items: start; }
+@media (max-width: 1080px) {
+  .notes { grid-template-columns: 1fr; }
+}
 .row { display: flex; align-items: center; gap: 8px; }
-.ts { color: #3d6fd6; font-size: 12px; }
+.ts { color: var(--el-color-primary, #3d6fd6); font-size: 12px; }
 .title { margin: 8px 0; font-size: 15px; }
 .content { line-height: 1.7; font-size: 13px; }
-.quote { margin: 0; padding: 8px 10px; background: #f6f7f9; border-left: 3px solid #3d6fd6; font-size: 12px; }
+.quote { margin: 0; padding: 8px 10px; background: var(--vm-quote-bg, #f6f7f9); border-left: 3px solid var(--el-color-primary, #3d6fd6); font-size: 12px; }
 .conflict { color: #b45309; font-size: 12px; }
 .anchor-btn { float: right; }
+.multi { margin-bottom: 10px; }
+.editor :deep(.md-editor-toolbar-wrapper) { height: auto; }
+.editor :deep(.md-editor-toolbar) { flex-wrap: wrap; }
 .state { font-size: 13px; margin-bottom: 12px; }
 .flows { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .tl { margin-top: 14px; }
-.snap { font-size: 12px; color: #606a7b; }
-.muted { color: #a5adba; font-size: 12px; }
+.snap { font-size: 12px; color: var(--vm-text-secondary, #4b5563); }
+.muted { color: var(--vm-muted, #5f6b7d); font-size: 12px; }
 </style>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
+import { clock } from '../api/labels'
 import type { ArtifactType, Item } from '../api/types'
 import ConfidenceTag from './ConfidenceTag.vue'
 import MermaidView from './MermaidView.vue'
@@ -40,11 +41,6 @@ const visiblePoints = computed(() =>
 function visible(kind: ArtifactType) {
   return kind === 'key_points' ? visiblePoints.value : of(kind)
 }
-
-function clock(ms: number) {
-  const total = Math.floor(ms / 1000)
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`
-}
 </script>
 
 <template>
@@ -60,7 +56,11 @@ function clock(ms: number) {
             :key="el.id"
             class="chip"
             type="info"
+            role="button"
+            tabindex="0"
             @click="emit('seek', el.anchor_ms)"
+            @keydown.enter="emit('seek', el.anchor_ms)"
+            @keydown.space.prevent="emit('seek', el.anchor_ms)"
           >{{ el.label }} · {{ clock(el.anchor_ms) }}</el-tag>
         </div>
       </template>
@@ -83,7 +83,13 @@ function clock(ms: number) {
           <el-checkbox v-model="onlyPitfall" size="small">只看易错点（F3）</el-checkbox>
         </div>
         <ul v-if="visible(t.key).length" class="list">
-          <li v-for="item in visible(t.key)" :key="item.id" @click="emit('select', item)">
+          <li
+            v-for="item in visible(t.key)" :key="item.id"
+            role="button" tabindex="0"
+            @click="emit('select', item)"
+            @keydown.enter="emit('select', item)"
+            @keydown.space.prevent="emit('select', item)"
+          >
             <div class="line">
               <el-link type="primary" class="ts" @click.stop="emit('seek', item.anchor_ms)">{{ clock(item.anchor_ms) }}</el-link>
               <span class="txt">{{ item.content }}</span>
@@ -100,17 +106,19 @@ function clock(ms: number) {
 <style scoped>
 .panel { height: 100%; }
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.list li { padding: 8px 10px; border: 1px solid #e6e8eb; border-radius: 6px; background: #fff; cursor: pointer; }
-.list li:hover { border-color: #3d6fd6; }
+.list li { padding: 8px 10px; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 6px; background: #fff; cursor: pointer; }
+.list li:hover { border-color: var(--el-color-primary, #3d6fd6); }
+.list li:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .line { display: flex; align-items: flex-start; gap: 8px; }
 .ts { flex: none; font-variant-numeric: tabular-nums; }
 .txt { flex: 1; line-height: 1.6; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip { cursor: pointer; }
+.chip:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .block { margin-bottom: 12px; }
-.block-head { display: flex; justify-content: space-between; font-size: 13px; color: #606a7b; margin-bottom: 4px; }
-.code { margin: 0; padding: 10px; background: #12151c; color: #dbe1ea; border-radius: 6px; font-size: 12px; overflow: auto; }
+.block-head { display: flex; justify-content: space-between; font-size: 13px; color: var(--vm-text-secondary, #4b5563); margin-bottom: 4px; }
+.code { margin: 0; padding: 10px; background: var(--vm-code-bg, #12151c); color: #dbe1ea; border-radius: 6px; font-size: 12px; overflow: auto; }
 .pbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .pitfall-tip { color: #b45309; font-size: 13px; }
-.no-filter { margin: 8px 0; font-size: 13px; color: #8b95a7; }
+.no-filter { margin: 8px 0; font-size: 13px; color: var(--vm-muted, #5f6b7d); }
 </style>

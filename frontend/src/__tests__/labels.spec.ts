@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  ARTIFACT_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, STAGE_LABEL,
-  STAGE_STATUS_LABEL, STATUS_LABEL, STATUS_TYPE, clock, fmtTime
+  ARTIFACT_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, STAGE_LABEL,
+  STAGE_STATUS_LABEL, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
 } from '@/api/labels'
 
 describe('枚举中文映射', () => {
@@ -22,12 +22,14 @@ describe('枚举中文映射', () => {
     expect(EVENT_STAGE_LABEL.batch).toBe('批次')
     expect(EVENT_STAGE_LABEL.video_start).toBe('开始解析')
     expect(STAGE_STATUS_LABEL.video_start).toBe('开始解析')
+    expect(STAGE_STATUS_LABEL.video_failed).toBe('单条失败')
     expect(STAGE_STATUS_LABEL.skipped).toBe('降级跳过')
   })
 
   it('产物类型与讲义状态映射齐备', () => {
     expect(ARTIFACT_LABEL.summary).toBe('内容总结')
     expect(REVISION_LABEL.pending_confirm).toBe('待确认')
+    expect(EDITOR_LABEL.local).toBe('本地用户')
   })
 })
 
@@ -46,6 +48,14 @@ describe('展示格式化', () => {
     expect(clock(19000)).toBe('0:19')
     expect(clock(4 * 60000)).toBe('4:00')
     expect(clock((3600 + 75) * 1000)).toBe('1:01:15')
+  })
+
+  it('pct clamp：正常值、越界、duration 为 0 都不让刻度溢出', () => {
+    expect(pct(0, 100)).toBe(0)
+    expect(pct(50, 100)).toBe(50)
+    expect(pct(120, 100)).toBe(100)
+    expect(pct(-10, 100)).toBe(0)
+    expect(pct(10, 0)).toBe(0)
   })
 
   it('fmtTime 把带时区的 UTC ISO 转本地时间；非法输入原样返回', () => {

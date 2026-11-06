@@ -43,7 +43,8 @@ export const STAGE_STATUS_LABEL: Record<string, string> = {
   done: '完成',
   failed: '失败',
   skipped: '降级跳过',
-  video_start: '开始解析'
+  video_start: '开始解析',
+  video_failed: '单条失败'
 }
 
 export const STAGE_STATUS_TYPE: Record<string, TagType> = {
@@ -51,7 +52,8 @@ export const STAGE_STATUS_TYPE: Record<string, TagType> = {
   running: 'primary',
   done: 'success',
   failed: 'danger',
-  skipped: 'warning'
+  skipped: 'warning',
+  video_failed: 'danger'
 }
 
 export const ARTIFACT_LABEL: Record<string, string> = {
@@ -73,6 +75,10 @@ export const REVISION_TYPE: Record<string, TagType> = {
   pending_confirm: 'warning',
   confirmed: 'success',
   revised: 'primary'
+}
+
+export const EDITOR_LABEL: Record<string, string> = {
+  local: '本地用户'
 }
 
 /** 讲义状态机（图 7 右半，与 backend/app/enums.py 的 REVISION_TRANSITIONS 同源） */
@@ -103,4 +109,10 @@ export function clock(ms: number): string {
   const m = Math.floor((total % 3600) / 60)
   const s = String(total % 60).padStart(2, '0')
   return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s}`
+}
+
+/** 时间轴位置百分比：clamp 到 0–100，duration 为 0 时不把刻度甩出轨道 */
+export function pct(ms: number, total: number): number {
+  if (!Number.isFinite(total) || total <= 0) return 0
+  return Math.min(100, Math.max(0, (ms / total) * 100))
 }

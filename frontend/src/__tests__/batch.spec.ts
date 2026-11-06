@@ -22,6 +22,25 @@ function event(status: string): StageEvent {
   return { batch_id: 1, video_id: null, stage: 'batch', status, message: '', ts: '2026-11-06T00:00:00+00:00' }
 }
 
+function stageEvent(overrides: Partial<StageEvent> = {}): StageEvent {
+  return {
+    batch_id: 1, video_id: 10, stage: 'transcribe', status: 'done', message: '',
+    ts: '2026-11-06T00:00:00+00:00', ...overrides
+  } as StageEvent
+}
+
+function snapshot(status = 'running') {
+  return {
+    id: 1, name: 'X', status,
+    videos: [{
+      id: 10, path: 'C:\\data\\1_demo.mp4', file_name: 'demo.mp4', duration_ms: 1000,
+      status: 'running', error: '', stages: {
+        transcribe: 'pending', visual: 'pending', structure: 'pending', artifact: 'pending'
+      }
+    }]
+  }
+}
+
 beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
@@ -72,5 +91,43 @@ describe('批次进度 store', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(mocks.getBatch).toHaveBeenCalledTimes(1)
+  })
+
+  it('阶段事件即时更新矩阵，video_start 把视频置 running', async () => {
+    const store = useBatchStore()
+    const holder: { cb?: (e: StageEvent) => void } = {}
+    mocks.getBatch.mockResolvedValue(snapshot())
+    mocks.openProgress.mockImplementation((_id: number, cb: (e: StageEvent) => void) => {
+      holder.cb = cb
+      return () => {}
+    })
+
+    await store.open(1)
+    holder.cb?.(stageEvent({ stage: 'transcribe', status: 'done' }))
+    holder.cb?.(stageEvent({ stage: 'batch', status: 'video_start' }))
+
+    expect(store.current?.videos[0].stages.transcribe).toBe('done')
+    expect(store.current?.videos[0].status).toBe('running')
+    expect(store.events).toHaveLength(2)
+  })
+
+  it('open 失败时设置 error 且不订阅', async () => {
+    const store = useBatchStore()
+    mocks.getBatch.mockRejectedValue(new Error('批次不存在'))
+    await store.open(1)
+    expect(store.error).toBe('批次不存在')
+    expect(store.current).toBeNull()
+    expect(mocks.openProgress).not.toHaveBeenCalled()
+  })
+
+  it('stopProgress 清空旧批次状态', async () => {
+    const store = useBatchStore()
+    mocks.getBatch.mockResolvedValue(snapshot('succeeded'))
+    mocks.openProgress.mockReturnValue(() => {})
+    await store.open(1)
+    store.stopProgress()
+    expect(store.current).toBeNull()
+    expect(store.events).toHaveLength(0)
+    expect(store.error).toBe('')
   })
 })
