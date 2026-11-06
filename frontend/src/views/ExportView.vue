@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { exportUrl, getBatch } from '../api/client'
 import { STATUS_LABEL, STATUS_TYPE } from '../api/labels'
 import type { BatchState } from '../api/types'
+import PageHeader from '../components/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -64,29 +65,21 @@ function download() {
 </script>
 
 <template>
-  <div class="export">
-    <div class="crumb">
-      <el-link @click="router.push('/')">视频库</el-link>
-      <span>/</span>
-      <el-link @click="router.push(`/batches/${id}`)">批次进度</el-link>
-      <span>/</span><span>导出</span>
-    </div>
-    <div class="head">
-      <div>
-        <h2>批次文稿预览</h2>
-        <p v-if="batch" class="sub">
-          {{ batch.name }}
-          <el-tag size="small" :type="STATUS_TYPE[batch.status] ?? 'info'">
-            {{ STATUS_LABEL[batch.status] ?? batch.status }}
-          </el-tag>
-        </p>
-      </div>
-      <div class="actions">
+  <div>
+    <PageHeader
+      title="导出文稿"
+      :crumbs="[{ label: '视频库', to: '/' }, { label: batch?.name ?? '批次进度', to: `/batches/${id}` }]"
+    >
+      <template #tag>
+        <el-tag v-if="batch" size="small" :type="STATUS_TYPE[batch.status] ?? 'info'">
+          {{ STATUS_LABEL[batch.status] ?? batch.status }}
+        </el-tag>
+      </template>
+      <template #actions>
         <el-button size="small" @click="load">重新生成</el-button>
         <el-button size="small" type="primary" :disabled="!isTerminal || loading" @click="download">下载 Markdown</el-button>
-        <el-button size="small" @click="router.push(`/batches/${id}`)">返回批次</el-button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <el-alert
       v-if="!loading && !error && !isTerminal"
@@ -94,7 +87,8 @@ function download() {
       :closable="false"
       show-icon
       class="bar"
-      title="批次尚未解析完成，导出暂不可用；请等待批次进入终态后再试。"
+      title="批次尚未解析完成，导出暂不可用"
+      description="请等待批次进入终态后再试。"
     />
     <el-alert
       v-else-if="!loading && !error"
@@ -102,24 +96,22 @@ function download() {
       :closable="false"
       show-icon
       class="bar"
-      title="导出的 UML 草稿为 Mermaid 源码，提交到 GitHub 后可原生渲染；/api/batches/{id}/structured 是给外部插件只读消费的结构化快照。"
+      title="导出的 UML 草稿为 Mermaid 源码，提交到 GitHub 后可原生渲染"
+      description="/api/batches/{id}/structured 是给外部插件只读消费的结构化快照。"
     />
 
-    <el-skeleton v-if="loading" :rows="12" animated />
-    <el-alert v-else-if="error" type="error" :closable="false" show-icon :title="`文稿生成失败：${error}`">
-      <el-button size="small" @click="router.push(`/batches/${id}`)">返回批次</el-button>
-    </el-alert>
-    <MdPreview v-else-if="isTerminal" :model-value="md" id="batch-preview" class="paper" />
+    <div class="export vm-card">
+      <el-skeleton v-if="loading" :rows="12" animated />
+      <el-alert v-else-if="error" type="error" :closable="false" show-icon :title="`文稿生成失败：${error}`">
+        <el-button size="small" @click="router.push(`/batches/${id}`)">返回批次</el-button>
+      </el-alert>
+      <MdPreview v-else-if="isTerminal" :model-value="md" id="batch-preview" class="paper" />
+    </div>
   </div>
 </template>
 
 <style scoped>
-.export { background: #fff; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 8px; padding: 16px; }
-.crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--vm-muted, #5f6b7d); flex-wrap: wrap; }
-.head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
-.head h2 { margin: 0; font-size: 18px; }
-.sub { margin: 4px 0 0; color: var(--vm-muted, #5f6b7d); font-size: 13px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.export { padding: 16px; }
 .bar { margin-bottom: 12px; }
 .paper { max-width: 900px; margin: 0 auto; }
 </style>

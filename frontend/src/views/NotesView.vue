@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
+import { WarningFilled } from '@element-plus/icons-vue'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -9,6 +10,7 @@ import { addNote, getItem, revise, updateNote } from '../api/client'
 import { EDITOR_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, REVISION_TYPE, clock, fmtDateTime } from '../api/labels'
 import type { ItemDetail, RevisionState } from '../api/types'
 import ConfidenceTag from '../components/ConfidenceTag.vue'
+import PageHeader from '../components/PageHeader.vue'
 import { useLeaveGuard } from '../composables/useLeaveGuard'
 
 const route = useRoute()
@@ -170,12 +172,13 @@ function insertAnchor() {
 
 <template>
   <div v-if="detail">
-    <div class="crumb">
-      <el-link @click="router.push('/')">视频库</el-link>
-      <span>/</span>
-      <el-link @click="router.push(`/videos/${detail.video_id}`)">知识工作台</el-link>
-      <span>/</span><span>笔记与讲义</span>
-    </div>
+    <PageHeader
+      title="笔记与讲义"
+      :crumbs="[
+        { label: '视频库', to: '/' },
+        { label: detail.video_name || '知识工作台', to: `/videos/${detail.video_id}` }
+      ]"
+    />
     <div class="notes">
       <el-card class="src" shadow="never">
         <template #header><b>来源条目</b></template>
@@ -187,7 +190,10 @@ function insertAnchor() {
         <h3 class="title">{{ detail.title }}</h3>
         <p class="content">{{ detail.content }}</p>
         <blockquote v-if="detail.evidence" class="quote">{{ detail.evidence.quote }}</blockquote>
-        <p v-if="detail.conflicts.length" class="conflict">⚠ 一致性提示：{{ detail.conflicts[0].description }}</p>
+        <p v-if="detail.conflicts.length" class="conflict">
+          <el-icon class="ic" :size="14"><WarningFilled /></el-icon>
+          <span>一致性提示：{{ detail.conflicts[0].description }}</span>
+        </p>
       </el-card>
 
       <el-card class="editor" shadow="never">
@@ -230,7 +236,8 @@ function insertAnchor() {
       <el-card class="history" shadow="never">
         <template #header><b>讲义状态与版本记录</b></template>
         <div class="state">
-          当前：<el-tag size="small" :type="REVISION_TYPE[state] ?? 'info'">{{ REVISION_LABEL[state] ?? state }}</el-tag>
+          <span class="muted">当前状态</span>
+          <el-tag size="small" :type="REVISION_TYPE[state] ?? 'info'">{{ REVISION_LABEL[state] ?? state }}</el-tag>
           <div class="flows">
             <el-button
               v-for="f in FLOW" :key="f.state" size="small"
@@ -255,14 +262,13 @@ function insertAnchor() {
 </template>
 
 <style scoped>
-.crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--vm-muted, #5f6b7d); flex-wrap: wrap; }
 .notes { display: grid; grid-template-columns: 320px minmax(420px, 1fr) 280px; gap: 14px; align-items: start; }
 @media (max-width: 1280px) {
-  /* 三列最小宽度约 1048px；1280 不降两列会在 1081–1275px 区间横向溢出 */
+  /* 三列最小宽度约 1048px；1280 不降两列会在 901–1275px 区间横向溢出 */
   .notes { grid-template-columns: 320px minmax(0, 1fr); }
   .history { grid-column: 1 / -1; }
 }
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .notes { grid-template-columns: 1fr; }
   .history { grid-column: auto; }
 }
@@ -271,8 +277,9 @@ function insertAnchor() {
 .title { margin: 8px 0; font-size: 15px; }
 .content { line-height: 1.7; font-size: 13px; }
 .quote { margin: 0; padding: 8px 10px; background: var(--vm-quote-bg, #f6f7f9); border-left: 3px solid var(--el-color-primary, #3d6fd6); font-size: 12px; }
-.conflict { color: #b45309; font-size: 12px; }
-.dirty { margin-left: 8px; color: #b45309; font-size: 12px; }
+.conflict { color: var(--vm-warning-text, #b45309); font-size: 12px; display: flex; align-items: flex-start; gap: 4px; line-height: 1.5; }
+.conflict .ic { margin-top: 1px; flex: none; }
+.dirty { margin-left: 8px; color: var(--vm-warning-text, #b45309); font-size: 12px; }
 .anchor-btn { float: right; }
 .multi { margin-bottom: 10px; }
 .note-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }

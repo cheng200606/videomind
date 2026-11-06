@@ -9,6 +9,7 @@ import type { Item, ItemDetail, Mark, TagInfo, VideoMeta } from '../api/types'
 import ArtifactPanel from '../components/ArtifactPanel.vue'
 import EvidenceDrawer from '../components/EvidenceDrawer.vue'
 import EvidenceTimeline from '../components/EvidenceTimeline.vue'
+import PageHeader from '../components/PageHeader.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -145,12 +146,10 @@ async function addTag() {
 
 <template>
   <div v-if="video">
-    <div class="crumb">
-      <el-link @click="router.push('/')">视频库</el-link>
-      <span>/</span>
-      <el-link @click="router.push(`/batches/${video.batch_id}`)">批次进度</el-link>
-      <span>/</span><span>知识工作台</span>
-    </div>
+    <PageHeader
+      :title="video.file_name || video.path.split(/[\\/]/).pop() || '知识工作台'"
+      :crumbs="[{ label: '视频库', to: '/' }, { label: '批次进度', to: `/batches/${video.batch_id}` }]"
+    />
     <el-alert
       v-if="video.error"
       type="error"
@@ -160,7 +159,7 @@ async function addTag() {
       :title="`该视频解析失败：${video.error}`"
     />
     <div class="workbench">
-      <div class="col left">
+      <div class="col vm-card left">
         <h3 class="t">章节大纲</h3>
         <el-empty
           v-if="!chapters.length"
@@ -201,7 +200,7 @@ async function addTag() {
         </div>
       </div>
 
-      <div class="col center">
+      <div class="col vm-card center">
         <EvidenceTimeline
           ref="player"
           :src="video.media_url || mediaUrl(video.path)"
@@ -213,7 +212,7 @@ async function addTag() {
         </p>
       </div>
 
-      <div class="col right">
+      <div class="col vm-card right">
         <div class="panel-head">
           <h3 class="t">结构化产物</h3>
           <el-button size="small" :disabled="!selected" @click="noteFromSelected">{{ noteLabel }}</el-button>
@@ -251,19 +250,18 @@ async function addTag() {
 </template>
 
 <style scoped>
-.crumb { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 12px; color: var(--vm-muted, #5f6b7d); flex-wrap: wrap; }
 .alert { margin-bottom: 12px; }
-/* 三列弹性收缩：1280 默认窗宽不溢出，窄窗按断点单列堆叠（产物列不可见是此前实测缺陷） */
+/* 三列弹性收缩：默认窗宽不溢出，≤900 单列堆叠（产物列不可见是此前实测缺陷） */
 .workbench { display: grid; grid-template-columns: minmax(220px, 300px) minmax(320px, 1fr) minmax(320px, 420px); gap: 14px; align-items: start; }
-@media (max-width: 1140px) {
+@media (max-width: 900px) {
   .workbench { grid-template-columns: 1fr; }
   /* 窄屏先给播放器与产物，大纲/转写放后面，避免一屏全是转写 */
   .col.center { order: 1; }
   .col.right { order: 2; }
   .col.left { order: 3; }
 }
-.col { background: #fff; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 8px; padding: 12px; min-width: 0; }
-.t { font-size: 13px; color: var(--vm-text-secondary, #4b5563); margin: 6px 0 8px; }
+.col { padding: 12px; min-width: 0; }
+.t { font-size: 14px; color: var(--vm-text-secondary, #4b5563); margin: 6px 0 8px; }
 .outline { margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .outline-item { display: flex; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
 .outline-item:hover { background: #f2f5fb; }

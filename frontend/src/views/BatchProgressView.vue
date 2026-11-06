@@ -8,6 +8,7 @@ import {
   EVENT_STAGE_LABEL, STAGE_LABEL, STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, fmtTime
 } from '../api/labels'
 import type { Stage, StageStatus, VideoState } from '../api/types'
+import PageHeader from '../components/PageHeader.vue'
 import { useBatchStore } from '../stores/batch'
 
 const route = useRoute()
@@ -78,17 +79,17 @@ async function retry(row: VideoState) {
 
 <template>
   <div v-if="store.current">
-    <div class="head">
-      <h2>{{ store.current.name }}</h2>
-      <el-tag :type="STATUS_TYPE[store.current.status] ?? 'info'">{{ STATUS_LABEL[store.current.status] ?? store.current.status }}</el-tag>
-      <div class="head-actions">
+    <PageHeader :title="store.current.name" :crumbs="[{ label: '视频库', to: '/' }]">
+      <template #tag>
+        <el-tag :type="STATUS_TYPE[store.current.status] ?? 'info'">{{ STATUS_LABEL[store.current.status] ?? store.current.status }}</el-tag>
+      </template>
+      <template #actions>
         <span :title="isTerminal ? '' : '批次尚未解析完成'">
-          <el-button size="small" :disabled="!isTerminal" @click="router.push(`/batches/${id}/export`)">导出批次文稿</el-button>
+          <el-button size="small" :disabled="!isTerminal" @click="router.push(`/batches/${id}/export`)">导出文稿</el-button>
         </span>
         <el-button size="small" :loading="rerunning" :disabled="!isTerminal" @click="reparseAll">整批重跑</el-button>
-        <el-button size="small" @click="router.push('/')">返回视频库</el-button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <el-alert
       v-if="store.current.status === 'partial'"
@@ -172,14 +173,22 @@ async function retry(row: VideoState) {
 
     <el-card class="stream" shadow="never">
       <template #header><b>解析事件流</b><span class="muted">（SSE 实时推送）</span></template>
-      <div v-for="(e, i) in store.events.slice(-12)" :key="e.seq ?? i" class="evt">
-        <span class="muted">{{ fmtTime(e.ts) }}</span>
-        <el-tag size="small" :type="STAGE_STATUS_TYPE[e.status as StageStatus] ?? 'info'">
-          {{ EVENT_STAGE_LABEL[e.stage] ?? e.stage }} ·
-          {{ STAGE_STATUS_LABEL[e.status] ?? STATUS_LABEL[e.status] ?? e.status }}
-        </el-tag>
-        <span>{{ e.message }}</span>
-      </div>
+      <el-timeline class="tl">
+        <el-timeline-item
+          v-for="(e, i) in store.events.slice(-12)" :key="e.seq ?? i"
+          :type="STAGE_STATUS_TYPE[e.status as StageStatus] ?? 'info'"
+          :timestamp="fmtTime(e.ts)"
+          placement="top"
+        >
+          <div class="evt">
+            <el-tag size="small" :type="STAGE_STATUS_TYPE[e.status as StageStatus] ?? 'info'" disable-transitions>
+              {{ EVENT_STAGE_LABEL[e.stage] ?? e.stage }} ·
+              {{ STAGE_STATUS_LABEL[e.status] ?? STATUS_LABEL[e.status] ?? e.status }}
+            </el-tag>
+            <span>{{ e.message }}</span>
+          </div>
+        </el-timeline-item>
+      </el-timeline>
       <el-empty
         v-if="!store.events.length"
         description="暂无事件：解析开始后自动推送，刷新页面会回放本次运行的事件"
@@ -201,19 +210,14 @@ async function retry(row: VideoState) {
 </template>
 
 <style scoped>
-.head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
-.head h2 { margin: 0; font-size: 18px; }
-.head-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
 .alert { margin-bottom: 12px; }
 .file { font-size: 13px; word-break: break-all; }
-.err { margin-top: 4px; color: #b42318; font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.err { margin-top: 4px; color: var(--vm-danger-text, #b42318); font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .stream { margin-top: 16px; }
-.evt { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 3px 0; flex-wrap: wrap; }
+.tl { padding-left: 2px; }
+.tl .evt { display: flex; align-items: center; gap: 10px; font-size: 12px; flex-wrap: wrap; }
 .muted { color: var(--vm-muted, #5f6b7d); }
 .mobile-list { display: none; }
-@media (max-width: 800px) {
-  .head-actions { margin-left: 0; }
-}
 @media (max-width: 700px) {
   /* 四阶段矩阵在窄屏会被固定操作列挤掉，改为卡片逐条展示 */
   .desktop-table { display: none; }
