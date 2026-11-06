@@ -8,6 +8,7 @@ from sqlmodel import Session, or_, select
 
 from app.db import get_session
 from app.enums import REVISION_TRANSITIONS, ArtifactType, Confidence, RevisionState, TagTarget
+from app.media import display_name
 from app.models import (
     Artifact,
     ConflictRecord,
@@ -45,7 +46,7 @@ def _brief(session: Session, item: KnowledgeItem) -> dict:
     return {
         "id": item.id,
         "video_id": item.video_id,
-        "video_name": Path(video.path).name if video else "",
+        "video_name": display_name(video.path, video.batch_id) if video else "",
         "type": item.type.value,
         "title": item.title,
         "content": item.content,
@@ -61,11 +62,13 @@ def _brief(session: Session, item: KnowledgeItem) -> dict:
 
 
 @router.get("/videos/{video_id}/items")
-def video_items(video_id: int, item_type: str | None = Query(None, alias="type"),
+def video_items(video_id: int, item_type: ArtifactType | None = Query(None, alias="type"),
                 session: Session = Depends(get_session)):
+    if session.get(Video, video_id) is None:
+        raise HTTPException(404, "视频不存在")
     stmt = select(KnowledgeItem).where(KnowledgeItem.video_id == video_id)
-    if item_type:
-        stmt = stmt.where(KnowledgeItem.type == ArtifactType(item_type))
+    if item_type is not None:
+        stmt = stmt.where(KnowledgeItem.type == item_type)
     items = session.exec(stmt.order_by(KnowledgeItem.ordinal)).all()
     return [_brief(session, i) for i in items]
 
@@ -88,7 +91,7 @@ def item_detail(item_id: int, session: Session = Depends(get_session)):
     ]
     data["notes"] = [
         {"id": n.id, "content": n.content, "anchor_ms": n.anchor_ms}
-        for n in session.exec(select(Note).where(Note.item_id == item_id)).all()
+        for n in session.exec(select(Note).where(Note.item_id == item_id).order_by(Note.id)).all()
     ]
     return data
 

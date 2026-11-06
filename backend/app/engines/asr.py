@@ -12,9 +12,18 @@ from app.engines.base import AsrResult, KeyFrame, TranscriptSegment, register_as
 
 FIXTURE_DIR = Path(os.environ.get("VMIND_FIXTURE_DIR", Path(__file__).resolve().parents[2] / "tests" / "fixtures"))
 
-# yueying 0.2.1 是 2026-09 新上传的单维护者包，接口未经本项目实测；
-# 装好后按 `python -m yueying --help` 校准这一个常量即可，其余代码不动。
-YUEYING_CLI_ARGS = os.environ.get("YUEYING_CLI_ARGS", "--json {video} --frames-dir {outdir}/frames")
+# yueying 0.2.1 实际接口：--out 指定输出目录，--json 额外打印 manifest；
+# 输出目录内 manifest.json 同时含 segments 与 frames（frames 为绝对路径）。
+# 默认不放 {video}，避免路径里的空格被 shlex 拆开；兼容旧式含 {video} 的覆盖值。
+YUEYING_CLI_ARGS = os.environ.get(
+    "YUEYING_CLI_ARGS",
+    "--json --out {outdir} --lang zh --model small --device auto",
+)
+
+
+def _split_args(raw: str) -> list[str]:
+    """Windows 下必须 posix=False，否则反斜杠路径会被 shlex 当转义吃掉。"""
+    return shlex.split(raw, posix=(os.name != "nt"))
 
 
 @register_asr("mock")
@@ -49,27 +58,52 @@ class YueyingAsr:
 
     def transcribe(self, video_path: str) -> AsrResult:
         outdir = Path(tempfile.mkdtemp(prefix="yueying_"))
-        cmd = [sys.executable, "-m", "yueying", *YUEYING_CLI_ARGS.format(video=video_path, outdir=outdir).split()]
+        if "{video}" in YUEYING_CLI_ARGS:
+            args = _split_args(YUEYING_CLI_ARGS.format(video=video_path, outdir=str(outdir)))
+        else:
+            args = _split_args(YUEYING_CLI_ARGS.format(outdir=str(outdir)))
+            args.append(video_path)
+        cmd = [sys.executable, "-m", "yueying", *args]
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
         if proc.returncode != 0:
-            raise RuntimeError(f"yueying 解析失败：{proc.stderr.strip()[:500] or proc.stdout.strip()[:500]}")
+            # 后台错误直接进 UI：优先给最后一行异常，而不是整段 traceback 的前 500 字
+            raw = (proc.stderr or proc.stdout or "").strip()
+            lines = [line for line in raw.splitlines() if line.strip()]
+            detail = lines[-1] if lines else "未知错误"
+            raise RuntimeError(f"yueying 解析失败：{detail[:500]}")
 
-        payload = json.loads((outdir / "transcript.json").read_text(encoding="utf-8"))
+        manifest_path = outdir / "manifest.json"
+        if manifest_path.exists():
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        else:
+            # 兼容上游未来只打印 manifest、不落文件的情况：取 stdout 最后一个 JSON 对象
+            lines = [line.strip() for line in proc.stdout.splitlines() if line.strip().startswith("{")]
+            if not lines:
+                raise RuntimeError("yueying 未产出 manifest.json，也没有可解析的 JSON 输出")
+            payload = json.loads(lines[-1])
+
         segments = [
             TranscriptSegment(
                 index=i,
-                start_ms=int(seg["start"] * 1000),
-                end_ms=int(seg["end"] * 1000),
-                text=seg["text"],
+                start_ms=int(float(seg["start"]) * 1000),
+                end_ms=int(float(seg["end"]) * 1000),
+                text=str(seg.get("text", "")),
                 confidence=float(seg.get("confidence", 0.0)),
             )
-            for i, seg in enumerate(payload["segments"])
+            for i, seg in enumerate(payload.get("segments", []))
         ]
-        frames = [
-            KeyFrame(ms=int(f.get("time", f.get("ms", 0)) * 1000), path=str(outdir / f["path"]))
-            for f in payload.get("keyframes", [])
-        ]
-        return AsrResult(duration_ms=int(payload.get("duration", 0) * 1000), segments=segments, frames=frames)
+        frames = []
+        for f in payload.get("frames", []):
+            raw = f.get("file") or f.get("path") or ""
+            frame_path = Path(raw)
+            if raw and not frame_path.is_absolute():
+                frame_path = outdir / frame_path
+            frames.append(KeyFrame(ms=int(float(f.get("time", f.get("ms", 0))) * 1000), path=str(frame_path)))
+        return AsrResult(
+            duration_ms=int(float(payload.get("duration", 0)) * 1000),
+            segments=segments,
+            frames=frames,
+        )
 
 
 @register_asr("funasr")

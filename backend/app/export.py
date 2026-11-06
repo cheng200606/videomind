@@ -9,6 +9,7 @@ from pathlib import Path
 from sqlmodel import Session, select
 
 from app.enums import ArtifactType, Confidence, RevisionState, TagTarget, VideoStatus
+from app.media import display_name
 from app.models import Artifact, ConflictRecord, Evidence, KnowledgeItem, Note, Revision, Tag, TagBinding, Video, VideoBatch
 
 # 导出文稿面向中文读者：枚举原值（succeeded / explicit / confirmed…）一律映射成中文
@@ -27,7 +28,16 @@ _REVISION = {
 
 def ts(ms: int) -> str:
     total = int(ms // 1000)
-    return f"{total // 60}:{total % 60:02d}"
+    h, rem = divmod(total, 3600)
+    return f"{h}:{rem // 60:02d}:{rem % 60:02d}" if h else f"{rem // 60}:{rem % 60:02d}"
+
+
+def _fmt_ms_source(value: str) -> str:
+    """ConflictRecord 里存的是 '12000ms' 字符串，导出时转成时间戳。"""
+    try:
+        return ts(int(str(value).removesuffix("ms")))
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def _tag_names(session: Session, target_type: TagTarget, target_id: int) -> list[str]:
@@ -57,7 +67,7 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
     if batch is None:
         raise KeyError(f"批次 {batch_id} 不存在")
 
-    videos = session.exec(select(Video).where(Video.batch_id == batch.id)).all()
+    videos = session.exec(select(Video).where(Video.batch_id == batch.id).order_by(Video.id)).all()
     now = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")
     out: list[str] = [
         f"# {batch.name} · 视频知识结构化文稿",
@@ -72,13 +82,19 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
     ]
     for v in videos:
         tags = "、".join(_tag_names(session, TagTarget.VIDEO, v.id)) or "-"
-        out.append(f"| `{Path(v.path).name}` | {ts(v.duration_ms)} | {_VIDEO_STATUS[v.status]} | {tags} |")
+        out.append(f"| `{display_name(v.path, v.batch_id)}` | {ts(v.duration_ms)} | {_VIDEO_STATUS[v.status]} | {tags} |")
     out.append("")
+
+    video_ids = [v.id for v in videos]
+    has_items = bool(video_ids and session.exec(
+        select(KnowledgeItem.id).where(KnowledgeItem.video_id.in_(video_ids)).limit(1)).first())
+    if not has_items:
+        out += ["> 本批次未产出任何条目（可能解析失败或产物集为空）。", ""]
 
     for v in videos:
         items = session.exec(select(KnowledgeItem).where(
             KnowledgeItem.video_id == v.id).order_by(KnowledgeItem.ordinal)).all()
-        out += ["---", "", f"## {Path(v.path).name}", ""]
+        out += ["---", "", f"## {display_name(v.path, v.batch_id)}", ""]
 
         summary = next((i for i in items if i.type == ArtifactType.SUMMARY), None)
         if summary:
@@ -123,7 +139,7 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
         if conflicts:
             out += ["**前后不一致提示（F2）**", ""]
             for c in conflicts:
-                out.append(f"- {c.description}（{c.source_a} ↔ {c.source_b}）")
+                out.append(f"- {c.description}（{_fmt_ms_source(c.source_a)} ↔ {_fmt_ms_source(c.source_b)}）")
             out.append("")
 
         notes = session.exec(select(Note).where(Note.item_id.in_([i.id for i in items] or [-1]))).all() if items else []

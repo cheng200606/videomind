@@ -7,11 +7,18 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlmodel import Session
 
 from app import engines  # noqa: F401  导入即把引擎实现注册进 base 的注册表
 from app.config import get_settings
-from app.db import init_db
+from app.db import engine, init_db
+from app.model_config import active_model_config, reset_model_config_cache
+from app.net import sanitize_proxy_env
+from app.pipeline import recover_orphan_runs
 from app.routers import delivery, knowledge, parse
+from app.routers import settings as settings_router
+
+sanitize_proxy_env()
 
 _settings = get_settings()
 
@@ -29,15 +36,24 @@ def _load_saved_settings() -> None:
         saved = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return
-    for attr in ("asr_engine", "ocr_engine", "output_schemas"):
+    for attr in ("asr_engine", "ocr_engine"):
         if isinstance(saved.get(attr), str):
             setattr(_settings, attr, saved[attr])
+    schemas = saved.get("output_schemas")
+    if isinstance(schemas, str):
+        names = [s.strip() for s in schemas.split(",") if s.strip()]
+        if names:
+            _settings.output_schemas = ",".join(names)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _load_saved_settings()
+    reset_model_config_cache()
+    active_model_config()   # 启动时读回本机模型配置，Key 不落日志
     init_db()
+    with Session(engine) as session:
+        recover_orphan_runs(session)
     yield
 
 
@@ -59,6 +75,7 @@ app.mount("/media", StaticFiles(directory=_settings.media_root), name="media")
 app.include_router(parse.router)
 app.include_router(knowledge.router)
 app.include_router(delivery.router)
+app.include_router(settings_router.router)
 
 
 @app.get("/api/health")

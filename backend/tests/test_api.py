@@ -8,8 +8,12 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
+from app.db import engine
+from app.enums import BatchStatus, StageStatus, VideoStatus
 from app.main import app
+from app.models import Video, VideoBatch
 
 
 @pytest.fixture(scope="module")
@@ -278,3 +282,160 @@ def test_export_markdown_chinese_labels(client: TestClient, tmp_path: Path):
     md = client.get(f"/api/batches/{batch_id}/export.md").text
     assert "成功" in md and "succeeded" not in md
     assert "（明述）" in md or "（推断）" in md
+
+
+def test_empty_output_schemas_are_422(client: TestClient):
+    assert client.put("/api/settings/engines", json={"output_schemas": []}).status_code == 422
+    assert client.put("/api/settings/engines", json={"output_schemas": "summary"}).status_code == 422
+    assert client.put("/api/settings/engines", json={"output_schemas": ["bogus"]}).status_code == 422
+    client.put("/api/settings/engines",
+               json={"output_schemas": ["summary", "uml_draft", "key_points", "code_blocks"]})
+
+
+def test_missing_video_endpoints_are_404_and_bad_type_422(client: TestClient):
+    assert client.get("/api/videos/987654/transcript").status_code == 404
+    assert client.get("/api/videos/987654/items").status_code == 404
+    # FastAPI 先校验枚举参数，非法 type 会先返回 422；合法 type 才走到 404
+    assert client.get("/api/videos/987654/items", params={"type": "bogus"}).status_code == 422
+
+
+def test_items_bad_type_is_422_for_existing_video(client: TestClient, tmp_path: Path):
+    src = tmp_path / "bad_type.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "类型校验批次"},
+                        files=[("files", ("bad_type.mp4", fh, "video/mp4"))])
+    vid = client.get(f"/api/batches/{r.json()['id']}").json()["videos"][0]["id"]
+    assert client.get(f"/api/videos/{vid}/items", params={"type": "bogus"}).status_code == 422
+
+
+def test_export_and_structured_require_terminal_batch(client: TestClient):
+    with Session(engine) as session:
+        batch = VideoBatch(name="运行中批次", video_count=0, status=BatchStatus.RUNNING)
+        session.add(batch)
+        session.commit()
+        session.refresh(batch)
+        batch_id = batch.id
+    try:
+        assert client.get(f"/api/batches/{batch_id}/export.md").status_code == 409
+        assert client.get(f"/api/batches/{batch_id}/structured").status_code == 409
+    finally:
+        with Session(engine) as session:
+            obj = session.get(VideoBatch, batch_id)
+            if obj:
+                session.delete(obj)
+                session.commit()
+
+
+def test_structured_snapshot_has_no_absolute_path(client: TestClient, tmp_path: Path):
+    src = tmp_path / "snapshot.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "快照脱敏批次"},
+                        files=[("files", ("snapshot.mp4", fh, "video/mp4"))])
+    data = client.get(f"/api/batches/{r.json()['id']}/structured").json()
+    video = data["videos"][0]
+    assert "path" not in video
+    assert video["file_name"] == "snapshot.mp4"
+    assert video["media_url"].startswith("/media/")
+    assert video["item_count"] > 0
+
+
+def test_empty_pending_batch_can_be_deleted(client: TestClient):
+    with Session(engine) as session:
+        batch = VideoBatch(name="空等待批次", video_count=0, status=BatchStatus.PENDING)
+        session.add(batch)
+        session.commit()
+        session.refresh(batch)
+        batch_id = batch.id
+    assert client.delete(f"/api/batches/{batch_id}").status_code == 204
+    assert client.get(f"/api/batches/{batch_id}").status_code == 404
+
+
+def test_upload_same_name_case_insensitive(client: TestClient, tmp_path: Path):
+    src = tmp_path / "Same.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as f1, src.open("rb") as f2:
+        r = client.post("/api/batches", data={"name": "大小写同名批次"},
+                        files=[("files", ("Same.mp4", f1, "video/mp4")),
+                               ("files", ("same.mp4", f2, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    assert r.json()["video_count"] == 1
+    assert r.json()["rejected"][0]["reason"] == "与批内已有文件同名"
+
+
+def test_upload_size_limit_rejects_without_orphan(client: TestClient, tmp_path: Path, monkeypatch):
+    import app.routers.parse as parse_router
+    monkeypatch.setattr(parse_router, "_MAX_FILE_BYTES", 1024)
+    src = tmp_path / "too_big.mp4"
+    src.write_bytes(b"\x00" * 4096)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "超限批次"},
+                        files=[("files", ("too_big.mp4", fh, "video/mp4"))])
+    assert r.status_code == 422
+    assert "超过" in r.json()["detail"]
+    # 全拒后不留下 PENDING 孤儿
+    assert all(b["name"] != "超限批次" for b in client.get("/api/batches").json())
+
+
+def test_reparse_running_batch_is_409(client: TestClient, tmp_path: Path):
+    src = tmp_path / "reparse_guard.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "重跑守卫批次"},
+                        files=[("files", ("reparse_guard.mp4", fh, "video/mp4"))])
+    batch_id = r.json()["id"]
+    with Session(engine) as session:
+        batch = session.get(VideoBatch, batch_id)
+        batch.status = BatchStatus.RUNNING
+        session.add(batch)
+        session.commit()
+    try:
+        assert client.post(f"/api/batches/{batch_id}/parse").status_code == 409
+    finally:
+        with Session(engine) as session:
+            batch = session.get(VideoBatch, batch_id)
+            batch.status = BatchStatus.SUCCEEDED
+            session.add(batch)
+            session.commit()
+
+
+def test_retry_running_video_is_409(client: TestClient, tmp_path: Path):
+    src = tmp_path / "retry_guard.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "重试守卫批次"},
+                        files=[("files", ("retry_guard.mp4", fh, "video/mp4"))])
+    vid = client.get(f"/api/batches/{r.json()['id']}").json()["videos"][0]["id"]
+    with Session(engine) as session:
+        video = session.get(Video, vid)
+        video.status = VideoStatus.RUNNING
+        session.add(video)
+        session.commit()
+    try:
+        assert client.post(f"/api/videos/{vid}/retry").status_code == 409
+    finally:
+        with Session(engine) as session:
+            video = session.get(Video, vid)
+            video.status = VideoStatus.SUCCEEDED
+            session.add(video)
+            session.commit()
+
+
+def test_reparse_sets_running_before_background(client: TestClient, tmp_path: Path, monkeypatch):
+    src = tmp_path / "sync_running.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "同步置运行批次"},
+                        files=[("files", ("sync_running.mp4", fh, "video/mp4"))])
+    batch_id = r.json()["id"]
+    monkeypatch.setattr("app.routers.parse._run_batch", lambda bid: None)
+    try:
+        assert client.post(f"/api/batches/{batch_id}/parse").status_code == 200
+        batch = client.get(f"/api/batches/{batch_id}").json()
+        assert batch["status"] == "running"
+        assert all(v["stages"]["transcribe"] == "pending" for v in batch["videos"])
+    finally:
+        monkeypatch.undo()
+        from app.routers.parse import _run_batch
+        _run_batch(batch_id)

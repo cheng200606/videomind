@@ -5,16 +5,15 @@
 """
 
 import json
-import os
 import re
+import time
 
 import httpx
 from pydantic import BaseModel, Field
 
-from app.config import get_settings
 from app.enums import Confidence
-
-_settings = get_settings()
+from app.model_config import ModelConfig, active_model_config
+from app.net import sanitize_proxy_env
 
 
 class Chapter(BaseModel):
@@ -78,24 +77,42 @@ _SCHEMA = json.dumps(StructuredDraft.model_json_schema(), ensure_ascii=False)
 
 
 def llm_ready() -> bool:
-    return bool(os.environ.get("DEEPSEEK_API_KEY") or _settings.deepseek_api_key)
+    return bool(active_model_config().api_key)
 
 
-def _chat(messages: list[dict]) -> str:
-    resp = httpx.post(
-        f"{_settings.deepseek_base_url.rstrip('/')}/chat/completions",
-        headers={"Authorization": f"Bearer {_settings.deepseek_api_key}"},
-        json={
-            "model": _settings.deepseek_model,
-            "messages": messages,
-            "response_format": {"type": "json_object"},   # DeepSeek 兼容端点不支持 json_schema
-            "temperature": 0.2,
-            "max_tokens": 4000,
-        },
-        timeout=180,
-    )
+def _post_chat(messages: list[dict], cfg: ModelConfig, *, json_mode: bool = True,
+               max_tokens: int = 4000, timeout: int = 180) -> str:
+    sanitize_proxy_env()
+    url = f"{cfg.base_url.rstrip('/')}/chat/completions"
+    headers = {"Authorization": f"Bearer {cfg.api_key}"}
+    payload = {
+        "model": cfg.model,
+        "messages": messages,
+        "temperature": 0.2,
+        "max_tokens": max_tokens,
+    }
+    if json_mode:
+        payload["response_format"] = {"type": "json_object"}
+    resp = httpx.post(url, headers=headers, json=payload, timeout=timeout)
+    if json_mode and resp.status_code in (400, 422):
+        # 部分 OpenAI 兼容服务不支持 response_format；去掉 JSON mode 再试一次
+        payload.pop("response_format", None)
+        resp = httpx.post(url, headers=headers, json=payload, timeout=timeout)
     resp.raise_for_status()
     return (resp.json()["choices"][0]["message"].get("content") or "").strip()
+
+
+def _chat(messages: list[dict], cfg: ModelConfig | None = None, **kwargs) -> str:
+    return _post_chat(messages, cfg or active_model_config(), **kwargs)
+
+
+def test_connection(cfg: ModelConfig | None = None) -> tuple[str, int]:
+    """设置页“测试连接”：最小请求 + 返回耗时（毫秒）。"""
+    cfg = cfg or active_model_config()
+    start = time.perf_counter()
+    text = _post_chat([{"role": "user", "content": "回复 OK"}], cfg,
+                      json_mode=False, max_tokens=8, timeout=20)
+    return text, int((time.perf_counter() - start) * 1000)
 
 
 def _parse(text: str) -> StructuredDraft:
@@ -122,6 +139,7 @@ def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, 
     if not llm_ready():
         return fallback_draft(transcript)
 
+    cfg = active_model_config()
     messages = [
         {"role": "system", "content": _SYSTEM},
         {"role": "user", "content": _USER_TMPL.format(
@@ -132,7 +150,7 @@ def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, 
     last_error: Exception | None = None
     for attempt in range(2):
         try:
-            return _parse(_chat(messages))
+            return _parse(_chat(messages, cfg, json_mode=True))
         except Exception as exc:
             last_error = exc
             messages = [*messages, {

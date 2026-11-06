@@ -125,12 +125,8 @@ def _media_url(frame_path: str, settings: Settings) -> str:
     return f"/media/{rel.as_posix()}"
 
 
-def _clear_video_data(session: Session, video_id: int) -> None:
-    """重跑前清空上次解析的派生数据，保证重试 / 整批重解析幂等，不产生重复条目。
-
-    删除顺序按外键依赖：绑定与子表在前，KnowledgeItem 在 Note 之后，Evidence/Segment 最后。
-    Tag 本体跨视频共享，保留；条目上的 Note 随条目一起清（锚点指向的条目已不存在）。
-    """
+def _clear_derived_items(session: Session, video_id: int) -> None:
+    """清掉一条视频的条目派生数据与证据，但保留 Segment（阶段④失败时仍可回看转写）。"""
     item_ids = session.exec(select(KnowledgeItem.id).where(KnowledgeItem.video_id == video_id)).all()
     if item_ids:
         session.exec(delete(TagBinding).where(
@@ -141,8 +137,38 @@ def _clear_video_data(session: Session, video_id: int) -> None:
         session.exec(delete(Note).where(Note.item_id.in_(item_ids)))
         session.exec(delete(KnowledgeItem).where(KnowledgeItem.video_id == video_id))
     session.exec(delete(Evidence).where(Evidence.video_id == video_id))
+    session.commit()
+
+
+def _clear_video_data(session: Session, video_id: int) -> None:
+    """重跑前清空上次解析的派生数据，保证重试 / 整批重解析幂等，不产生重复条目。
+
+    删除顺序按外键依赖：绑定与子表在前，KnowledgeItem 在 Note 之后，Evidence/Segment 最后。
+    Tag 本体跨视频共享，保留；条目上的 Note 随条目一起清（锚点指向的条目已不存在）。
+    """
+    _clear_derived_items(session, video_id)
     session.exec(delete(Segment).where(Segment.video_id == video_id))
     session.commit()
+
+
+def _recompute_batch_status(session: Session, batch_id: int) -> BatchStatus:
+    """按视频终态重算批次状态；重试/重跑后必须调用，避免批次状态停在旧值。"""
+    batch = session.get(VideoBatch, batch_id)
+    if batch is None:
+        return BatchStatus.FAILED
+    statuses = [v.status for v in session.exec(select(Video).where(Video.batch_id == batch_id)).all()]
+    if not statuses:
+        status = BatchStatus.FAILED
+    elif all(s == VideoStatus.SUCCEEDED for s in statuses):
+        status = BatchStatus.SUCCEEDED
+    elif any(s in (VideoStatus.SUCCEEDED, VideoStatus.PARTIAL) for s in statuses):
+        status = BatchStatus.PARTIAL
+    else:
+        status = BatchStatus.FAILED
+    batch.status = status
+    session.add(batch)
+    session.commit()
+    return status
 
 
 def parse_video(session: Session, video: Video, settings: Settings | None = None) -> Video:
@@ -221,12 +247,25 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
 
     # ④ 产物生成与落库
     _set_stage(session, video, Stage.ARTIFACT, StageStatus.RUNNING)
-    ctx = ParseContext(draft=draft, segments=list(result.segments), frames=frames,
-                       ocr=frame_texts, duration_ms=video.duration_ms)
-    drafts: list[ItemDraft] = []
-    for strategy in resolve(settings.output_schema_list):
-        drafts.extend(strategy.build(ctx))
-    _persist(session, video, drafts, draft.conflicts, draft.tags)
+    try:
+        ctx = ParseContext(draft=draft, segments=list(result.segments), frames=frames,
+                           ocr=frame_texts, duration_ms=video.duration_ms)
+        drafts: list[ItemDraft] = []
+        for strategy in resolve(settings.output_schema_list):
+            drafts.extend(strategy.build(ctx))
+        _persist(session, video, drafts, draft.conflicts, draft.tags)
+    except Exception as exc:
+        # 阶段④异常不能穿出后台任务：批次会永久 RUNNING、无法删除，SSE 也只剩余 ping
+        session.rollback()
+        video = session.get(Video, video.id)
+        if video is None:
+            raise
+        _clear_derived_items(session, video.id)
+        video.status = VideoStatus.FAILED
+        session.add(video)
+        session.commit()
+        _set_stage(session, video, Stage.ARTIFACT, StageStatus.FAILED, str(exc))
+        return video
 
     failed = any(getattr(video, f"{s.value}_status") == StageStatus.FAILED for s in STAGES)
     video.status = VideoStatus.PARTIAL if failed else VideoStatus.SUCCEEDED
@@ -300,36 +339,75 @@ def _bind_tag(session: Session, target_type: TagTarget, target_id: int, name: st
 
 
 def parse_batch(session: Session, batch: VideoBatch) -> None:
-    """顺序处理整批（范围外：并发调度）。"""
+    """顺序处理整批（范围外：并发调度）。任何异常都必须让批次落终态。"""
     batch.status = BatchStatus.RUNNING
     session.add(batch)
     session.commit()
     bus.emit(batch.id, None, "batch", StageStatus.RUNNING.value)
 
-    videos = session.exec(select(Video).where(Video.batch_id == batch.id)).all()
-    for video in videos:
-        # 事件流面向使用者，只给文件名——本机绝对路径不该上 UI
-        bus.emit(batch.id, video.id, "batch", "video_start", Path(video.path).name)
-        parse_video(session, video)
-
-    statuses = [v.status for v in videos]
-    if all(s == VideoStatus.SUCCEEDED for s in statuses):
-        batch.status = BatchStatus.SUCCEEDED
-    elif any(s in (VideoStatus.SUCCEEDED, VideoStatus.PARTIAL) for s in statuses):
-        batch.status = BatchStatus.PARTIAL
-    else:
-        batch.status = BatchStatus.FAILED
-    session.add(batch)
-    session.commit()
-    bus.emit(batch.id, None, "batch", batch.status.value)
+    videos = session.exec(select(Video).where(Video.batch_id == batch.id).order_by(Video.id)).all()
+    try:
+        for video in videos:
+            # 事件流面向使用者，只给文件名——本机绝对路径不该上 UI
+            bus.emit(batch.id, video.id, "batch", "video_start", Path(video.path).name)
+            try:
+                parse_video(session, video)
+            except Exception as exc:
+                # 单条未预期异常不能拖垮整批：标失败后继续下一条
+                session.rollback()
+                failed = session.get(Video, video.id)
+                if failed is not None:
+                    failed.status = VideoStatus.FAILED
+                    failed.error = f"{failed.error}\n{type(exc).__name__}: {exc}".strip()[:500]
+                    session.add(failed)
+                    session.commit()
+                    bus.emit(batch.id, failed.id, "batch", "video_failed",
+                             f"{Path(failed.path).name} 解析异常")
+    finally:
+        status = _recompute_batch_status(session, batch.id)
+        bus.emit(batch.id, None, "batch", status.value)
 
 
 def retry_video(session: Session, video_id: int) -> Video | None:
     video = session.get(Video, video_id)
     if video is None:
         return None
+    batch_id = video.batch_id
     for stage in STAGES:
         setattr(video, f"{stage.value}_status", StageStatus.PENDING)
     session.add(video)
     session.commit()
-    return parse_video(session, video)
+    try:
+        result = parse_video(session, video)
+    except Exception as exc:
+        session.rollback()
+        failed = session.get(Video, video_id)
+        if failed is not None:
+            failed.status = VideoStatus.FAILED
+            failed.error = f"{failed.error}\n{type(exc).__name__}: {exc}".strip()[:500]
+            session.add(failed)
+            session.commit()
+        result = failed
+    finally:
+        status = _recompute_batch_status(session, batch_id)
+        bus.emit(batch_id, None, "batch", status.value)
+    return result
+
+
+def recover_orphan_runs(session: Session) -> None:
+    """进程重启后把未完成的批次/视频标成失败，保证可重试、可删除。"""
+    videos = session.exec(select(Video).where(
+        Video.status.in_([VideoStatus.PENDING, VideoStatus.RUNNING]))).all()
+    for video in videos:
+        video.status = VideoStatus.FAILED
+        video.error = f"{video.error}\n服务重启导致解析中断，可重试".strip()[:500]
+        for stage in STAGES:
+            if getattr(video, f"{stage.value}_status") == StageStatus.RUNNING:
+                setattr(video, f"{stage.value}_status", StageStatus.FAILED)
+        session.add(video)
+    session.commit()
+
+    batches = session.exec(select(VideoBatch).where(
+        VideoBatch.status.in_([BatchStatus.PENDING, BatchStatus.RUNNING]))).all()
+    for batch in batches:
+        _recompute_batch_status(session, batch.id)

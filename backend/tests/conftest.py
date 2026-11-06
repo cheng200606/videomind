@@ -17,5 +17,7 @@ os.environ["VMIND_FIXTURE_DIR"] = str(_HERE / "fixtures")
 
 # 引擎设置会持久化到 data/settings.json 并在 lifespan 读回；先清掉上次运行残留，保证测试封闭
 (_WORK / "settings.json").unlink(missing_ok=True)
+# 自定义模型配置同理；Key 不能跨测试残留
+(_WORK / "model_settings.json").unlink(missing_ok=True)
 # 测试库一次性：标签采纳/驳回会改 Tag.suggested_by_ai 并跨运行持久，残留会污染断言
 (_WORK / "test.db").unlink(missing_ok=True)

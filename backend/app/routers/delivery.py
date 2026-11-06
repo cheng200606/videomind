@@ -6,11 +6,20 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlmodel import Session, select
 
 from app.db import get_session
+from app.enums import BatchStatus
 from app.export import build_batch_markdown
+from app.media import display_name, media_url
 from app.models import KnowledgeItem, Video, VideoBatch
 from app.routers.knowledge import _brief
 
 router = APIRouter(prefix="/api", tags=["delivery"])
+
+_TERMINAL = (BatchStatus.SUCCEEDED, BatchStatus.PARTIAL, BatchStatus.FAILED)
+
+
+def _ensure_terminal(batch: VideoBatch) -> None:
+    if batch.status not in _TERMINAL:
+        raise HTTPException(409, "批次尚未解析完成，暂不能导出/生成快照")
 
 
 @router.get("/batches/{batch_id}/export.md")
@@ -18,6 +27,7 @@ def export_markdown(batch_id: int, session: Session = Depends(get_session)):
     batch = session.get(VideoBatch, batch_id)
     if batch is None:
         raise HTTPException(404, "批次不存在")
+    _ensure_terminal(batch)
     md = build_batch_markdown(session, batch_id)
     filename = quote(f"{batch.name}.md")
     return Response(
@@ -32,15 +42,19 @@ def structured(batch_id: int, session: Session = Depends(get_session)):
     batch = session.get(VideoBatch, batch_id)
     if batch is None:
         raise HTTPException(404, "批次不存在")
-    videos = session.exec(select(Video).where(Video.batch_id == batch_id)).all()
+    _ensure_terminal(batch)
+    videos = session.exec(select(Video).where(Video.batch_id == batch_id).order_by(Video.id)).all()
     payload = []
     for video in videos:
         items = session.exec(select(KnowledgeItem).where(
             KnowledgeItem.video_id == video.id).order_by(KnowledgeItem.ordinal)).all()
         payload.append({
             "video_id": video.id,
-            "path": video.path,
+            "file_name": display_name(video.path, video.batch_id),
+            "media_url": media_url(video.path),
+            "status": video.status.value,
             "duration_ms": video.duration_ms,
+            "item_count": len(items),
             "items": [_brief(session, i) for i in items],
         })
     return {"batch_id": batch_id, "name": batch.name, "disclaimer": "识别结果仅供参考", "videos": payload}

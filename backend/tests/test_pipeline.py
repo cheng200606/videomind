@@ -8,10 +8,10 @@ from sqlmodel import Session, select
 
 from app.artifacts import ItemDraft
 from app.db import engine, init_db
-from app.enums import ArtifactType, Confidence, RevisionState, StageStatus, VideoStatus
-from app.export import build_batch_markdown
+from app.enums import ArtifactType, BatchStatus, Confidence, RevisionState, StageStatus, VideoStatus
+from app.export import build_batch_markdown, ts
 from app.models import Artifact, ConflictRecord, Evidence, KnowledgeItem, Segment, Video, VideoBatch
-from app.pipeline import _persist, parse_video, retry_video
+from app.pipeline import _persist, parse_batch, parse_video, recover_orphan_runs, retry_video
 from app.routers.knowledge import _brief
 
 
@@ -144,3 +144,89 @@ def test_conflict_record_anchors_to_nearest_item(video: Video):
             ConflictRecord.item_id == nearest.id)).first()
         assert record is not None
         assert record.description == "先讲A后改成B"
+
+
+def test_artifact_stage_exception_marks_batch_failed(video: Video, monkeypatch):
+    """阶段④异常不能让批次永久 RUNNING。"""
+    monkeypatch.setattr("app.pipeline.resolve", lambda names: (_ for _ in ()).throw(RuntimeError("产物策略炸了")))
+    with Session(engine) as session:
+        parse_batch(session, session.get(VideoBatch, video.batch_id))
+        batch = session.get(VideoBatch, video.batch_id)
+        parsed = session.get(Video, video.id)
+    assert batch.status == BatchStatus.FAILED
+    assert parsed.status == VideoStatus.FAILED
+    assert parsed.artifact_status == StageStatus.FAILED
+    assert "产物策略炸了" in parsed.error
+
+
+def test_parse_batch_survives_unexpected_video_exception(video: Video, monkeypatch):
+    monkeypatch.setattr("app.pipeline.parse_video", lambda session, v: (_ for _ in ()).throw(RuntimeError("视频级异常")))
+    with Session(engine) as session:
+        parse_batch(session, session.get(VideoBatch, video.batch_id))
+        batch = session.get(VideoBatch, video.batch_id)
+        parsed = session.get(Video, video.id)
+    assert batch.status == BatchStatus.FAILED
+    assert parsed.status == VideoStatus.FAILED
+    assert "视频级异常" in parsed.error
+
+
+def test_retry_recomputes_batch_status(video: Video, monkeypatch):
+    """先让结构阶段失败，再恢复重试：批次必须从 failed 重算为 succeeded。"""
+    monkeypatch.setattr("app.pipeline.structure", lambda *args: (_ for _ in ()).throw(RuntimeError("LLM 暂时不可用")))
+    with Session(engine) as session:
+        parse_video(session, session.get(Video, video.id))
+        assert session.get(Video, video.id).status == VideoStatus.FAILED
+    monkeypatch.undo()
+    with Session(engine) as session:
+        retry_video(session, video.id)
+        batch = session.get(VideoBatch, video.batch_id)
+        parsed = session.get(Video, video.id)
+    assert parsed.status == VideoStatus.SUCCEEDED
+    assert batch.status == BatchStatus.SUCCEEDED
+
+
+def test_recover_orphan_runs_marks_running_failed(video: Video):
+    with Session(engine) as session:
+        batch = session.get(VideoBatch, video.batch_id)
+        parsed = session.get(Video, video.id)
+        batch.status = BatchStatus.RUNNING
+        parsed.status = VideoStatus.RUNNING
+        parsed.transcribe_status = StageStatus.RUNNING
+        session.add(batch)
+        session.add(parsed)
+        session.commit()
+
+        recover_orphan_runs(session)
+        batch = session.get(VideoBatch, video.batch_id)
+        parsed = session.get(Video, video.id)
+    assert parsed.status == VideoStatus.FAILED
+    assert parsed.transcribe_status == StageStatus.FAILED
+    assert "服务重启" in parsed.error
+    assert batch.status == BatchStatus.FAILED
+
+
+def test_export_timestamp_over_hour():
+    assert ts(3_725_000) == "1:02:05"
+
+
+def test_export_empty_batch_has_explicit_notice():
+    with Session(engine) as session:
+        batch = VideoBatch(name="空批次", video_count=0, status=BatchStatus.FAILED)
+        session.add(batch)
+        session.commit()
+        session.refresh(batch)
+        md = build_batch_markdown(session, batch.id)
+    assert "未产出任何条目" in md
+
+
+def test_export_formats_conflict_sources_as_timestamps(video: Video):
+    with Session(engine) as session:
+        parse_video(session, session.get(Video, video.id))
+        item = session.exec(select(KnowledgeItem).where(
+            KnowledgeItem.video_id == video.id)).first()
+        session.add(ConflictRecord(item_id=item.id, source_a="12000ms", source_b="90000ms",
+                                   description="前后表述不一致"))
+        session.commit()
+        md = build_batch_markdown(session, video.batch_id)
+    assert "0:12" in md and "1:30" in md
+    assert "12000ms" not in md

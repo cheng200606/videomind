@@ -37,15 +37,21 @@ def _unwrap(result) -> tuple[list[str], list[float], list]:
     """把 RapidOCR 返回值归一成 (texts, scores, boxes)。
 
     v3.x 返回带 txts/scores/boxes 的结果对象；1.x（rapidocr-onnxruntime）返回
-    (每行 [box, text, score], 耗时) 元组。本项目锁 3.10.0，装好后打印一次
-    type(result) 就能确认走哪条分支，另一条只在换版本时兜住。
+    (每行 [box, text, score], 耗时) 元组。numpy 数组不能直接做布尔判断，
+    统一先 list() 再归一，避免 "truth value of an array is ambiguous"。
     """
+    def _as_list(value):
+        return [] if value is None else list(value)
+
     if hasattr(result, "txts"):
-        return list(result.txts or []), list(result.scores or []), list(result.boxes or [])
+        return (_as_list(getattr(result, "txts", None)),
+                _as_list(getattr(result, "scores", None)),
+                _as_list(getattr(result, "boxes", None)))
     rows = result[0] if isinstance(result, tuple) else result
-    rows = list(rows or [])
+    rows = _as_list(rows)
     if rows and isinstance(rows[0], dict):
-        return ([r.get("txt", "") for r in rows], [float(r.get("score", 0.0)) for r in rows],
+        return ([r.get("txt", "") for r in rows],
+                [float(r.get("score", 0.0)) for r in rows],
                 [r.get("box", []) for r in rows])
     return ([r[1] for r in rows], [float(r[2]) for r in rows], [r[0] for r in rows])
 
