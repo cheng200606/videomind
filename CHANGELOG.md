@@ -265,3 +265,28 @@
 - **程夏（组长）**：后端 pytest 83 例全绿（71 → 83），前端 vitest 29 例全绿（28 → 29），`npm run build` 通过；浏览器实测坏深链中文提示、检索禁用态与总数展示、工作台切换器
 - **程夏（组长）**：审视结论与验收记录见 docs/测试与迭代报告_v0.11.md；明确不做：分块结构化、向量检索、暗色模式（范围外）
 - **程夏（组长）**：发布 GitHub Release [v0.11.0](https://github.com/cheng200606/videomind/releases/tag/v0.11.0)——NSIS 安装包 + latest.yml + blockmap 三资产齐全，桌面端在「设置 → 应用更新」点「检查更新」即可从 v0.7.1 升级
+
+---
+
+## [v0.12] — 完整度迭代：双通道入包 + 长视频完整结构化（2026-11-07）
+
+### 背景：从「能跑的切片」到「可正常使用的正式发布」
+
+- **程夏（组长）**：以「真实用户拿到安装包能否完整用起来」为口径审视 v0.11.0，确认三处完整性缺口：① 超过 12000 字符的转写被整体截断（约 20 分钟后的内容不参与结构化），讲座类核心场景产出不完整；② 桌面安装包为控体积把 RapidOCR/onnxruntime 整套排除，且 Whisper 引擎不产关键帧——「ASR+OCR 双通道」这一核心差异化在正式发布物里缺席，设置页只剩「关闭」一个选项；③ Electron 55 个语言包只用到 2 个，安装包有无谓膨胀
+
+### P0 完整性（组长直推，按规留痕）
+
+- **程夏（组长）**：LLM 分块结构化——`structure()` 按段边界把长转写切块（每块渲染后 ≤12000 字符，不打断一句话），逐块调用后按时间序合并章节/条目/冲突，画面 OCR 文本按时间归属到对应块（不重复计费）；合并后用章节清单做一次收尾调用补全局 one_line 与 tags（失败保持合并结果）；个别块失败不拖垮整条——report 记 `failed_chunks`，结构化阶段置 PARTIAL、视频随之 PARTIAL，事件流与摘要 notice 写明「第 N 段失败，对应区间内容可能缺失」；单段自身超长才物理截断，截断事实照旧上报。新增 `StageStatus.PARTIAL`（前端 labels.ts 既有映射，零前端改动）
+- **程夏（组长）**：独立关键帧抽样——新增 `app/engines/frames.py`：av 解码视频流按间隔（默认 30s，`VMIND_FRAME_INTERVAL_S` 可调）采样，16x16 灰度均值差丢弃相邻相似帧（numpy 手写，不为去重引入 imagehash+scipy 约 120MB 依赖）；Whisper/FunASR 等纯音频引擎解析时自动补齐关键帧，结果走独立缓存（键含采样间隔）；抽样失败只让画面通道降级 SKIPPED，不影响音频通道
+- **程夏（组长）**：桌面版内置 RapidOCR 画面通道——`VideoMindBackend.spec` 对 rapidocr/onnxruntime/cv2/PIL/shapely/pyclipper `collect_all`（模型随 wheel 内置，离线可用），excludes 相应收窄；实测 ctranslate2 只带 `libiomp5md.dll`、onnxruntime 无 OpenMP DLL，无同名冲突；`run_server.py` 默认 OCR 引擎改为「rapidocr 可导入即 rapid，否则 none」；设置页 OCR 下拉在安装包里显示「关闭 / RapidOCR」
+
+### P1 发布质量
+
+- **程夏（组长）**：安装包体积 A 级优化——`electron-builder.yml` 增 `electronLanguages: [zh-CN, en-US]`（语言包 55→2）与 `compression: maximum`（NSIS LZMA 最高压缩），抵消画面通道带来的部分体积增量
+- **程夏（组长）**：设置页 OCR 引擎下新增说明——「列表只显示当前环境可用的引擎……」，与 ASR 提示风格对齐，消除「为什么只有关闭」的困惑
+
+### 验证
+
+- **程夏（组长）**：后端 pytest 91 例全绿（83 → 91：分块/截断/块失败容忍/收尾/OCR 时间归属 6 例 + av 合成视频抽帧/去重/坏文件降级 3 例）；前端 vitest 29 例全绿，`npm run build` 通过
+- **程夏（组长）**：打包烟雾验证（三轮，对最终 sidecar）：`/api/settings/engines` 列出 whisper+rapid；上传合成视频（h264+静音 aac）走完四阶段——faster-whisper(ctranslate2) 推理、VAD(onnxruntime)、av 抽帧、RapidOCR 识别在同一冻结进程内共存无冲突，批次 succeeded；打包产物上以 Edge 实测库页/设置页/工作台渲染与提示文案
+- **程夏（组长）**：审视结论与验收记录见 docs/测试与迭代报告_v0.12.md；桌面版从 v0.11.0 经「检查更新」或重新安装升级
