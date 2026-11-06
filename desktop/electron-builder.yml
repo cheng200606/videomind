@@ -7,6 +7,12 @@ directories:
   output: release
   buildResources: resources
 
+# 体积 A 级优化（v0.12）：只带中英语言包（55→2，省约 48MB 解包体积），NSIS 用 LZMA 最高压缩
+electronLanguages:
+  - zh-CN
+  - en-US
+compression: maximum
+
 files:
   - main.js
   - preload.js
