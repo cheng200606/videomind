@@ -254,3 +254,15 @@ def test_export_formats_conflict_sources_as_timestamps(video: Video):
         md = build_batch_markdown(session, video.batch_id)
     assert "0:12" in md and "1:30" in md
     assert "12000ms" not in md
+
+
+def test_sanitize_error_strips_local_paths():
+    """错误文本上 UI 前必须洗掉本机路径（事件流/进度页不暴露落盘路径的约定）。"""
+    from app.pipeline import sanitize_error
+
+    msg = sanitize_error(r"模型加载失败：C:\Users\lenovo\AppData\Local\Temp\xyz\model.bin 缺失")
+    assert "C:" not in msg and "本机路径" in msg
+    msg2 = sanitize_error("帧写入失败 /tmp/yueying-123/frame.jpg 不可读")
+    assert "/tmp/" not in msg2 and "本机路径" in msg2
+    assert sanitize_error("普通错误信息保持原样") == "普通错误信息保持原样"
+    assert sanitize_error("") == ""

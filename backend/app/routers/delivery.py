@@ -10,7 +10,7 @@ from app.enums import BatchStatus
 from app.export import build_batch_markdown
 from app.media import display_name, media_url
 from app.models import KnowledgeItem, Video, VideoBatch
-from app.routers.knowledge import _brief
+from app.routers.knowledge import _brief_many
 
 router = APIRouter(prefix="/api", tags=["delivery"])
 
@@ -55,6 +55,6 @@ def structured(batch_id: int, session: Session = Depends(get_session)):
             "status": video.status.value,
             "duration_ms": video.duration_ms,
             "item_count": len(items),
-            "items": [_brief(session, i) for i in items],
+            "items": _brief_many(session, items, video=video),
         })
     return {"batch_id": batch_id, "name": batch.name, "disclaimer": "识别结果仅供参考", "videos": payload}

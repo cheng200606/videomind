@@ -131,19 +131,38 @@ def _parse(text: str) -> StructuredDraft:
     return StructuredDraft.model_validate(json.loads(body))
 
 
+_TRANSCRIPT_LIMIT = 12000
+_OCR_LIMIT = 6000
+
+
 def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, str]],
-              duration_ms: int) -> StructuredDraft:
+              duration_ms: int, report: dict | None = None) -> StructuredDraft:
+    """转写 + OCR → StructuredDraft。
+
+    超长输入会截断（单次 LLM 调用的上下文限制，分块结构化在范围外）；截断事实
+    通过 report 回传给调用方，由其决定如何提示用户——不允许静默丢内容。
+    """
     body = "\n".join(f"[{s / 1000:.1f}s-{e / 1000:.1f}s] {t}" for s, e, t in transcript)
     ocr_body = "\n".join(f"[{ms / 1000:.1f}s] {t}" for ms, t in ocr_text) or "（画面通道未启用或无文字）"
+
+    transcript_truncated = len(body) > _TRANSCRIPT_LIMIT
+    ocr_truncated = len(ocr_body) > _OCR_LIMIT
+    if report is not None:
+        report["transcript_truncated"] = transcript_truncated
+        report["ocr_truncated"] = ocr_truncated
+        report["transcript_chars"] = len(body)
 
     if not llm_ready():
         return fallback_draft(transcript)
 
     cfg = active_model_config()
+    prompt_transcript = body[:_TRANSCRIPT_LIMIT]
+    if transcript_truncated:
+        prompt_transcript += "\n（注意：转写超过长度上限，以上仅为视频前半部分的转写，请只针对给出的内容产出。）"
     messages = [
         {"role": "system", "content": _SYSTEM},
         {"role": "user", "content": _USER_TMPL.format(
-            duration_s=duration_ms / 1000, transcript=body[:12000], ocr=ocr_body[:6000])},
+            duration_s=duration_ms / 1000, transcript=prompt_transcript, ocr=ocr_body[:_OCR_LIMIT])},
         {"role": "user", "content": f"只输出一个 JSON 对象，不要解释、不要围栏。schema：\n{_SCHEMA}"},
     ]
 

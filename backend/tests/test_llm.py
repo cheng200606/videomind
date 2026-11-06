@@ -48,3 +48,30 @@ def test_fallback_draft_shapes_without_key():
 def test_no_key_in_test_env():
     """conftest 清空了 DEEPSEEK_API_KEY，结构化必须走 fallback 而不是真调外网。"""
     assert llm_ready() is False
+
+
+def test_structure_reports_truncation(monkeypatch):
+    """转写超 12000 字符：report 必须带回截断事实，提示词只含截断后内容并显式声明。"""
+    from app import llm
+
+    seen: dict = {}
+
+    def fake_chat(messages, cfg=None, **kw):
+        seen["prompt"] = messages[1]["content"]
+        return _draft_json()
+
+    monkeypatch.setattr(llm, "llm_ready", lambda: True)
+    monkeypatch.setattr(llm, "_chat", fake_chat)
+
+    seg_text = "这是一个很长的句子用来撑字符数。" * 60
+    transcript = [(i * 1000, (i + 1) * 1000, seg_text) for i in range(30)]
+    report: dict = {}
+    draft = llm.structure(transcript, [], 30000, report=report)
+    assert draft.one_line == "一句话结论"
+    assert report["transcript_truncated"] is True
+    assert report["transcript_chars"] > 12000
+    assert "转写超过长度上限" in seen["prompt"]
+
+    short_report: dict = {}
+    llm.structure(transcript[:2], [], 2000, report=short_report)
+    assert short_report["transcript_truncated"] is False

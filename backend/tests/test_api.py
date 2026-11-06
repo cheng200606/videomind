@@ -75,8 +75,11 @@ def test_full_slice_over_http(client: TestClient, tmp_path: Path):
 
     tags = client.get("/api/tags").json()
     assert tags, "AI 建议标签应已落库"
-    assert isinstance(client.get("/api/search", params={"q": "ref"}).json(), list)
-    assert isinstance(client.get("/api/search", params={"tag": tags[0]["id"]}).json(), list)
+    # v0.11 检索契约：{total, items}，且不再接受空条件全量
+    for params in ({"q": "ref"}, {"tag": tags[0]["id"]}):
+        body = client.get("/api/search", params=params).json()
+        assert isinstance(body, dict) and isinstance(body["items"], list)
+        assert body["total"] >= len(body["items"])
 
     item_id = next(i for i in items if i["type"] == "key_points")["id"]
     note = client.post(f"/api/items/{item_id}/notes", json={"content": "复习用", "anchor_ms": 12000})
@@ -158,10 +161,13 @@ def test_reparse_batch_is_idempotent_over_http(client: TestClient, tmp_path: Pat
 
 
 def test_search_confidence_filter(client: TestClient):
-    """F4 置信度过滤：合法值返回列表，非法值 422。"""
-    assert isinstance(client.get("/api/search", params={"confidence": "explicit"}).json(), list)
-    assert isinstance(client.get("/api/search", params={"confidence": "inferred"}).json(), list)
+    """F4 置信度过滤：合法值返回 {total, items}，非法值 422，空条件 422。"""
+    for conf in ("explicit", "inferred"):
+        body = client.get("/api/search", params={"confidence": conf}).json()
+        assert isinstance(body, dict) and isinstance(body["items"], list)
     assert client.get("/api/search", params={"confidence": "不存在"}).status_code == 422
+    assert client.get("/api/search").status_code == 422
+    assert client.get("/api/search", params={"q": "   "}).status_code == 422
 
 
 def test_search_tag_scope_covers_video_and_item_level(client: TestClient, tmp_path: Path):
@@ -181,24 +187,25 @@ def test_search_tag_scope_covers_video_and_item_level(client: TestClient, tmp_pa
     assert video_tag.status_code == 201
     video_tag_id = video_tag.json()["id"]
     by_video = client.get("/api/search", params={"tag": video_tag_id}).json()
-    assert len(by_video) == len(items)
-    assert {x["video_id"] for x in by_video} == {vid}
+    assert by_video["total"] == len(items)
+    assert len(by_video["items"]) == len(items)
+    assert {x["video_id"] for x in by_video["items"]} == {vid}
 
     item_id = items[0]["id"]
     bound = client.post("/api/tags/bind", json={
         "name": "仅条目标签", "target_type": "item", "target_id": item_id})
     assert bound.status_code == 201
     by_item = client.get("/api/search", params={"tag": bound.json()["id"]}).json()
-    assert [x["id"] for x in by_item] == [item_id]
+    assert [x["id"] for x in by_item["items"]] == [item_id]
 
     assert client.get("/api/search", params={
-        "tag": video_tag_id, "q": "一定不存在的关键词"}).json() == []
+        "tag": video_tag_id, "q": "一定不存在的关键词"}).json() == {"total": 0, "items": []}
 
     temp = client.post("/api/tags/bind", json={
         "name": "临时无绑定标签", "target_type": "item", "target_id": item_id}).json()
     assert client.post(f"/api/tags/{temp['id']}/dismiss",
                        params={"target_type": "item", "target_id": item_id}).status_code == 200
-    assert client.get("/api/search", params={"tag": temp["id"]}).json() == []
+    assert client.get("/api/search", params={"tag": temp["id"]}).json() == {"total": 0, "items": []}
 
 
 def _sse_events(body: str) -> list[dict]:
@@ -550,3 +557,106 @@ def test_reparse_sets_running_before_background(client: TestClient, tmp_path: Pa
         monkeypatch.undo()
         from app.routers.parse import _run_batch
         _run_batch(batch_id)
+
+
+def test_search_limit_returns_total(client: TestClient, monkeypatch, tmp_path: Path):
+    """检索结果有上限也要带回总数：前端才能提示「已显示前 N 条」。"""
+    from app.routers import knowledge
+
+    src = tmp_path / "search_limit.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "检索上限批次"},
+                        files=[("files", ("search_limit.mp4", fh, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    vid = client.get(f"/api/batches/{r.json()['id']}").json()["videos"][0]["id"]
+    all_items = client.get(f"/api/videos/{vid}/items").json()
+    assert len(all_items) >= 2
+
+    monkeypatch.setattr(knowledge, "_SEARCH_LIMIT", 2)
+    body = client.get("/api/search", params={"video_id": vid}).json()
+    assert body["total"] == len(all_items)
+    assert len(body["items"]) == 2
+
+
+def test_batch_list_carries_status_counts(client: TestClient, tmp_path: Path):
+    """库页卡片要能直接看出「2 成功 1 失败」：列表接口带按状态计数。"""
+    src = tmp_path / "counts.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", files=[("files", ("counts.mp4", fh, "video/mp4"))])
+    assert r.status_code == 201
+    batches = client.get("/api/batches").json()
+    mine = next(b for b in batches if b["id"] == r.json()["id"])
+    assert mine["video_status_counts"] == {"succeeded": 1}
+
+
+def test_upload_rejects_too_many_files(client: TestClient):
+    """单批文件数上限：先于任何落盘拒绝。"""
+    files = [("files", (f"f{i}.mp4", b"\x00" * 16, "video/mp4")) for i in range(21)]
+    r = client.post("/api/batches", data={"name": "超量批次"}, files=files)
+    assert r.status_code == 422
+    assert "最多 20 个文件" in r.json()["detail"]
+
+
+def test_upload_batch_total_cap(client: TestClient, monkeypatch):
+    """批次总大小上限：超限文件记入 rejected，前面的有效文件照常创建。"""
+    from app.routers import parse as parse_router
+
+    monkeypatch.setattr(parse_router, "_MAX_BATCH_BYTES", 32)
+    files = [("files", ("a.mp4", b"\x00" * 16, "video/mp4")),
+             ("files", ("b.mp4", b"\x00" * 20, "video/mp4"))]
+    r = client.post("/api/batches", data={"name": "总量上限"}, files=files)
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["video_count"] == 1
+    assert any("总大小" in x["reason"] for x in body["rejected"])
+
+
+def test_upload_content_length_precheck(client: TestClient, monkeypatch):
+    """Content-Length 预检：超大请求体在落盘前就被 413 拒绝。"""
+    from app.routers import parse as parse_router
+
+    monkeypatch.setattr(parse_router, "_MULTIPART_SLACK", -(10 ** 9))
+    boundary = "----vmboundary"
+    body = (
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"name\"\r\n\r\n预检\r\n"
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"files\"; filename=\"pre.mp4\"\r\n"
+        "Content-Type: video/mp4\r\n\r\n\x00\x00\x00\x00\r\n"
+        f"--{boundary}--\r\n"
+    ).encode("utf-8")
+    r = client.post(
+        "/api/batches",
+        content=body,
+        headers={
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "Content-Length": str(30 * 1024 ** 3),
+        },
+    )
+    assert r.status_code == 413
+    assert "分批" in r.json()["detail"]
+
+
+def test_parse_mutex_blocks_second_batch(client: TestClient, tmp_path: Path):
+    """解析互斥：已有批次在解析时，新批次创建直接 409。"""
+    from app.pipeline import parse_mutex
+
+    assert parse_mutex.claim(999_999)
+    try:
+        src = tmp_path / "m.mp4"
+        src.write_bytes(b"\x00" * 32)
+        with src.open("rb") as fh:
+            r = client.post("/api/batches", files=[("files", ("m.mp4", fh, "video/mp4"))])
+        assert r.status_code == 409
+        assert "已有批次正在解析" in r.json()["detail"]
+    finally:
+        parse_mutex.release(999_999)
+
+
+def test_validation_error_is_chinese(client: TestClient):
+    """路径参数非法时回中文 422，不再把 pydantic 英文 detail 甩给前端。"""
+    r = client.get("/api/videos/abc/items")
+    assert r.status_code == 422
+    detail = r.json()["detail"]
+    assert detail.startswith("请求参数格式不正确")
+    assert "video_id" in detail and "应为整数" in detail

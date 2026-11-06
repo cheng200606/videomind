@@ -39,6 +39,8 @@ class ParseContext:
     frames: list[KeyFrame]
     ocr: list[FrameText]
     duration_ms: int
+    # 解析阶段的诚实提示（如转写超长截断），随摘要产物持久化，前端在工作台展示
+    notices: list[str] = field(default_factory=list)
 
 
 class OutputSchemaStrategy(Protocol):
@@ -72,6 +74,8 @@ def _safe(text: str, limit: int = 40) -> str:
 class SummaryPayload(BaseModel):
     one_line: str
     chapters: list[dict] = Field(default_factory=list)
+    # 解析阶段的诚实提示（如「转写超长，仅前 12000 字符参与结构化」），工作台横幅展示
+    notice: str = ""
 
 
 class UmlPayload(BaseModel):
@@ -110,7 +114,8 @@ class SummaryStrategy:
             ordinal=0,
             quote=seg0.text if seg0 else "",
             frame_path=_frame_near(ctx, 0),
-            payload=SummaryPayload(one_line=ctx.draft.one_line, chapters=chapters).model_dump(),
+            payload=SummaryPayload(one_line=ctx.draft.one_line, chapters=chapters,
+                                   notice="；".join(ctx.notices)).model_dump(),
             tags=ctx.draft.tags,
         )]
 

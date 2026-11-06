@@ -1,11 +1,13 @@
 from contextlib import asynccontextmanager
 import json
+import logging
 from pathlib import Path
 import sys
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session
 
@@ -101,6 +103,45 @@ app.include_router(parse.router)
 app.include_router(knowledge.router)
 app.include_router(delivery.router)
 app.include_router(settings_router.router)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_handler(request: Request, exc: RequestValidationError):
+    """FastAPI 自动校验的 422 默认回英文 detail 数组，前端会原样甩给中文用户。
+
+    统一收敛为一条中文消息：位置用点号连接（省略 body/query/path 前缀），msg 做常见模式的中文化。
+    """
+    parts = []
+    for err in exc.errors():
+        loc = ".".join(str(p) for p in err.get("loc", ()) if p not in ("body", "query", "path"))
+        msg = str(err.get("msg", "参数不合法"))
+        for pattern, zh in _VALIDATION_MSG_ZH:
+            if pattern in msg:
+                msg = zh
+                break
+        parts.append(f"{loc}：{msg}" if loc else msg)
+    return JSONResponse(status_code=422, content={"detail": "请求参数格式不正确：" + "；".join(parts)})
+
+
+_VALIDATION_MSG_ZH: list[tuple[str, str]] = [
+    ("Input should be a valid integer", "应为整数"),
+    ("unable to parse string as an integer", "应为整数"),
+    ("Input should be a valid number", "应为数字"),
+    ("Field required", "缺少必填参数"),
+    ("String should have at most", "超出长度上限"),
+    ("should be a valid enumeration", "取值不合法"),
+]
+
+
+@app.exception_handler(Exception)
+async def unhandled_handler(request: Request, exc: Exception):
+    """未捕获异常统一回中文 500：不把堆栈与内部路径泄给前端，完整异常只进服务端日志。
+
+    注意：Exception 处理器在 ServerErrorMiddleware（最外层）里跑，这里抛 HTTPException
+    不会再被转换，必须直接返回 Response。
+    """
+    logging.getLogger("uvicorn.error").exception("未处理异常 %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"detail": "服务内部错误，请稍后重试；若持续出现请检查后端日志"})
 
 
 @app.get("/api/health")

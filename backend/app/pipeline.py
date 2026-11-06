@@ -5,6 +5,7 @@
 """
 
 import queue
+import re
 import shutil
 import threading
 from collections import OrderedDict, deque
@@ -114,11 +115,58 @@ class ProgressBus:
 bus = ProgressBus()
 
 
+_WIN_PATH_RE = re.compile(r"[A-Za-z]:[\\/][^\s\"'，。）)）]*")
+_POSIX_PATH_RE = re.compile(r"/(?:home|Users|tmp|var|root|data)[^\s\"'，。）)]*")
+
+
+def sanitize_error(text: str, limit: int = 300) -> str:
+    """错误文本要上 UI（进度页/SSE/事件流）：剥掉本机绝对路径与控制字符，只留可读原因。
+
+    引擎异常常携带临时目录、模型文件等本机路径（如 FileNotFoundError 的完整路径），
+    与「事件流不暴露落盘路径」的约定冲突，这里统一在写入点清洗。
+    """
+    if not text:
+        return ""
+    cleaned = _WIN_PATH_RE.sub("(本机路径)", text)
+    cleaned = _POSIX_PATH_RE.sub("(本机路径)", cleaned)
+    cleaned = "".join(ch for ch in cleaned if ch == "\n" or ch.isprintable())
+    return re.sub(r"\n{2,}", "\n", cleaned).strip()[:limit]
+
+
+class ParseMutex:
+    """同一时间只允许一个批次在解析——「顺序处理，不做并发调度」口径的显式化。
+
+    两个批次并发解析在 SQLite 下会撞写锁（database locked），先完成的
+    _recompute_batch_status 还会把仍在解析的批次提前置终态。进程级守护即可：
+    后台线程与请求都在同一进程；进程重启后集合自然为空，孤儿恢复由
+    recover_orphan_runs 兜底（ RUNNING 状态会被标失败，可重试）。
+    """
+
+    def __init__(self) -> None:
+        self._active: set[int] = set()
+        self._lock = threading.Lock()
+
+    def claim(self, batch_id: int) -> bool:
+        with self._lock:
+            if self._active:
+                return False
+            self._active.add(batch_id)
+            return True
+
+    def release(self, batch_id: int) -> None:
+        with self._lock:
+            self._active.discard(batch_id)
+
+
+parse_mutex = ParseMutex()
+
+
 def _set_stage(session: Session, video: Video, stage: Stage, status: StageStatus, error: str = "") -> None:
     setattr(video, f"{stage.value}_status", status)
     if error and status == StageStatus.FAILED:
         # 多个阶段可能先后失败：累加而不是覆盖，失败定位以阶段状态为准；
         # SKIPPED 的说明（如“画面通道未启用”）只是降级原因，不该伪装成错误
+        error = sanitize_error(error)
         video.error = f"{video.error}\n{error}".strip()[:500]
     session.add(video)
     session.commit()
@@ -275,7 +323,13 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
     _set_stage(session, video, Stage.STRUCTURE, StageStatus.RUNNING)
     transcript = _transcript_rows(session, video.id)
     try:
-        draft = structure(transcript, [(f.ms, f.text) for f in frame_texts], video.duration_ms)
+        report: dict = {}
+        draft = structure(transcript, [(f.ms, f.text) for f in frame_texts], video.duration_ms, report=report)
+        if report.get("transcript_truncated"):
+            # 诚实边界：截断不能静默——事件流给一条部分成功，摘要产物里留持久提示
+            notice = (f"转写超长（约 {report.get('transcript_chars', 0)} 字符），"
+                      "仅前 12000 字符参与结构化，后半段内容可能缺失")
+            bus.emit(video.batch_id, video.id, Stage.STRUCTURE.value, StageStatus.PARTIAL.value, notice)
         _set_stage(session, video, Stage.STRUCTURE, StageStatus.DONE)
     except Exception as exc:
         _set_stage(session, video, Stage.STRUCTURE, StageStatus.FAILED, str(exc))
@@ -288,7 +342,8 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
     _set_stage(session, video, Stage.ARTIFACT, StageStatus.RUNNING)
     try:
         ctx = ParseContext(draft=draft, segments=list(result.segments), frames=frames,
-                           ocr=frame_texts, duration_ms=video.duration_ms)
+                           ocr=frame_texts, duration_ms=video.duration_ms,
+                           notices=[notice] if report.get("transcript_truncated") else [])
         drafts: list[ItemDraft] = []
         for strategy in resolve(settings.output_schema_list):
             drafts.extend(strategy.build(ctx))
@@ -409,7 +464,7 @@ def parse_batch(session: Session, batch: VideoBatch) -> None:
                 failed = session.get(Video, video.id)
                 if failed is not None:
                     failed.status = VideoStatus.FAILED
-                    failed.error = f"{failed.error}\n{type(exc).__name__}: {exc}".strip()[:500]
+                    failed.error = f"{failed.error}\n{type(exc).__name__}: {sanitize_error(str(exc))}".strip()[:500]
                     session.add(failed)
                     session.commit()
                     _emit_video_terminal(batch.id, failed)
@@ -439,7 +494,7 @@ def retry_video(session: Session, video_id: int) -> Video | None:
         failed = session.get(Video, video_id)
         if failed is not None:
             failed.status = VideoStatus.FAILED
-            failed.error = f"{failed.error}\n{type(exc).__name__}: {exc}".strip()[:500]
+            failed.error = f"{failed.error}\n{type(exc).__name__}: {sanitize_error(str(exc))}".strip()[:500]
             session.add(failed)
             session.commit()
             _emit_video_terminal(batch_id, failed)
