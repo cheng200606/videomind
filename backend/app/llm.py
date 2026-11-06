@@ -7,6 +7,7 @@
 import json
 import re
 import time
+from collections.abc import Callable
 
 import httpx
 from pydantic import BaseModel, Field
@@ -56,6 +57,7 @@ _SYSTEM = (
 )
 
 _USER_TMPL = """【时长】{duration_s:.0f} 秒
+【范围】{chunk_note}
 
 【带时间戳转写】
 {transcript}
@@ -135,41 +137,65 @@ _TRANSCRIPT_LIMIT = 12000
 _OCR_LIMIT = 6000
 
 
-def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, str]],
-              duration_ms: int, report: dict | None = None) -> StructuredDraft:
-    """转写 + OCR → StructuredDraft。
+def _chunk_transcript(transcript: list[tuple[int, int, str]],
+                      limit: int = _TRANSCRIPT_LIMIT) -> list[list[tuple[int, int, str]]]:
+    """按段边界切块：每块渲染成提示词后不超过 limit。
 
-    超长输入会截断（单次 LLM 调用的上下文限制，分块结构化在范围外）；截断事实
-    通过 report 回传给调用方，由其决定如何提示用户——不允许静默丢内容。
+    只在段边界切（不打断一句话）；单个超长段独占一块，渲染后仍超限时才物理截断。
     """
-    body = "\n".join(f"[{s / 1000:.1f}s-{e / 1000:.1f}s] {t}" for s, e, t in transcript)
-    ocr_body = "\n".join(f"[{ms / 1000:.1f}s] {t}" for ms, t in ocr_text) or "（画面通道未启用或无文字）"
+    chunks: list[list[tuple[int, int, str]]] = []
+    cur: list[tuple[int, int, str]] = []
+    cur_len = 0
+    for seg in transcript:
+        s, e, t = seg
+        line_len = len(f"[{s / 1000:.1f}s-{e / 1000:.1f}s] {t}") + 1
+        if cur and cur_len + line_len > limit:
+            chunks.append(cur)
+            cur, cur_len = [], 0
+        cur.append(seg)
+        cur_len += line_len
+    if cur:
+        chunks.append(cur)
+    return chunks
 
-    transcript_truncated = len(body) > _TRANSCRIPT_LIMIT
-    ocr_truncated = len(ocr_body) > _OCR_LIMIT
-    if report is not None:
-        report["transcript_truncated"] = transcript_truncated
-        report["ocr_truncated"] = ocr_truncated
-        report["transcript_chars"] = len(body)
 
-    if not llm_ready():
-        return fallback_draft(transcript)
+def _allocate_ocr(ocr_text: list[tuple[int, str]],
+                  chunks: list[list[tuple[int, int, str]]]) -> list[list[tuple[int, str]]]:
+    """画面文字按时间归属到对应块：每段 LLM 调用只看自己时间范围内的 OCR，不重复计费。"""
+    spans = [(c[0][0], c[-1][1]) if c else (0, 0) for c in chunks]
+    out: list[list[tuple[int, str]]] = [[] for _ in chunks]
+    for ms, text in ocr_text:
+        idx = len(chunks) - 1
+        for i, (_, end) in enumerate(spans):
+            if ms <= end:
+                idx = i
+                break
+        out[idx].append((ms, text))
+    return out
 
-    cfg = active_model_config()
+
+def _structure_chunk(chunk: list[tuple[int, int, str]], ocr: list[tuple[int, str]],
+                     duration_ms: int, chunk_note: str) -> tuple[StructuredDraft, bool]:
+    """单块结构化，返回 (草稿, 本块是否被物理截断)。解析失败重试一次。"""
+    body = "\n".join(f"[{s / 1000:.1f}s-{e / 1000:.1f}s] {t}" for s, e, t in chunk)
+    ocr_body = "\n".join(f"[{ms / 1000:.1f}s] {t}" for ms, t in ocr) or "（画面通道未启用或无文字）"
+
+    truncated = len(body) > _TRANSCRIPT_LIMIT
     prompt_transcript = body[:_TRANSCRIPT_LIMIT]
-    if transcript_truncated:
-        prompt_transcript += "\n（注意：转写超过长度上限，以上仅为视频前半部分的转写，请只针对给出的内容产出。）"
+    if truncated:
+        prompt_transcript += "\n（注意：本段转写超过长度上限，以上仅为该段开头部分，请只针对给出的内容产出。）"
     messages = [
         {"role": "system", "content": _SYSTEM},
         {"role": "user", "content": _USER_TMPL.format(
-            duration_s=duration_ms / 1000, transcript=prompt_transcript, ocr=ocr_body[:_OCR_LIMIT])},
+            duration_s=duration_ms / 1000, transcript=prompt_transcript,
+            ocr=ocr_body[:_OCR_LIMIT], chunk_note=chunk_note)},
         {"role": "user", "content": f"只输出一个 JSON 对象，不要解释、不要围栏。schema：\n{_SCHEMA}"},
     ]
 
     last_error: Exception | None = None
     for attempt in range(2):
         try:
-            return _parse(_chat(messages, cfg, json_mode=True))
+            return _parse(_chat(messages, active_model_config(), json_mode=True)), truncated
         except Exception as exc:
             last_error = exc
             messages = [*messages, {
@@ -177,6 +203,99 @@ def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, 
                 "content": f"上一次输出无法解析（{type(exc).__name__}: {exc}）。重新只输出合法 JSON。",
             }]
     raise RuntimeError(f"DeepSeek 结构化失败：{last_error}")
+
+
+_MERGE_TMPL = """一段长视频已按时间切成多段分别结构化，合并后的章节如下（按时间顺序）：
+
+{chapter_lines}
+
+请基于以上章节给整条视频收尾：
+1. one_line：整条视频的一句话结论（不超过 40 字）
+2. tags：3-6 个建议标签
+
+只输出一个 JSON 对象：{{"one_line": "...", "tags": ["...", "..."]}}"""
+
+
+def _refine_summary(draft: StructuredDraft) -> None:
+    """跨段收尾：用合并章节补一句话结论与标签；失败保持合并结果，不致命。"""
+    try:
+        lines = "\n".join(
+            f"[{c.start_ms / 1000:.0f}s-{c.end_ms / 1000:.0f}s] {c.title}" + (f"：{c.gist}" if c.gist else "")
+            for c in draft.chapters
+        ) or "（无章节）"
+        text = _chat([
+            {"role": "system", "content": _SYSTEM},
+            {"role": "user", "content": _MERGE_TMPL.format(chapter_lines=lines)},
+        ], active_model_config(), max_tokens=200, timeout=60)
+        body = text.strip()
+        fenced = re.search(r"```(?:[a-zA-Z0-9_-]+)?\s*(.+?)\s*```", body, re.DOTALL)
+        data = json.loads(fenced.group(1) if fenced else body)
+        if isinstance(data, dict):
+            one_line = data.get("one_line")
+            if isinstance(one_line, str) and one_line.strip():
+                draft.one_line = one_line.strip()[:80]
+            tags = data.get("tags")
+            if isinstance(tags, list) and tags:
+                cleaned = [str(t).strip() for t in tags if str(t).strip()]
+                if cleaned:
+                    draft.tags = list(dict.fromkeys(cleaned))[:6]
+    except Exception:
+        pass
+
+
+def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, str]],
+              duration_ms: int, report: dict | None = None,
+              progress: "Callable[[int, int], None] | None" = None) -> StructuredDraft:
+    """转写 + OCR → StructuredDraft。
+
+    长转写按段边界分块、逐块调用后合并——整条视频的内容都参与结构化，不再整体截断；
+    只有单个超长段才会物理截断。分块数、失败块、截断与字符数事实通过 report 回传给
+    调用方，由其决定如何提示用户——不允许静默丢内容。
+    """
+    chunks = _chunk_transcript(transcript) or [[]]   # 空转写也留一块，给画面 OCR 机会
+    ocr_parts = _allocate_ocr(ocr_text, chunks)
+
+    if report is not None:
+        report["chunk_count"] = len(chunks)
+        report["transcript_chars"] = sum(
+            len(f"[{s / 1000:.1f}s-{e / 1000:.1f}s] {t}") for s, e, t in transcript)
+        report["transcript_truncated"] = False
+        report["failed_chunks"] = []
+
+    if not llm_ready():
+        return fallback_draft(transcript)
+
+    n = len(chunks)
+    drafts: list[StructuredDraft] = []
+    last_error: Exception | None = None
+    for i, chunk in enumerate(chunks, 1):
+        if progress is not None:
+            progress(i, n)
+        note = "整条视频" if n == 1 else f"整条视频的第 {i}/{n} 段（时间连续，只分析本段给出的转写与画面文字）"
+        try:
+            draft, truncated = _structure_chunk(chunk, ocr_parts[i - 1], duration_ms, note)
+            drafts.append(draft)
+            if truncated and report is not None:
+                report["transcript_truncated"] = True
+        except Exception as exc:
+            last_error = exc
+            if report is not None:
+                report["failed_chunks"].append(i)
+
+    if not drafts:
+        raise RuntimeError(f"DeepSeek 结构化失败：{last_error}")
+
+    merged = StructuredDraft(
+        one_line=drafts[0].one_line,
+        chapters=[c for d in drafts for c in d.chapters],
+        items=[item for d in drafts for item in d.items],
+        conflicts=[c for d in drafts for c in d.conflicts],
+        tags=list(dict.fromkeys(t for d in drafts for t in d.tags))[:8],
+        language=next((d.language for d in drafts if d.language), "python"),
+    )
+    if len(drafts) > 1:
+        _refine_summary(merged)
+    return merged
 
 
 def fallback_draft(transcript: list[tuple[int, int, str]]) -> StructuredDraft:

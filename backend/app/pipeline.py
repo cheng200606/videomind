@@ -29,6 +29,7 @@ from app.enums import (
     VideoStatus,
 )
 from app.engines.base import AsrEngine, KeyFrame, OcrEngine, build_asr, build_ocr
+from app.engines.frames import FRAME_INTERVAL_S, sample_frames
 from app.llm import structure
 from app.media import display_name
 from app.models import (
@@ -212,6 +213,27 @@ def _media_url(frame_path: str, settings: Settings) -> str:
     return f"/media/{rel.as_posix()}"
 
 
+def _keyframes(video: Video) -> list[KeyFrame]:
+    """Whisper/FunASR 只产转写不出帧：画面通道启用时用 av 独立抽样补齐关键帧。
+
+    结果走独立缓存（键含采样间隔），与 ASR 缓存互不影响；抽样失败只让画面通道
+    降级为 SKIPPED，不能拖垮整条解析。缓存存的是 localize 后的稳定路径。
+    """
+    cache_key = cache.key_of(video.path, f"frames:{FRAME_INTERVAL_S:g}")
+    hit = cache.get(cache_key)
+    if hit is not None:
+        return [KeyFrame(**f) for f in hit]
+    try:
+        frames = sample_frames(video.path, FRAME_INTERVAL_S)
+    except Exception:
+        return []
+    if not frames:
+        return []
+    frames = _localize_frames(video.id, frames)
+    cache.put(cache_key, [asdict(f) for f in frames])
+    return frames
+
+
 def _clear_derived_items(session: Session, video_id: int) -> None:
     """清掉一条视频的条目派生数据与证据，但保留 Segment（阶段④失败时仍可回看转写）。"""
     item_ids = session.exec(select(KnowledgeItem.id).where(KnowledgeItem.video_id == video_id)).all()
@@ -289,6 +311,10 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
         else:
             result = asr.transcribe(video.path)
 
+        # Whisper 等纯音频引擎不出帧：画面通道启用时用 av 独立抽样补齐（失败只降级）
+        if ocr is not None and not result.frames:
+            result.frames = _keyframes(video)
+
         # 关键帧复制进 media_root 后再落缓存：临时目录的帧 /media 不可达，重启后旧路径也会失效
         result.frames = _localize_frames(video.id, result.frames)
         if not hit:
@@ -319,18 +345,38 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
             frame_texts = []
             _set_stage(session, video, Stage.VISUAL, StageStatus.FAILED, str(exc))
 
-    # ③ LLM 结构化
+    # ③ LLM 结构化（长转写按段边界分块逐段调用，见 llm.structure）
     _set_stage(session, video, Stage.STRUCTURE, StageStatus.RUNNING)
     transcript = _transcript_rows(session, video.id)
+    notices: list[str] = []
+
+    def _structure_progress(i: int, n: int) -> None:
+        if n > 1:
+            bus.emit(video.batch_id, video.id, Stage.STRUCTURE.value,
+                     StageStatus.RUNNING.value, f"结构化 {i}/{n} 段")
+
     try:
         report: dict = {}
-        draft = structure(transcript, [(f.ms, f.text) for f in frame_texts], video.duration_ms, report=report)
-        if report.get("transcript_truncated"):
-            # 诚实边界：截断不能静默——事件流给一条部分成功，摘要产物里留持久提示
-            notice = (f"转写超长（约 {report.get('transcript_chars', 0)} 字符），"
-                      "仅前 12000 字符参与结构化，后半段内容可能缺失")
-            bus.emit(video.batch_id, video.id, Stage.STRUCTURE.value, StageStatus.PARTIAL.value, notice)
-        _set_stage(session, video, Stage.STRUCTURE, StageStatus.DONE)
+        draft = structure(transcript, [(f.ms, f.text) for f in frame_texts],
+                          video.duration_ms, report=report, progress=_structure_progress)
+        failed_chunks = report.get("failed_chunks") or []
+        if failed_chunks:
+            notices.append(f"第 {'、'.join(str(i) for i in failed_chunks)} 段结构化失败，对应区间内容可能缺失")
+        elif report.get("transcript_truncated"):
+            # 单段超长的物理截断：诚实边界，不能静默
+            notices.append(f"转写单段超长（约 {report.get('transcript_chars', 0)} 字符），超限部分未能参与结构化")
+        if (report.get("chunk_count") or 1) > 1 and not failed_chunks:
+            notices.append(f"转写较长，已按时间切 {report['chunk_count']} 段完整结构化")
+
+        if failed_chunks:
+            # 内容真缺了一块：阶段置 PARTIAL，视频随之 PARTIAL，比「成功但缺内容」诚实
+            _set_stage(session, video, Stage.STRUCTURE, StageStatus.PARTIAL, notices[0])
+            for extra in notices[1:]:
+                bus.emit(video.batch_id, video.id, Stage.STRUCTURE.value, StageStatus.PARTIAL.value, extra)
+        else:
+            for notice in notices:
+                bus.emit(video.batch_id, video.id, Stage.STRUCTURE.value, StageStatus.DONE.value, notice)
+            _set_stage(session, video, Stage.STRUCTURE, StageStatus.DONE)
     except Exception as exc:
         _set_stage(session, video, Stage.STRUCTURE, StageStatus.FAILED, str(exc))
         video.status = VideoStatus.FAILED
@@ -343,7 +389,7 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
     try:
         ctx = ParseContext(draft=draft, segments=list(result.segments), frames=frames,
                            ocr=frame_texts, duration_ms=video.duration_ms,
-                           notices=[notice] if report.get("transcript_truncated") else [])
+                           notices=notices)
         drafts: list[ItemDraft] = []
         for strategy in resolve(settings.output_schema_list):
             drafts.extend(strategy.build(ctx))
@@ -361,7 +407,9 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
         _set_stage(session, video, Stage.ARTIFACT, StageStatus.FAILED, str(exc))
         return video
 
-    failed = any(getattr(video, f"{s.value}_status") == StageStatus.FAILED for s in STAGES)
+    # 阶段 PARTIAL（如结构化只成功了一部分）与 FAILED 一样，都算「产物不完整」
+    bad = (StageStatus.FAILED, StageStatus.PARTIAL)
+    failed = any(getattr(video, f"{s.value}_status") in bad for s in STAGES)
     video.status = VideoStatus.PARTIAL if failed else VideoStatus.SUCCEEDED
     session.add(video)
     session.commit()

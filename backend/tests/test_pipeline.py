@@ -196,7 +196,8 @@ def test_parse_batch_survives_unexpected_video_exception(video: Video, monkeypat
 
 def test_retry_recomputes_batch_status(video: Video, monkeypatch):
     """先让结构阶段失败，再恢复重试：批次必须从 failed 重算为 succeeded。"""
-    monkeypatch.setattr("app.pipeline.structure", lambda *args: (_ for _ in ()).throw(RuntimeError("LLM 暂时不可用")))
+    monkeypatch.setattr("app.pipeline.structure",
+                        lambda *args, **kwargs: (_ for _ in ()).throw(RuntimeError("LLM 暂时不可用")))
     with Session(engine) as session:
         parse_video(session, session.get(Video, video.id))
         assert session.get(Video, video.id).status == VideoStatus.FAILED

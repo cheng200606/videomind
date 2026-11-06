@@ -17,6 +17,7 @@ class StageStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     DONE = "done"
+    PARTIAL = "partial"   # 阶段部分成功：如分块结构化个别块失败，产物可用但不完整
     FAILED = "failed"
     SKIPPED = "skipped"   # 无字幕降级 / OCR 关闭时走这里（页 12 异常态）
 
