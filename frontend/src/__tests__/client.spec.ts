@@ -14,10 +14,19 @@ describe('URL 拼装', () => {
 })
 
 describe('FastAPI 422 detail 可读化', () => {
-  it('数组 detail 转成字段：原因，不再把原始 JSON 甩给用户', () => {
+  it('数组 detail 转成「字段：中文原因」，pydantic 英文 msg 做常见模式映射', () => {
     expect(formatDetail([
       { loc: ['body', 'anchor_ms'], msg: 'Input should be a valid integer' }
-    ])).toBe('anchor_ms：Input should be a valid integer')
+    ])).toBe('anchor_ms：应为整数')
+    expect(formatDetail([
+      { loc: ['body'], msg: 'Field required' }
+    ])).toBe('缺少必填参数')
+  })
+
+  it('无法映射的 msg 保留原文（后端 v0.11 已在源头中文化，这里只兜底）', () => {
+    expect(formatDetail([
+      { loc: ['query', 'type'], msg: 'unexpected value' }
+    ])).toBe('type：unexpected value')
   })
 
   it('字符串 detail 原样返回，空值返回空串', () => {

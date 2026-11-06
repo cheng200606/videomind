@@ -3,9 +3,9 @@ import { ElMessage } from 'element-plus'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { bindTag, dismissTag, getItem, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
+import { bindTag, dismissTag, getBatch, getItem, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
 import { clock } from '../api/labels'
-import type { Item, ItemDetail, Mark, TagInfo, VideoMeta } from '../api/types'
+import type { Item, ItemDetail, Mark, TagInfo, VideoMeta, VideoState } from '../api/types'
 import ArtifactPanel from '../components/ArtifactPanel.vue'
 import EvidenceDrawer from '../components/EvidenceDrawer.vue'
 import EvidenceTimeline from '../components/EvidenceTimeline.vue'
@@ -24,10 +24,19 @@ const loadError = ref('')
 const selected = ref<ItemDetail | null>(null)
 const drawer = ref(false)
 const player = ref<InstanceType<typeof EvidenceTimeline> | null>(null)
+/** 同批次的其他视频：给工作台一个不回退进度页的横向切换入口 */
+const batchVideos = ref<VideoState[]>([])
+const TRANSCRIPT_LIMIT = 5000   // 与后端 transcript 端点的上限一致
 
 const chapters = computed(() => {
   const summary = items.value.find((i) => i.type === 'summary')
   return ((summary?.payload as { chapters?: { title: string; start_ms: number; gist: string }[] })?.chapters ?? [])
+})
+
+/** 摘要产物携带的诚实提示（如「转写超长，仅前 12000 字符参与结构化」），解析时落库 */
+const summaryNotice = computed(() => {
+  const summary = items.value.find((i) => i.type === 'summary')
+  return ((summary?.payload as { notice?: string } | undefined)?.notice ?? '')
 })
 
 /** 左大纲 + 进度条刻度同源：点大纲条目 = 跳时间点，和右侧产物面板点击是同一个动作 */
@@ -56,11 +65,17 @@ const loadSeq = ref(0)
 
 async function load() {
   const mine = ++loadSeq.value
+  if (!Number.isFinite(videoId.value)) {
+    // 坏深链（/videos/abc）：不发起请求，直接给中文提示
+    loadError.value = '链接无效：视频 ID 必须是数字'
+    return
+  }
   loadError.value = ''
   video.value = null
   items.value = []
   transcript.value = []
   tags.value = []
+  batchVideos.value = []
   selected.value = null
   drawer.value = false
   try {
@@ -73,6 +88,8 @@ async function load() {
     items.value = its
     transcript.value = trs
     openQueryItem()
+    // 同批次列表失败不阻塞工作台主体
+    void getBatch(v.batch_id).then((b) => { if (mine === loadSeq.value) batchVideos.value = b.videos }).catch(() => {})
     // 标签失败不阻塞工作台主体
     await loadTags().catch(() => { tags.value = [] })
   } catch (err) {
@@ -149,7 +166,24 @@ async function addTag() {
     <PageHeader
       :title="video.file_name || video.path.split(/[\\/]/).pop() || '知识工作台'"
       :crumbs="[{ label: '视频库', to: '/' }, { label: '批次进度', to: `/batches/${video.batch_id}` }]"
-    />
+    >
+      <template #actions>
+        <el-select
+          v-if="batchVideos.length > 1"
+          class="sib"
+          size="small"
+          :model-value="''"
+          placeholder="切换同批次视频"
+          aria-label="切换同批次视频"
+          @change="(id: number | string) => router.push(`/videos/${Number(id)}`)"
+        >
+          <el-option
+            v-for="v in batchVideos" :key="v.id" :value="v.id"
+            :label="`${v.id === videoId ? '当前 · ' : ''}${v.file_name || v.path.split(/[\\/]/).pop()}`"
+          />
+        </el-select>
+      </template>
+    </PageHeader>
     <el-alert
       v-if="video.error"
       type="error"
@@ -157,6 +191,14 @@ async function addTag() {
       show-icon
       class="alert"
       :title="`该视频解析失败：${video.error}`"
+    />
+    <el-alert
+      v-if="summaryNotice"
+      type="warning"
+      :closable="false"
+      show-icon
+      class="alert"
+      :title="summaryNotice"
     />
     <div class="workbench">
       <div class="col vm-card left">
@@ -184,6 +226,9 @@ async function addTag() {
         </div>
 
         <h3 class="t">原话转写（{{ transcript.length }} 句）</h3>
+        <p v-if="transcript.length >= TRANSCRIPT_LIMIT" class="tip">
+          转写过长，仅显示前 {{ TRANSCRIPT_LIMIT }} 段
+        </p>
         <el-empty v-if="!transcript.length" description="暂无转写：可能仍在解析" :image-size="48" />
         <div v-else class="outline scroll">
           <div
@@ -277,4 +322,5 @@ async function addTag() {
 .op { margin-left: 6px; font-size: 11px; vertical-align: baseline; }
 .tag-input { width: 120px; }
 .tag-hint { font-size: 12px; color: var(--vm-muted, #5f6b7d); }
+.sib { width: 190px; }
 </style>

@@ -19,6 +19,7 @@ const controller = ref<AbortController | null>(null)
 const leavingForResult = ref(false)
 let cancelled = false
 const MAX_BYTES = 2 * 1024 ** 3
+const MAX_FILES = 20   // 与后端单批上限一致
 
 const engines = ref<EngineSettings | null>(null)
 const modelMeta = ref<ModelSettings | null>(null)
@@ -45,6 +46,10 @@ async function submit() {
   const tooLarge = files.find((f) => f.size > MAX_BYTES)
   if (tooLarge) {
     ElMessage.error(`${tooLarge.name} 超过 2GB，请先压缩或分段`)
+    return
+  }
+  if (files.length > MAX_FILES) {
+    ElMessage.error(`单批最多 ${MAX_FILES} 个文件（当前选择了 ${files.length} 个），请分批上传`)
     return
   }
   const ac = new AbortController()
@@ -105,7 +110,7 @@ useLeaveGuard(() => !leavingForResult.value && (fileList.value.length > 0 || bus
           >
             <div class="drop">把本地视频拖进来，或点击选择多个文件</div>
           </el-upload>
-          <p class="hint">支持 mp4 / mov / mkv / avi / webm；单文件不超过 2GB；批内同名文件会被判重复并跳过（保留第一份）。</p>
+          <p class="hint">支持 mp4 / mov / mkv / avi / webm；单文件不超过 2GB；单批最多 20 个文件；批内同名文件会被判重复并跳过（保留第一份）。</p>
         </el-form-item>
 
         <h3 class="sec"><span class="no vm-num">2</span>解析参数</h3>

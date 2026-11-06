@@ -62,6 +62,14 @@ export interface BatchSummary {
   status: VideoStatus
   video_count: number
   created_at: string
+  /** 按状态计数的视频分布（v0.11），如 { succeeded: 2, failed: 1 } */
+  video_status_counts?: Record<string, number>
+}
+
+/** v0.11 检索契约：items 最多 200 条（后端上限），total 是未截断的命中总数 */
+export interface SearchResponse {
+  total: number
+  items: Item[]
 }
 
 export interface TagInfo {

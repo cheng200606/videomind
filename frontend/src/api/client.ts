@@ -1,12 +1,23 @@
 import axios from 'axios'
 import type {
   BatchState, BatchSummary, EngineSettings, Item, ItemDetail, ModelSettings, ModelSettingsInput,
-  ModelTestResult, RevisionState, StageEvent, TagInfo, VideoMeta
+  ModelTestResult, RevisionState, SearchResponse, StageEvent, TagInfo, VideoMeta
 } from './types'
 
 const http = axios.create({ baseURL: '/api', timeout: 60000 })
 
-/** FastAPI 的 422 detail 是数组；直接 JSON.stringify 会把原始字段名甩给中文用户。 */
+/**
+ * FastAPI 的 422 detail 是数组；直接 JSON.stringify 会把原始字段名甩给中文用户。
+ * 后端 v0.11 起有全局中文处理器，这里对 msg 再做一层兜底中文化，兼容直连旧后端的场景。
+ */
+const PYDANTIC_MSG_ZH: [RegExp, string][] = [
+  [/unable to parse string as an integer|Input should be a valid integer/i, '应为整数'],
+  [/Input should be a valid number/i, '应为数字'],
+  [/Field required/i, '缺少必填参数'],
+  [/should be a valid enumeration/i, '取值不合法'],
+  [/String should have at most/i, '超出长度上限'],
+]
+
 export function formatDetail(detail: unknown): string {
   if (!detail) return ''
   if (typeof detail === 'string') return detail
@@ -18,7 +29,10 @@ export function formatDetail(detail: unknown): string {
         const loc = Array.isArray(item.loc)
           ? item.loc.filter((p) => p !== 'body' && p !== 'query').join('.')
           : ''
-        const msg = item.msg == null ? JSON.stringify(entry) : String(item.msg)
+        let msg = item.msg == null ? JSON.stringify(entry) : String(item.msg)
+        for (const [re, zh] of PYDANTIC_MSG_ZH) {
+          if (re.test(msg)) { msg = zh; break }
+        }
         return loc ? `${loc}：${msg}` : msg
       }
       return String(entry)
@@ -139,8 +153,8 @@ export async function dismissTag(tagId: number, targetType: 'video' | 'item', ta
   await http.post(`/tags/${tagId}/dismiss`, null, { params: { target_type: targetType, target_id: targetId } })
 }
 
-export async function search(params: { tag?: number; q?: string; confidence?: string; video_id?: number }): Promise<Item[]> {
-  const { data } = await http.get<Item[]>('/search', { params })
+export async function search(params: { tag?: number; q?: string; confidence?: string; video_id?: number }): Promise<SearchResponse> {
+  const { data } = await http.get<SearchResponse>('/search', { params })
   return data
 }
 

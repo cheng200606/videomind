@@ -67,6 +67,11 @@ const loadError = ref('')
 
 async function load(opts: { keepNote?: boolean; keepLecture?: boolean } = {}) {
   const mine = ++loadSeq.value
+  if (!Number.isFinite(itemId.value)) {
+    // 坏深链（/notes/abc）：不发起请求，直接给中文提示
+    loadError.value = '链接无效：条目 ID 必须是数字'
+    return
+  }
   loadError.value = ''
   try {
     const data = await getItem(itemId.value)

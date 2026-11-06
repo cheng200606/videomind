@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ElMessage } from 'element-plus'
 import { MdPreview } from 'md-editor-v3'
 import 'md-editor-v3/lib/preview.css'
 import { computed, ref, watch } from 'vue'
@@ -25,6 +26,13 @@ const isTerminal = computed(() =>
 async function load() {
   loading.value = true
   error.value = ''
+  if (!Number.isFinite(id.value)) {
+    // 坏深链（/batches/abc/export）：不发起请求，直接给中文提示
+    batch.value = null
+    loading.value = false
+    error.value = '链接无效：批次 ID 必须是数字'
+    return
+  }
   try {
     batch.value = await getBatch(id.value)
     if (!isTerminal.value) {
@@ -62,6 +70,17 @@ function download() {
   // 立即 revoke 在部分浏览器上会让下载中断
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+/** 不下载文件直接进剪贴板：贴笔记软件/文档里更顺手 */
+async function copyMd() {
+  if (!md.value) return
+  try {
+    await navigator.clipboard.writeText(md.value)
+    ElMessage.success('已复制到剪贴板')
+  } catch {
+    ElMessage.error('复制失败：浏览器未授权剪贴板访问')
+  }
+}
 </script>
 
 <template>
@@ -77,6 +96,7 @@ function download() {
       </template>
       <template #actions>
         <el-button size="small" @click="load">重新生成</el-button>
+        <el-button size="small" :disabled="!md || loading" @click="copyMd">复制 Markdown</el-button>
         <el-button size="small" type="primary" :disabled="!isTerminal || loading" @click="download">下载 Markdown</el-button>
       </template>
     </PageHeader>

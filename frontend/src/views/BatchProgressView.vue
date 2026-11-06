@@ -17,8 +17,15 @@ const store = useBatchStore()
 
 const id = computed(() => Number(route.params.id))
 const rerunning = ref(false)
-onMounted(() => void store.open(id.value))
-watch(id, (v) => { if (v) void store.open(v) })
+onMounted(() => { if (Number.isFinite(id.value)) void store.open(id.value) })
+watch(id, (v) => {
+  if (!Number.isFinite(v)) {
+    // 坏深链（/batches/abc）：不发起请求，直接给中文提示
+    store.error = '链接无效：批次 ID 必须是数字'
+    return
+  }
+  void store.open(v)
+})
 // SSE 连接跟着进度页走：离开页面就断开，别挂在根组件上泄漏
 onUnmounted(() => store.stopProgress())
 

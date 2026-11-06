@@ -8,7 +8,6 @@ import { STATUS_LABEL, STATUS_TYPE, fmtDateTime } from '../api/labels'
 import type { BatchSummary } from '../api/types'
 import PageHeader from '../components/PageHeader.vue'
 import { useBatchStore } from '../stores/batch'
-
 const store = useBatchStore()
 const router = useRouter()
 const loading = ref(true)
@@ -41,6 +40,18 @@ const statusOptions = computed(() => {
 const filtered = computed(() =>
   statusFilter.value === 'all' ? store.batches : store.batches.filter((b) => b.status === statusFilter.value)
 )
+
+/** 状态分布文案：部分成功/失败的批次直接在卡片上给出「2 成功 · 1 失败」，不必点进详情 */
+function statusLine(b: BatchSummary): string {
+  const c = b.video_status_counts ?? {}
+  const parts: string[] = []
+  if (c.succeeded) parts.push(`成功 ${c.succeeded}`)
+  if (c.partial) parts.push(`部分成功 ${c.partial}`)
+  if (c.failed) parts.push(`失败 ${c.failed}`)
+  if (c.running) parts.push(`解析中 ${c.running}`)
+  if (c.pending) parts.push(`等待 ${c.pending}`)
+  return parts.join(' · ')
+}
 
 /** 删除只清运行时数据（后端级联），解析中的批次按钮已禁用 */
 async function removeBatch(b: BatchSummary) {
@@ -94,6 +105,7 @@ function canDelete(b: BatchSummary): boolean {
             <el-tag size="small" :type="STATUS_TYPE[b.status] ?? 'info'">{{ STATUS_LABEL[b.status] ?? b.status }}</el-tag>
             <span class="vm-num">{{ b.video_count }} 条</span>
           </div>
+          <div v-if="statusLine(b)" class="line muted vm-num">{{ statusLine(b) }}</div>
           <div class="line muted vm-num">{{ fmtDateTime(b.created_at) }}</div>
           <div class="acts">
             <el-button size="small" @click="router.push(`/batches/${b.id}`)">解析进度</el-button>
