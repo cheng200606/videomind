@@ -14,16 +14,20 @@
   --el-text-color-secondary: #5f6b7d;
   --el-text-color-placeholder: #7a8598;
   --el-border-color-light: #e6e8eb;
-  --el-bg-color-page: #f5f6f8;
+  --el-bg-color-page: #f4f6fa;
+  --el-border-radius-base: 6px;
+  --el-main-padding: 24px;
 
   --vm-text: #1f2937;
   --vm-text-secondary: #4b5563;
   --vm-muted: #5f6b7d;
   --vm-border: #e6e8eb;
-  --vm-bg: #f5f6f8;
+  --vm-bg: #f4f6fa;
   --vm-quote-bg: #f6f7f9;
   --vm-code-bg: #12151c;
   --vm-sidebar: #1f2430;
+  /* 侧栏「夜空」渐变：向墨蓝（--vm-code-bg）偏色，与播放器/代码块同一色族 */
+  --vm-sidebar-bg: linear-gradient(180deg, #1e2534 0%, #161c2a 100%);
 
   /* 语义文字色（白底可读档，与 el-tag 压深色一致） */
   --vm-warning-text: #b45309;
@@ -31,7 +35,19 @@
   --vm-surface: #ffffff;
   --vm-radius: 8px;
   --vm-radius-sm: 6px;
+  --vm-shadow-rest: 0 1px 2px rgba(16, 24, 40, 0.06);
   --vm-shadow-hover: 0 6px 18px rgba(31, 41, 55, 0.12);
+  --vm-hover-tint: #f2f5fb;
+
+  /* 播放器深色岛：与时间码芯片、代码块共享「视频世界」色族（v0.10 起 token 化） */
+  --vm-player-screen: #000000;
+  --vm-player-track: #2a3040;
+  --vm-player-text: #b7c0d0;
+  --vm-player-bright: #e5e7eb;
+  --vm-player-mask: rgba(0, 0, 0, 0.72);
+  --vm-tick-chapter: #f0a202;
+  --vm-tick-item: #6ee7b7;
+  --vm-tick-evidence: #f87171;
 }
 
 body {
@@ -46,9 +62,13 @@ body {
   border-radius: var(--vm-radius, 8px);
 }
 
-/* el-card 圆角对齐 token（默认 4px 与自绘卡不一致） */
+/* el-card 圆角/内边距/静置阴影对齐 token（is-never-shadow 的双类选择器压过 EP 默认 box-shadow:none） */
 .el-card {
   border-radius: var(--vm-radius, 8px);
+  --el-card-padding: 20px;
+}
+.el-card.is-never-shadow {
+  box-shadow: var(--vm-shadow-rest);
 }
 
 /* 数字（时间戳/时长/计数）用等宽数字，避免时间轴刻度与事件流抖动 */
@@ -56,16 +76,66 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* 签名元素：时间码芯片——每个可跳回原片的时间锚点都用「播放器深色岛」的样子出现 */
+.vm-ts {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  height: 18px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--vm-code-bg, #12151c);
+  color: var(--vm-player-bright, #e5e7eb);
+  font-size: 11px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 h2.vm-page-title {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.4;
+}
+@media (max-width: 900px) {
+  h2.vm-page-title { font-size: 18px; }
+  .el-card { --el-card-padding: 16px; }
 }
 
 /* 证据抽屉固定 420px 会在窄屏越界；全局约束到视口的 92% */
 .el-drawer {
   max-width: 92vw;
+}
+
+/* 主按钮：轻微渐变 + 贴地投影；plain/link/text 变体不参与 */
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled) {
+  background: linear-gradient(180deg, #4d7ce0 0%, #3d6fd6 100%);
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgba(49, 89, 171, 0.35);
+  transition: box-shadow 0.15s ease, filter 0.15s ease;
+}
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):hover {
+  background: linear-gradient(180deg, #5b88e4 0%, #4677dc 100%);
+  filter: none;
+}
+.el-button--primary:not(.is-plain):not(.is-link):not(.is-text):not(.is-disabled):active {
+  background: var(--el-color-primary-dark-2, #3159ab);
+}
+.el-button--primary.is-disabled {
+  box-shadow: none;
+}
+
+/* 输入类聚焦柔光圈（保留 EP 的 inset 描边） */
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary, #3d6fd6) inset, 0 0 0 3px rgba(61, 111, 214, 0.14) !important;
+}
+
+/* 卡片标题：从默认 <b> 的 700 收到 600，层级更从容 */
+.el-card__header b {
+  font-weight: 600;
 }
 
 /* WCAG AA：Element Plus 浅色变体的默认前景偏浅，统一压深（axe color-contrast） */
@@ -84,3 +154,14 @@ h2.vm-page-title {
 .side .el-menu-item.is-active { color: #a8c0f0 !important; }
 .side .el-menu { --el-menu-active-color: #a8c0f0 !important; }
 .md-editor-preview code { color: #1f5fa8 !important; }
+
+/* 动效一票关闭：系统声明减少动效时，页面过渡/骨架屏/悬浮全部静止 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

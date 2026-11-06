@@ -74,7 +74,7 @@ function visible(kind: ArtifactType) {
             @click="emit('seek', el.anchor_ms)"
             @keydown.enter="emit('seek', el.anchor_ms)"
             @keydown.space.prevent="emit('seek', el.anchor_ms)"
-          >{{ el.label }} · {{ clock(el.anchor_ms) }}</el-tag>
+          >{{ el.label }} · <span class="vm-num">{{ clock(el.anchor_ms) }}</span></el-tag>
         </div>
       </template>
 
@@ -82,7 +82,7 @@ function visible(kind: ArtifactType) {
         <div v-for="item in of(t.key)" :key="item.id" class="block">
           <div class="block-head">
             <span>{{ item.title }}</span>
-            <el-link type="primary" @click="emit('seek', item.anchor_ms)">{{ clock(item.anchor_ms) }}</el-link>
+            <el-link underline="never" type="primary" @click="emit('seek', item.anchor_ms)"><span class="vm-num">{{ clock(item.anchor_ms) }}</span></el-link>
           </div>
           <pre class="code">{{ item.content }}</pre>
         </div>
@@ -106,7 +106,7 @@ function visible(kind: ArtifactType) {
             @keydown.space.prevent="emit('select', item)"
           >
             <div class="line">
-              <el-link type="primary" class="ts" @click.stop="emit('seek', item.anchor_ms)">{{ clock(item.anchor_ms) }}</el-link>
+              <el-link underline="never" class="ts-link" @click.stop="emit('seek', item.anchor_ms)"><span class="vm-ts">{{ clock(item.anchor_ms) }}</span></el-link>
               <span class="txt">{{ item.content }}</span>
               <ConfidenceTag :confidence="item.confidence" />
             </div>
@@ -125,14 +125,15 @@ function visible(kind: ArtifactType) {
 .list-item:hover { border-color: var(--el-color-primary, #3d6fd6); }
 .list-item:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .line { display: flex; align-items: flex-start; gap: 8px; }
-.ts { flex: none; font-variant-numeric: tabular-nums; }
+.ts-link { height: 18px; }
+.ts-link :deep(.el-link__inner) { display: inline-flex; }
 .txt { flex: 1; line-height: 1.6; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .chip { cursor: pointer; }
 .chip:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .block { margin-bottom: 12px; }
 .block-head { display: flex; justify-content: space-between; font-size: 13px; color: var(--vm-text-secondary, #4b5563); margin-bottom: 4px; }
-.code { margin: 0; padding: 10px; background: var(--vm-code-bg, #12151c); color: #dbe1ea; border-radius: 6px; font-size: 12px; overflow: auto; }
+.code { margin: 0; padding: 10px; background: var(--vm-code-bg, #12151c); color: var(--vm-player-bright, #e5e7eb); border-radius: var(--vm-radius-sm, 6px); font-size: 12px; overflow: auto; }
 .pbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .pitfall-tip { color: var(--vm-warning-text, #b45309); font-size: 13px; display: inline-flex; align-items: flex-start; gap: 4px; }
 .pitfall-tip .ic { margin-top: 2px; flex: none; }

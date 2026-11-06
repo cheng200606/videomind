@@ -273,7 +273,7 @@ function insertAnchor() {
   .history { grid-column: auto; }
 }
 .row { display: flex; align-items: center; gap: 8px; }
-.ts { color: var(--el-color-primary, #3d6fd6); font-size: 12px; }
+.ts { color: var(--el-color-primary, #3d6fd6); font-size: 12px; font-variant-numeric: tabular-nums; }
 .title { margin: 8px 0; font-size: 15px; }
 .content { line-height: 1.7; font-size: 13px; }
 .quote { margin: 0; padding: 8px 10px; background: var(--vm-quote-bg, #f6f7f9); border-left: 3px solid var(--el-color-primary, #3d6fd6); font-size: 12px; }

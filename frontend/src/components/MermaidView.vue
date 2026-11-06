@@ -23,6 +23,7 @@ async function getMermaid(): Promise<Mermaid> {
         // Mermaid 12 默认用 ELK，会多拉 1.5 MB 的布局块；产物里没有复杂布局需求，固定 dagre
         layout: 'dagre',
         themeVariables: {
+          // 与 theme.css 的 token 保持同值（mermaid 初始化只吃 JS 常量，读不到 CSS 变量）：primaryColor=--el-color-primary-light-9，text=--vm-text，border/line=--el-color-primary
           primaryColor: '#eef3fd',
           primaryTextColor: '#1f2937',
           primaryBorderColor: '#3d6fd6',
@@ -73,6 +74,6 @@ watch(() => props.code, render)
 
 <style scoped>
 .wrap { display: flex; flex-direction: column; gap: 8px; }
-.diagram { overflow: auto; background: #fff; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 6px; padding: 8px; min-height: 120px; }
+.diagram { overflow: auto; background: var(--vm-surface, #fff); border: 1px solid var(--vm-border, #e6e8eb); border-radius: var(--vm-radius-sm, 6px); padding: 8px; min-height: 120px; }
 .raw { font-size: 11px; color: var(--vm-muted, #5f6b7d); white-space: pre-wrap; margin: 0; }
 </style>

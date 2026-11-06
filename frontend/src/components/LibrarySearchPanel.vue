@@ -77,7 +77,7 @@ async function runSearch() {
       </el-table-column>
       <el-table-column prop="video_name" label="所属视频" min-width="150" />
       <el-table-column label="锚点" width="84">
-        <template #default="{ row }">{{ clock(row.anchor_ms) }}</template>
+        <template #default="{ row }"><span class="vm-ts">{{ clock(row.anchor_ms) }}</span></template>
       </el-table-column>
     </el-table>
     <el-empty v-else-if="searched && !searchError" description="没有匹配的条目" :image-size="60" />

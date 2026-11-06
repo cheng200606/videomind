@@ -60,8 +60,10 @@ const frameUrl = computed(() => {
       <template v-if="item.evidence">
         <el-divider content-position="left">溯源</el-divider>
         <div class="row"><span class="k">时间点</span>
-          <el-link type="primary" @click="emit('seek', item.evidence.start_ms)">
-            {{ clock(item.evidence.start_ms) }} → {{ clock(item.evidence.end_ms) }}
+          <el-link underline="never" @click="emit('seek', item.evidence.start_ms)">
+            <span class="vm-ts">{{ clock(item.evidence.start_ms) }}</span>
+            <span class="arrow">→</span>
+            <span class="vm-ts">{{ clock(item.evidence.end_ms) }}</span>
           </el-link>
         </div>
         <div class="row"><span class="k">通道</span><span>{{ CHANNEL[item.evidence.channel] ?? item.evidence.channel }}</span></div>
@@ -91,7 +93,8 @@ const frameUrl = computed(() => {
 .k { color: var(--vm-muted, #5f6b7d); width: 56px; font-size: 13px; }
 .title { margin: 0; font-size: 16px; }
 .content { margin: 0; line-height: 1.7; }
-.quote { margin: 0; padding: 10px 12px; background: var(--vm-quote-bg, #f6f7f9); border-left: 3px solid var(--el-color-primary, #3d6fd6); color: #444; }
+.quote { margin: 0; padding: 10px 12px; background: var(--vm-quote-bg, #f6f7f9); border-left: 3px solid var(--el-color-primary, #3d6fd6); color: var(--vm-text-secondary, #4b5563); }
+.arrow { color: var(--vm-muted, #5f6b7d); font-size: 12px; margin: 0 2px; }
 .conflict { margin: 2px 0; }
 .conflict-line { font-size: 12px; line-height: 1.6; }
 .frame { width: 100%; border-radius: 6px; }

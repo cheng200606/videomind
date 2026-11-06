@@ -31,9 +31,9 @@ defineProps<{
 </template>
 
 <style scoped>
-.ph { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.ph { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
 .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .acts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
-.sub { margin: 0; font-size: 12px; color: var(--vm-muted, #5f6b7d); }
+.sub { margin: 0; font-size: 13px; color: var(--vm-muted, #5f6b7d); }
 .crumb :deep(.el-breadcrumb__item) { font-size: 12px; }
 </style>

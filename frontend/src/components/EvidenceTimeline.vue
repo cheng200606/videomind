@@ -117,22 +117,22 @@ onBeforeUnmount(() => video.value?.pause())
 </template>
 
 <style scoped>
-.player { background: #12151c; border-radius: 8px; padding: 12px; }
+.player { background: var(--vm-code-bg, #12151c); border-radius: var(--vm-radius, 8px); padding: 12px; }
 .screen-wrap { position: relative; }
-.screen { width: 100%; max-height: 62vh; display: block; border-radius: 6px; background: #000; }
+.screen { width: 100%; max-height: 62vh; display: block; border-radius: var(--vm-radius-sm, 6px); background: var(--vm-player-screen, #000); }
 .video-error {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.72); color: #e5e7eb; padding: 20px; text-align: center;
-  border-radius: 6px; font-size: 13px; line-height: 1.7;
+  background: var(--vm-player-mask, rgba(0, 0, 0, 0.72)); color: var(--vm-player-bright, #e5e7eb); padding: 20px; text-align: center;
+  border-radius: var(--vm-radius-sm, 6px); font-size: 13px; line-height: 1.7;
 }
-.track { position: relative; height: 26px; margin-top: 10px; background: #2a3040; border-radius: 13px; cursor: pointer; }
-.track:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.track { position: relative; height: 26px; margin-top: 10px; background: var(--vm-player-track, #2a3040); border-radius: 13px; cursor: pointer; }
+.track:focus-visible { outline: 2px solid var(--vm-player-bright, #e5e7eb); outline-offset: 2px; }
 .played { position: absolute; inset: 0 auto 0 0; background: var(--el-color-primary, #3d6fd6); border-radius: 13px; }
-.head { position: absolute; top: 3px; width: 4px; height: 20px; margin-left: -2px; background: #fff; border-radius: 2px; }
+.head { position: absolute; top: 3px; width: 4px; height: 20px; margin-left: -2px; background: var(--vm-player-bright, #e5e7eb); border-radius: 2px; }
 .tick { position: absolute; top: 5px; width: 8px; height: 16px; padding: 0; border: none; border-radius: 3px; cursor: pointer; transform: translateX(-4px); }
-.tick.chapter { background: #f0a202; }
-.tick.item { background: #6ee7b7; }
-.tick.evidence { background: #f87171; }
-.meta { display: flex; justify-content: space-between; margin-top: 8px; color: #b7c0d0; font-size: 12px; gap: 10px; flex-wrap: wrap; }
-.now { font-variant-numeric: tabular-nums; color: #e5e7eb; }
+.tick.chapter { background: var(--vm-tick-chapter, #f0a202); }
+.tick.item { background: var(--vm-tick-item, #6ee7b7); }
+.tick.evidence { background: var(--vm-tick-evidence, #f87171); }
+.meta { display: flex; justify-content: space-between; margin-top: 8px; color: var(--vm-player-text, #b7c0d0); font-size: 12px; gap: 10px; flex-wrap: wrap; }
+.now { font-variant-numeric: tabular-nums; color: var(--vm-player-bright, #e5e7eb); }
 </style>

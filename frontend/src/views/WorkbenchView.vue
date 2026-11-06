@@ -175,7 +175,7 @@ async function addTag() {
             @keydown.enter="seek(c.start_ms)"
             @keydown.space.prevent="seek(c.start_ms)"
           >
-            <span class="ts">{{ clock(c.start_ms) }}</span>
+            <span class="vm-ts">{{ clock(c.start_ms) }}</span>
             <div>
               <div>{{ c.title }}</div>
               <div class="gist">{{ c.gist }}</div>
@@ -194,7 +194,7 @@ async function addTag() {
             @keydown.enter="seek(s.start_ms)"
             @keydown.space.prevent="seek(s.start_ms)"
           >
-            <span class="ts">{{ clock(s.start_ms) }}</span>
+            <span class="vm-ts">{{ clock(s.start_ms) }}</span>
             <span class="txt">{{ s.text }}</span>
           </div>
         </div>
@@ -264,10 +264,11 @@ async function addTag() {
 .t { font-size: 14px; color: var(--vm-text-secondary, #4b5563); margin: 6px 0 8px; }
 .outline { margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .outline-item { display: flex; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-.outline-item:hover { background: #f2f5fb; }
+.outline-item:hover { background: var(--vm-hover-tint, #f2f5fb); }
 .outline-item:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .outline.scroll { max-height: 40vh; overflow: auto; }
-.ts { color: var(--el-color-primary, #3d6fd6); font-variant-numeric: tabular-nums; flex: none; width: 48px; }
+/* 时间码芯片定宽居中，保证多行列表的内容起始边对齐 */
+.outline-item .vm-ts { width: 56px; }
 .gist { color: var(--vm-muted, #5f6b7d); font-size: 12px; }
 .tip { font-size: 12px; color: var(--vm-muted, #5f6b7d); margin-top: 10px; }
 .panel-head { display: flex; justify-content: space-between; align-items: center; }
