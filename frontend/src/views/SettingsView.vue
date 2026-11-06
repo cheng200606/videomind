@@ -6,6 +6,7 @@ import { getEngines, getModelSettings, setEngines, setModelSettings, testModelSe
 import { ARTIFACT_LABEL, ASR_LABEL, OCR_LABEL } from '../api/labels'
 import type { EngineSettings, ModelProvider, ModelSettings, ModelSettingsInput, ModelTestResult } from '../api/types'
 import { useLeaveGuard } from '../composables/useLeaveGuard'
+import PageHeader from '../components/PageHeader.vue'
 import type { AppInfo, UpdateState } from '../desktop'
 
 const ALL_SCHEMAS = ['summary', 'key_points', 'uml_draft', 'code_blocks']
@@ -245,13 +246,11 @@ async function saveEngines() {
 
 <template>
   <div class="settings">
-    <div class="head">
-      <div>
-        <h2>设置</h2>
-        <p class="sub">模型与解析引擎均为本机配置；识别结果仅供参考。</p>
-      </div>
-      <el-button size="small" @click="load">重新加载</el-button>
-    </div>
+    <PageHeader title="设置" subtitle="模型与解析引擎均为本机配置；识别结果仅供参考。">
+      <template #actions>
+        <el-button size="small" @click="load">重新加载</el-button>
+      </template>
+    </PageHeader>
 
     <el-skeleton v-if="loading" :rows="8" animated />
     <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`设置加载失败：${loadError}`">
@@ -412,21 +411,17 @@ async function saveEngines() {
 </template>
 
 <style scoped>
-.settings { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
-.head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
-.head h2 { margin: 0 0 4px; }
-.sub { margin: 0; color: var(--vm-muted, #5f6b7d); font-size: 13px; }
-.card { border-radius: 8px; }
+.settings { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .form { max-width: 620px; }
 .field { width: 100%; }
 .hint { margin: 6px 0 0; color: var(--vm-muted, #5f6b7d); font-size: 12px; line-height: 1.6; }
-.hint.warn { color: #b45309; }
+.hint.warn { color: var(--vm-warning-text, #b45309); }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .result { margin-top: 12px; }
 .release-notes { white-space: pre-wrap; font-size: 12px; line-height: 1.6; max-height: 180px; overflow: auto; }
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .settings { padding: 0; }
   .actions :deep(.el-button) { flex: 1 1 auto; }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { WarningFilled } from '@element-plus/icons-vue'
 import { computed, ref, watch } from 'vue'
 
 import { ARTIFACT_LABEL, clock } from '../api/labels'
@@ -90,7 +91,8 @@ function visible(kind: ArtifactType) {
       <template v-else>
         <div v-if="t.key === 'key_points'" class="pbar">
           <span v-if="pitfalls.length" class="pitfall-tip">
-            ⚠ {{ pitfalls.length }} 条命中易错点（讲师反复强调 / 当场纠错 / 演示错误写法）
+            <el-icon class="ic" :size="14"><WarningFilled /></el-icon>
+            {{ pitfalls.length }} 条命中易错点（讲师反复强调 / 当场纠错 / 演示错误写法）
           </span>
           <el-checkbox v-model="onlyPitfall" size="small">只看易错点（F3）</el-checkbox>
         </div>
@@ -119,7 +121,7 @@ function visible(kind: ArtifactType) {
 <style scoped>
 .panel { height: 100%; }
 .list { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.list-item { padding: 8px 10px; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 6px; background: #fff; cursor: pointer; }
+.list-item { padding: 8px 10px; border: 1px solid var(--vm-border, #e6e8eb); border-radius: var(--vm-radius-sm, 6px); background: var(--vm-surface, #fff); cursor: pointer; }
 .list-item:hover { border-color: var(--el-color-primary, #3d6fd6); }
 .list-item:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .line { display: flex; align-items: flex-start; gap: 8px; }
@@ -132,6 +134,7 @@ function visible(kind: ArtifactType) {
 .block-head { display: flex; justify-content: space-between; font-size: 13px; color: var(--vm-text-secondary, #4b5563); margin-bottom: 4px; }
 .code { margin: 0; padding: 10px; background: var(--vm-code-bg, #12151c); color: #dbe1ea; border-radius: 6px; font-size: 12px; overflow: auto; }
 .pbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-.pitfall-tip { color: #b45309; font-size: 13px; }
+.pitfall-tip { color: var(--vm-warning-text, #b45309); font-size: 13px; display: inline-flex; align-items: flex-start; gap: 4px; }
+.pitfall-tip .ic { margin-top: 2px; flex: none; }
 .no-filter { margin: 8px 0; font-size: 13px; color: var(--vm-muted, #5f6b7d); }
 </style>
