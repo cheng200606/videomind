@@ -24,11 +24,43 @@
   --vm-quote-bg: #f6f7f9;
   --vm-code-bg: #12151c;
   --vm-sidebar: #1f2430;
+
+  /* 语义文字色（白底可读档，与 el-tag 压深色一致） */
+  --vm-warning-text: #b45309;
+  --vm-danger-text: #b42318;
+  --vm-surface: #ffffff;
+  --vm-radius: 8px;
+  --vm-radius-sm: 6px;
+  --vm-shadow-hover: 0 6px 18px rgba(31, 41, 55, 0.12);
 }
 
 body {
   color: var(--vm-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+/* 统一白卡配方：自绘白卡与 el-card（shadow=never）共用一套观感 */
+.vm-card {
+  background: var(--vm-surface, #fff);
+  border: 1px solid var(--vm-border, #e6e8eb);
+  border-radius: var(--vm-radius, 8px);
+}
+
+/* el-card 圆角对齐 token（默认 4px 与自绘卡不一致） */
+.el-card {
+  border-radius: var(--vm-radius, 8px);
+}
+
+/* 数字（时间戳/时长/计数）用等宽数字，避免时间轴刻度与事件流抖动 */
+.vm-num {
+  font-variant-numeric: tabular-nums;
+}
+
+h2.vm-page-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 /* 证据抽屉固定 420px 会在窄屏越界；全局约束到视口的 92% */
