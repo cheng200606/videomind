@@ -11,6 +11,8 @@ os.environ["MEDIA_ROOT"] = (_WORK / "media").as_posix()
 os.environ["CACHE_ROOT"] = (_WORK / "cache").as_posix()
 os.environ["ASR_ENGINE"] = "mock"
 os.environ["OCR_ENGINE"] = "none"
+# 测试用任意文件名频繁造视频；显式允许 mock 退回通用样例。生产环境没有这个开关。
+os.environ["VMIND_MOCK_ALLOW_FALLBACK"] = "1"
 os.environ["DEEPSEEK_API_KEY"] = ""
 os.environ["REDIS_URL"] = ""
 os.environ["VMIND_FIXTURE_DIR"] = str(_HERE / "fixtures")

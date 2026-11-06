@@ -28,7 +28,13 @@ Path(_settings.cache_root).mkdir(parents=True, exist_ok=True)
 
 
 def _load_saved_settings() -> None:
-    """读回上次运行保存的引擎设置（PUT /settings/engines 落盘的 data/settings.json），重启不丢。"""
+    """读回上次运行保存的引擎设置（PUT /settings/engines 落盘的 data/settings.json），重启不丢。
+
+    v0.7.1 迁移：旧版本把 mock 写成了默认值，导致真实视频被内置样例冒充。
+    没有 schema_version 的旧文件若仍是 mock，一次性改成 auto（之后用户显式选择 mock 会保留）。
+    """
+    from app.engines.base import available_asr, available_ocr
+
     path = Path(_settings.media_root).parent / "settings.json"
     if not path.exists():
         return
@@ -36,6 +42,20 @@ def _load_saved_settings() -> None:
         saved = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return
+    changed = False
+    if saved.get("schema_version") != 2:
+        if saved.get("asr_engine") == "mock":
+            saved["asr_engine"] = "auto"
+        saved["schema_version"] = 2
+        changed = True
+    if saved.get("asr_engine") not in [*available_asr(), "auto"]:
+        # 升级后引擎可能不再随包提供（例如桌面版未内置某重引擎）：回到 auto 由后端解析
+        saved["asr_engine"] = "auto"
+        changed = True
+    if saved.get("ocr_engine") not in ["none", *available_ocr()]:
+        # v0.7.0 桌面版设置页曾列出未打包的 rapid/paddle；选中后升级会 500，统一回退为 none
+        saved["ocr_engine"] = "none"
+        changed = True
     for attr in ("asr_engine", "ocr_engine"):
         if isinstance(saved.get(attr), str):
             setattr(_settings, attr, saved[attr])
@@ -44,6 +64,11 @@ def _load_saved_settings() -> None:
         names = [s.strip() for s in schemas.split(",") if s.strip()]
         if names:
             _settings.output_schemas = ",".join(names)
+    if changed:
+        try:
+            path.write_text(json.dumps(saved, ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            pass
 
 
 @asynccontextmanager

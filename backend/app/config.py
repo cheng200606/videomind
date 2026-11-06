@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     deepseek_base_url: str = "https://api.deepseek.com/v1"
     deepseek_model: str = "deepseek-chat"
 
-    asr_engine: str = "mock"
+    asr_engine: str = "auto"
     ocr_engine: str = "none"
     output_schemas: str = "summary,uml_draft,key_points,code_blocks"
     # F5 语音-视觉交叉校验：课程版只做设计，默认关闭（docs/产品定义.md §五）

@@ -25,8 +25,11 @@ def _prepare() -> None:
     os.environ.setdefault("MEDIA_ROOT", str(Path(data_dir) / "media"))
     os.environ.setdefault("CACHE_ROOT", str(Path(data_dir) / "cache"))
     os.environ.setdefault("REDIS_URL", "")
-    os.environ.setdefault("ASR_ENGINE", "mock")
+    os.environ.setdefault("ASR_ENGINE", "auto")
     os.environ.setdefault("OCR_ENGINE", "none")
+    os.environ.setdefault("VMIND_WHISPER_MODEL", "tiny")
+    # 桌面版用户多在国内网络；模型下载走镜像，源码环境不强制（用户可自行覆盖）
+    os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
     # MockAsr 的脱敏样例转写：打包后取 _MEIPASS/app_fixtures，源码运行取 tests/fixtures
     if getattr(sys, "frozen", False):

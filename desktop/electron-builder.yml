@@ -9,6 +9,7 @@ directories:
 
 files:
   - main.js
+  - preload.js
   - package.json
 
 # PyInstaller 的 onedir 产物整目录塞进 resources/backend，主进程按 resources/backend/VideoMindBackend.exe 拉起

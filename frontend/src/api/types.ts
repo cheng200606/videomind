@@ -83,7 +83,7 @@ export interface StageEvent {
 }
 
 export interface EngineSettings {
-  asr: { current: string; available: string[] }
+  asr: { current: string; resolved?: string; available: string[] }
   ocr: { current: string; available: string[] }
   output_schemas: string[]
   cache_enabled: boolean

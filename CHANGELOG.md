@@ -174,3 +174,24 @@
 - **程夏（组长）**：长视频 ASR 分片/流式与自动重试；LLM 长转写分段结构化后再合并
 - **程夏（组长）**：移除 `get_batch`/`get_video` 的绝对 `path` 兼容字段；Docker 运行验证与依赖锁文件复核
 - **程夏（组长）**：真实移动端/全站 WCAG 审计；历史旧标签与旧导出稿迁移
+
+---
+
+## [v0.7.1] — 修复：真实视频笔记串样例 + 桌面检查更新（2026-11-06）
+
+### 原因与修复（组长直推，按新规留痕）
+
+- **程夏（组长）**：修复「真实本地视频生成的笔记/纪要与内容无关」——根因是 `MockAsr` 对任意视频静默回退到内置 `lecture_transcript.json`（Vue3 样例），而桌面版只内置 mock、旧 `settings.json` 又把 `mock` 持久化成了默认引擎；现 mock 只接受同名内置样例，遇到真实视频直接报可执行的切换提示，不再用样例冒充转写
+- **程夏（组长）**：新增本地真实转写引擎 `whisper`（faster-whisper / ctranslate2，CPU int8，默认 tiny 模型，首次约 75MB），引擎注册表按实际依赖过滤可用项；`ASR_ENGINE` 默认改为 `auto`，优先 whisper/yueying，未安装重引擎时才退回 mock
+- **程夏（组长）**：桌面 sidecar 内置 whisper 依赖（faster-whisper/ctranslate2/av/tokenizers/huggingface_hub/numpy/httpx2），仍排除 yueying/RapidOCR/Paddle/FunASR/torch；因 ctranslate2 与 onnxruntime 的 OpenMP 运行库冲突，桌面不打包 onnxruntime，Whisper 在无 VAD 依赖时自动关闭 VAD
+- **程夏（组长）**：旧数据迁移——`data/settings.json` 无 `schema_version` 且为 `mock` 时一次性改为 `auto` 并回写；升级后引擎不可用时同样回 `auto`，避免启动即 500
+- **程夏（组长）**：设置页/上传页显式标注「演示样例（mock）不读取视频」，当前解析引擎显示实际解析结果（如 auto → whisper）；mock 下给出切换与整批重跑提示
+- **程夏（组长）**：新增桌面「应用更新」入口——preload + IPC 暴露 `getAppInfo / getUpdateState / checkForUpdates / downloadUpdate / installUpdate / onUpdateState`；设置页显示当前版本、检查结果、更新说明、下载进度与「重启并安装」
+- **程夏（组长）**：更新器改为手动可控流程（`autoDownload=false`，用户点「下载更新」），启动后静默检查一次但不自动下载；支持 `VMIND_UPDATE_URL` 指向本地 generic 源做联调，生产走 electron-builder `publish: github`
+- **程夏（组长）**：OCR 引擎可用性按实际依赖过滤（桌面只显示 `none`），阶段 SKIPPED 的降级说明不再写入 `video.error` 伪装成失败
+- **程夏（组长）**：验证——后端 68 例、前端 18 例全绿；`npm run build` 通过；本地 generic 更新源检测到 9.9.9 → 下载完成 → 显示「重启并安装」；打包 sidecar（含 whisper）用 2 分钟真实视频跑通，转写 49 段、产物 8 条且内容与 UML 视频相关；桌面安装包版本升至 0.7.1
+
+### 已知限制
+
+- 桌面版默认 tiny 模型（精度低于 small，识别结果仅供参考）；如需更高精度可在源码环境设置 `VMIND_WHISPER_MODEL` 并安装对应模型
+- 旧版本用 mock 生成的批次不会被自动改写，需在批次页执行「整批重跑」

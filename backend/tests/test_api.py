@@ -30,6 +30,8 @@ def test_health(client: TestClient):
 def test_engine_settings_roundtrip(client: TestClient):
     current = client.get("/api/settings/engines").json()
     assert "mock" in current["asr"]["available"]
+    assert "auto" in current["asr"]["available"]
+    assert current["asr"]["resolved"] in current["asr"]["available"]
     assert "none" in current["ocr"]["available"]
 
     changed = client.put("/api/settings/engines", json={"output_schemas": ["summary", "uml_draft"]})

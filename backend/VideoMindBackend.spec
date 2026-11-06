@@ -1,24 +1,44 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_all
+
+# 桌面版内置 Whisper 本地转写（faster-whisper / ctranslate2 / av / tokenizers）。
+# 其余重引擎（yueying、RapidOCR、Paddle、FunASR、torch）仍排除，避免安装包无限膨胀。
+_whisper_packages = (
+    'faster_whisper', 'ctranslate2', 'av', 'tokenizers',
+    'huggingface_hub', 'httpx2', 'httpcore2', 'numpy',
+)
+extra_datas, extra_binaries, extra_hidden = [], [], []
+for _pkg in _whisper_packages:
+    _d, _b, _h = collect_all(_pkg)
+    extra_datas += _d
+    extra_binaries += _b
+    extra_hidden += _h
 
 a = Analysis(
     ['run_server.py'],
     pathex=['.'],
-    binaries=[],
-    datas=[('tests/fixtures', 'app_fixtures'), ('../frontend/dist', 'frontend_dist')],
-    hiddenimports=['uvicorn', 'uvicorn.logging', 'uvicorn.loops.auto', 'uvicorn.protocols.http.auto', 'uvicorn.protocols.websockets.auto', 'uvicorn.lifespan.on', 'uvicorn.lifespan.off'],
+    binaries=extra_binaries,
+    datas=[
+        ('tests/fixtures', 'app_fixtures'),
+        ('../frontend/dist', 'frontend_dist'),
+        *extra_datas,
+    ],
+    hiddenimports=[
+        'uvicorn', 'uvicorn.logging', 'uvicorn.loops.auto', 'uvicorn.protocols.http.auto',
+        'uvicorn.protocols.websockets.auto', 'uvicorn.lifespan.on', 'uvicorn.lifespan.off',
+        *extra_hidden,
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    # 桌面版按交付设计只内置 mock ASR / OCR none；真实引擎是源码环境的可选依赖，
-    # 不能让 PyInstaller 把 rapidocr/onnxruntime/yueying 等整条重依赖链塞进安装包。
     excludes=[
-        'yueying', 'faster_whisper', 'ctranslate2', 'av', 'tokenizers', 'huggingface_hub', 'hf_xet',
-        'rapidocr', 'onnxruntime', 'cv2', 'numpy', 'scipy', 'shapely', 'pyclipper', 'PIL', 'imagehash',
-        'funasr', 'torch', 'torchaudio', 'paddle', 'paddleocr', 'paddlepaddle',
-        'mcp', 'mcp_types', 'httpx2', 'httpcore2', 'cryptography', 'pyjwt', 'jsonschema',
-        'yt_dlp', 'imageio_ffmpeg', 'requests', 'tqdm', 'colorlog', 'omegaconf', 'fsspec',
-        'filelock', 'flatbuffers', 'protobuf', 'win32', 'pywintypes',
+        'yueying', 'funasr', 'torch', 'torchaudio',
+        'rapidocr', 'onnxruntime', 'cv2', 'scipy', 'shapely', 'pyclipper', 'PIL', 'imagehash',
+        'paddle', 'paddleocr', 'paddlepaddle',
+        'mcp', 'mcp_types', 'cryptography', 'pyjwt', 'jsonschema',
+        'yt_dlp', 'imageio_ffmpeg', 'colorlog', 'omegaconf',
+        'flatbuffers', 'protobuf', 'win32', 'pywintypes', 'hf_xet',
     ],
     noarchive=False,
     optimize=0,

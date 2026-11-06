@@ -38,6 +38,9 @@ class FrameText:
 class AsrEngine(Protocol):
     name: str
 
+    @staticmethod
+    def is_available() -> bool: ...
+
     def transcribe(self, video_path: str) -> AsrResult: ...
 
 
@@ -66,14 +69,29 @@ def register_ocr(name: str):
 
 
 def available_asr() -> list[str]:
-    return sorted(_ASR)
+    """只列当前环境真的能用的引擎：装了重依赖才出现，避免设置页选了却 500。"""
+    return sorted(name for name, cls in _ASR.items()
+                  if getattr(cls, "is_available", lambda: True)())
+
+
+def resolve_asr_name(name: str) -> str:
+    """auto = 优先本地真实引擎，全都没有才退回 mock 演示。"""
+    if name != "auto":
+        return name
+    for candidate in ("whisper", "yueying", "funasr"):
+        cls = _ASR.get(candidate)
+        if cls is not None and cls.is_available():
+            return candidate
+    return "mock"
 
 
 def available_ocr() -> list[str]:
-    return sorted(_OCR)
+    return sorted(name for name, cls in _OCR.items()
+                  if getattr(cls, "is_available", lambda: True)())
 
 
 def build_asr(name: str) -> AsrEngine:
+    name = resolve_asr_name(name)
     if name not in _ASR:
         raise KeyError(f"未知 ASR 引擎 {name!r}，可选：{available_asr()}")
     return _ASR[name]()

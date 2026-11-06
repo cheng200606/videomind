@@ -6,7 +6,56 @@ from subprocess import CompletedProcess
 
 import pytest
 
-from app.engines.asr import YueyingAsr
+from app.engines import asr as asr_module
+from app.engines.asr import MockAsr, YueyingAsr
+
+
+def test_mock_uses_matching_fixture_only(tmp_path: Path, monkeypatch):
+    (tmp_path / "my_video.json").write_text(json.dumps({
+        "duration_ms": 2000,
+        "segments": [{"index": 0, "start_ms": 0, "end_ms": 2000, "text": "真实样例内容"}],
+    }, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(asr_module, "FIXTURE_DIR", tmp_path)
+
+    result = MockAsr().transcribe(str(tmp_path / "my_video.mp4"))
+    assert [s.text for s in result.segments] == ["真实样例内容"]
+
+
+def test_mock_matches_fixture_behind_upload_prefix(tmp_path: Path, monkeypatch):
+    """上传落盘会加批次前缀，演示样例仍应按原文件名命中。"""
+    (tmp_path / "lecture_transcript.json").write_text(json.dumps({
+        "duration_ms": 1000,
+        "segments": [{"index": 0, "start_ms": 0, "end_ms": 1000, "text": "样例命中"}],
+    }, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(asr_module, "FIXTURE_DIR", tmp_path)
+    monkeypatch.delenv("VMIND_MOCK_ALLOW_FALLBACK", raising=False)
+
+    result = MockAsr().transcribe(str(tmp_path / "3_lecture_transcript.mp4"))
+    assert [s.text for s in result.segments] == ["样例命中"]
+
+
+def test_mock_refuses_unknown_video_instead_of_fake_transcript(tmp_path: Path, monkeypatch):
+    """回归：任意真实视频曾被 lecture_transcript.json（Vue3 样例）冒充。"""
+    monkeypatch.setattr(asr_module, "FIXTURE_DIR", tmp_path)
+    monkeypatch.delenv("VMIND_MOCK_ALLOW_FALLBACK", raising=False)
+
+    with pytest.raises(RuntimeError) as err:
+        MockAsr().transcribe(str(tmp_path / "UML-6时序图.mp4"))
+    message = str(err.value)
+    assert "不会读取真实视频" in message
+    assert "whisper" in message
+
+
+def test_mock_fallback_requires_explicit_test_switch(tmp_path: Path, monkeypatch):
+    (tmp_path / "lecture_transcript.json").write_text(json.dumps({
+        "duration_ms": 1000,
+        "segments": [{"index": 0, "start_ms": 0, "end_ms": 1000, "text": "兜底样例"}],
+    }, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setattr(asr_module, "FIXTURE_DIR", tmp_path)
+    monkeypatch.setenv("VMIND_MOCK_ALLOW_FALLBACK", "1")
+
+    result = MockAsr().transcribe(str(tmp_path / "anything.mp4"))
+    assert [s.text for s in result.segments] == ["兜底样例"]
 
 def test_yueying_parses_manifest(tmp_path: Path, monkeypatch):
     def fake_run(cmd, capture_output=True, text=True, timeout=None):

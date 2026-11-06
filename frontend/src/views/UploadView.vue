@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import type { UploadRawFile, UploadUserFile } from 'element-plus'
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createBatch, getEngines, getModelSettings } from '../api/client'
+import { ASR_LABEL } from '../api/labels'
 import type { EngineSettings, ModelSettings } from '../api/types'
 
 const router = useRouter()
@@ -17,6 +18,8 @@ const MAX_BYTES = 2 * 1024 ** 3
 const engines = ref<EngineSettings | null>(null)
 const modelMeta = ref<ModelSettings | null>(null)
 const summaryError = ref('')
+const resolvedAsr = computed(() => engines.value?.asr.resolved ?? engines.value?.asr.current ?? '')
+const usingMock = computed(() => resolvedAsr.value === 'mock')
 
 onMounted(async () => {
   try {
@@ -93,7 +96,8 @@ async function submit() {
             <div class="srow">
               <span class="k">解析引擎</span>
               <span class="v">
-                ASR {{ engines?.asr.current ?? '—' }} · OCR {{ engines?.ocr.current ?? '—' }} ·
+                ASR {{ ASR_LABEL[resolvedAsr] ?? resolvedAsr }} ·
+                OCR {{ engines?.ocr.current ?? '—' }} ·
                 {{ engines?.output_schemas.length ?? 0 }} 类产物
               </span>
               <el-button link type="primary" @click="router.push('/settings')">修改</el-button>
@@ -111,6 +115,16 @@ async function submit() {
       class="warn"
       title="未配置大模型 Key：解析仍可完成，但结构化阶段会使用规则兜底，质量有限。"
     />
+    <el-alert
+      v-if="usingMock"
+      type="warning"
+      :closable="false"
+      show-icon
+      class="warn"
+      title="当前 ASR 是演示样例：不会读取视频内容，生成的笔记会与视频无关。"
+    >
+      请先到设置页切换为「自动」或「Whisper 本地转写」。
+    </el-alert>
 
     <p class="note">
       平台只处理你本机的文件：不留存、不下载、不分发任何第三方视频内容。

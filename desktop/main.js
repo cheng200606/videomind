@@ -1,7 +1,7 @@
 // VideoMind 桌面壳：选空闲端口 → 拉起 PyInstaller 后端 sidecar → 健康探测 → 开窗口。
 // 打包态从 resources/backend 拉后端；开发态直接用 backend/dist 里的产物，方便联调。
 
-const { app, BrowserWindow, dialog } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain } = require('electron')
 const { spawn } = require('child_process')
 const fs = require('fs')
 const http = require('http')
@@ -9,6 +9,7 @@ const net = require('net')
 const path = require('path')
 
 const isDev = !app.isPackaged
+const UPDATE_URL = process.env.VMIND_UPDATE_URL || ''
 const BACKEND_EXE = isDev
   ? path.join(__dirname, '..', 'backend', 'dist', 'VideoMindBackend', 'VideoMindBackend.exe')
   : path.join(process.resourcesPath, 'backend', 'VideoMindBackend.exe')
@@ -76,6 +77,127 @@ function stopBackend() {
   }
 }
 
+// ── 更新器：设置页“检查更新”走这里；发现新版本后由用户决定下载/重启安装 ──
+let autoUpdater = null
+let updateState = { status: 'idle', currentVersion: app.getVersion() }
+
+function emitUpdate(patch) {
+  updateState = { ...updateState, ...patch, currentVersion: app.getVersion() }
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update:state', updateState)
+  }
+  return updateState
+}
+
+function updateErrorText(err) {
+  const text = err && err.message ? err.message : String(err)
+  return text.replace(/\s+/g, ' ').slice(0, 500)
+}
+
+function updateNotes(notes) {
+  if (!notes) return ''
+  const text = Array.isArray(notes)
+    ? notes.map((n) => (typeof n === 'string' ? n : n && n.note ? n.note : '')).join('\n')
+    : typeof notes === 'string' ? notes : JSON.stringify(notes)
+  return text.slice(0, 4000)
+}
+
+function initUpdater() {
+  if (!app.isPackaged && !UPDATE_URL) return null
+  try {
+    const { autoUpdater: au } = require('electron-updater')
+    autoUpdater = au
+    autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = true
+    autoUpdater.allowPrerelease = false
+    autoUpdater.allowDowngrade = false
+    autoUpdater.logger = {
+      info: (m) => log('updater.log', `info ${m}`),
+      warn: (m) => log('updater.log', `warn ${m}`),
+      error: (m) => log('updater.log', `error ${m}`),
+      debug: () => {}
+    }
+
+    if (!app.isPackaged) {
+      // 开发态联调：VMIND_UPDATE_URL 指向一个 generic 更新源（目录里放 latest.yml）
+      autoUpdater.forceDevUpdateConfig = true
+      const cfg = path.join(app.getPath('userData'), 'dev-app-update.yml')
+      fs.writeFileSync(cfg, `provider: generic\nurl: ${UPDATE_URL}\n`, 'utf-8')
+      autoUpdater.updateConfigPath = cfg
+      log('updater.log', `dev update url=${UPDATE_URL}`)
+    }
+
+    autoUpdater.on('checking-for-update', () => emitUpdate({ status: 'checking', error: '' }))
+    autoUpdater.on('update-available', (info) => emitUpdate({
+      status: 'available',
+      latestVersion: info && info.version,
+      releaseName: info && info.releaseName,
+      releaseNotes: updateNotes(info && info.releaseNotes)
+    }))
+    autoUpdater.on('update-not-available', (info) => emitUpdate({
+      status: 'up-to-date', latestVersion: info && info.version, error: ''
+    }))
+    autoUpdater.on('download-progress', (p) => emitUpdate({
+      status: 'downloading', progress: Math.round(p && p.percent ? p.percent : 0)
+    }))
+    autoUpdater.on('update-downloaded', (info) => emitUpdate({
+      status: 'downloaded', latestVersion: info && info.version, progress: 100
+    }))
+    autoUpdater.on('error', (err) => emitUpdate({ status: 'error', error: updateErrorText(err) }))
+    return autoUpdater
+  } catch (err) {
+    log('updater.log', `updater init failed ${err}`)
+    return null
+  }
+}
+
+async function checkForUpdates() {
+  if (!autoUpdater) {
+    return emitUpdate({
+      status: 'unsupported',
+      error: '当前构建未启用自动更新（浏览器模式或未配置更新源的开发模式）'
+    })
+  }
+  emitUpdate({ status: 'checking', error: '' })
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    const latest = result && result.updateInfo ? result.updateInfo.version : ''
+    if (updateState.status === 'checking') {
+      // 正常情况下 electron-updater 已发出 available/not-available；这里只兜底
+      const newer = latest && latest !== app.getVersion()
+      emitUpdate({ status: newer ? 'available' : 'up-to-date', latestVersion: latest })
+    }
+  } catch (err) {
+    emitUpdate({ status: 'error', error: updateErrorText(err) })
+  }
+  return updateState
+}
+
+ipcMain.handle('app:info', () => ({
+  version: app.getVersion(),
+  packaged: app.isPackaged,
+  canUpdate: !!autoUpdater
+}))
+ipcMain.handle('update:state', () => updateState)
+ipcMain.handle('update:check', () => checkForUpdates())
+ipcMain.handle('update:download', async () => {
+  if (!autoUpdater) return emitUpdate({ status: 'unsupported', error: '当前构建未启用自动更新' })
+  if (updateState.status !== 'available') return updateState
+  try {
+    emitUpdate({ status: 'downloading', progress: 0, error: '' })
+    await autoUpdater.downloadUpdate()
+  } catch (err) {
+    emitUpdate({ status: 'error', error: updateErrorText(err) })
+  }
+  return updateState
+})
+ipcMain.handle('update:install', () => {
+  if (!autoUpdater || updateState.status !== 'downloaded') return { ok: false }
+  // 退出应用并运行已下载的安装程序，安装完成后自动拉起新版本；before-quit 会停 sidecar
+  autoUpdater.quitAndInstall(false, true)
+  return { ok: true }
+})
+
 async function createWindow() {
   const port = await freePort()
   try {
@@ -95,7 +217,11 @@ async function createWindow() {
     show: false,
     autoHideMenuBar: true,
     title: `VideoMind 视析 v${app.getVersion()}`,
-    webPreferences: { contextIsolation: true }
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
   mainWindow.once('ready-to-show', () => mainWindow.show())
   mainWindow.on('closed', () => { mainWindow = null })
@@ -115,28 +241,12 @@ if (!gotLock) {
   })
 
   app.whenReady().then(async () => {
+    initUpdater()
     await createWindow()
 
-    if (app.isPackaged) {
-      // 自动更新走 GitHub Releases（electron-builder 的 publish 配置）；失败只记日志，不打断使用
-      try {
-        const { autoUpdater } = require('electron-updater')
-        autoUpdater.autoDownload = true
-        autoUpdater.autoInstallOnAppQuit = true
-        autoUpdater.on('checking-for-update', () => log('updater.log', 'checking-for-update'))
-        autoUpdater.on('update-available', (i) => log('updater.log', `update-available version=${i && i.version}`))
-        autoUpdater.on('update-not-available', (i) => log('updater.log', `update-not-available version=${i && i.version}`))
-        autoUpdater.on('download-progress', (p) => {
-          if (Math.floor(p.percent) % 10 === 0) log('updater.log', `download-progress ${Math.floor(p.percent)}%`)
-        })
-        autoUpdater.on('update-downloaded', (i) => {
-          log('updater.log', `update-downloaded version=${i && i.version}，退出应用后自动安装`)
-        })
-        autoUpdater.on('error', (err) => log('updater.log', `error ${err}`))
-        autoUpdater.checkForUpdatesAndNotify().catch((err) => log('updater.log', `check failed ${err}`))
-      } catch (err) {
-        log('updater.log', `updater init failed ${err}`)
-      }
+    if (autoUpdater) {
+      // 启动后静默查一次，让设置页直接显示是否有新版本；下载仍由用户点击触发
+      setTimeout(() => { checkForUpdates().catch((err) => log('updater.log', `startup check ${err}`)) }, 1500)
     }
   })
 

@@ -14,7 +14,7 @@ from sse_starlette.sse import EventSourceResponse
 from app.config import get_settings
 from app.db import engine, get_session
 from app.enums import STAGES, BatchStatus, StageStatus, TagTarget, VideoStatus
-from app.engines.base import available_asr, available_ocr
+from app.engines.base import available_asr, available_ocr, resolve_asr_name
 from app.media import display_name, media_url
 from app.models import (
     Artifact, ConflictRecord, Evidence, KnowledgeItem, Note, Revision, Segment, TagBinding, Video, VideoBatch
@@ -321,7 +321,11 @@ def transcript(video_id: int, session: Session = Depends(get_session)):
 def engines():
     settings = get_settings()
     return {
-        "asr": {"current": settings.asr_engine, "available": available_asr()},
+        "asr": {
+            "current": settings.asr_engine,
+            "resolved": resolve_asr_name(settings.asr_engine),
+            "available": ["auto", *available_asr()],
+        },
         "ocr": {"current": settings.ocr_engine, "available": ["none", *available_ocr()]},
         "output_schemas": settings.output_schema_list,
         "cache_enabled": bool(settings.redis_url),
@@ -337,6 +341,7 @@ def _save_engine_settings() -> None:
     path = Path(settings.media_root).parent / "settings.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
+        "schema_version": 2,
         "asr_engine": settings.asr_engine,
         "ocr_engine": settings.ocr_engine,
         "output_schemas": settings.output_schemas,
@@ -348,8 +353,8 @@ def set_engines(body: dict):
     """页 11 设置页：OCR 引擎切换 + 默认产物集；校验后改运行时配置并持久化。"""
     settings = get_settings()
     if "asr" in body:
-        if body["asr"] not in available_asr():
-            raise HTTPException(422, f"未知 ASR 引擎，可选 {available_asr()}")
+        if body["asr"] not in ["auto", *available_asr()]:
+            raise HTTPException(422, f"未知 ASR 引擎，可选 {['auto', *available_asr()]}")
         settings.asr_engine = body["asr"]
     if "ocr" in body:
         if body["ocr"] != "none" and body["ocr"] not in available_ocr():

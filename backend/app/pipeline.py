@@ -78,8 +78,9 @@ bus = ProgressBus()
 
 def _set_stage(session: Session, video: Video, stage: Stage, status: StageStatus, error: str = "") -> None:
     setattr(video, f"{stage.value}_status", status)
-    if error:
-        # 多个阶段可能先后失败：累加而不是覆盖，失败定位以阶段状态为准
+    if error and status == StageStatus.FAILED:
+        # 多个阶段可能先后失败：累加而不是覆盖，失败定位以阶段状态为准；
+        # SKIPPED 的说明（如“画面通道未启用”）只是降级原因，不该伪装成错误
         video.error = f"{video.error}\n{error}".strip()[:500]
     session.add(video)
     session.commit()

@@ -81,6 +81,22 @@ export const EDITOR_LABEL: Record<string, string> = {
   local: '本地用户'
 }
 
+/** ASR 引擎展示名；mock 必须显式写明“不读取视频”，避免真实视频被样例冒充 */
+export const ASR_LABEL: Record<string, string> = {
+  auto: '自动（优先本地真实引擎）',
+  whisper: 'Whisper 本地转写',
+  yueying: 'yueying 转写',
+  funasr: 'FunASR 转写',
+  mock: '演示样例（不读取视频）'
+}
+
+export const OCR_LABEL: Record<string, string> = {
+  none: '关闭',
+  rapid: 'RapidOCR',
+  paddle: 'PaddleOCR',
+  vision: '视觉模型'
+}
+
 /** 讲义状态机（图 7 右半，与 backend/app/enums.py 的 REVISION_TRANSITIONS 同源） */
 export const REVISION_TRANSITIONS: Record<string, string[]> = {
   draft: ['pending_confirm'],

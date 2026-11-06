@@ -1,5 +1,7 @@
 """`OcrEngine` 的三个实现 + 关键帧去重。画面通道（阶段 ②）在此。"""
 
+import importlib.util
+import os
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -8,6 +10,13 @@ from app.config import get_settings
 from app.engines.base import FrameText, KeyFrame, register_ocr
 
 _settings = get_settings()
+
+
+def _has_module(name: str) -> bool:
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):
+        return False
 
 
 def dedupe_frames(frames: Sequence[KeyFrame], threshold: int = 8) -> list[KeyFrame]:
@@ -63,6 +72,10 @@ class RapidOcr:
     name = "rapid"
     _engine = None
 
+    @staticmethod
+    def is_available() -> bool:
+        return _has_module("rapidocr")
+
     def _load(self):
         if RapidOcr._engine is None:
             from rapidocr import RapidOCR
@@ -86,6 +99,10 @@ class PaddleOcr:
 
     name = "paddle"
     _engine = None
+
+    @staticmethod
+    def is_available() -> bool:
+        return _has_module("paddleocr")
 
     def _load(self):
         if PaddleOcr._engine is None:
@@ -113,6 +130,11 @@ class VisionModelOcr:
     """
 
     name = "vision"
+
+    @staticmethod
+    def is_available() -> bool:
+        # 只有显式配置了视觉端点/Key 才可选；DeepSeek 文本 Key 不能当视觉模型用
+        return bool(os.environ.get("VISION_API_KEY"))
 
     def recognize(self, frames: Sequence[KeyFrame]) -> list[FrameText]:
         import base64

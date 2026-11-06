@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { getEngines, getModelSettings, setEngines, setModelSettings, testModelSettings } from '../api/client'
-import { ARTIFACT_LABEL } from '../api/labels'
+import { ARTIFACT_LABEL, ASR_LABEL, OCR_LABEL } from '../api/labels'
 import type { EngineSettings, ModelProvider, ModelSettings, ModelSettingsInput, ModelTestResult } from '../api/types'
+import type { AppInfo, UpdateState } from '../desktop'
 
 const ALL_SCHEMAS = ['summary', 'key_points', 'uml_draft', 'code_blocks']
 const PROVIDERS: { value: ModelProvider; label: string }[] = [
@@ -34,6 +35,12 @@ const ocr = ref('none')
 const schemas = ref<string[]>([])
 const savingEngines = ref(false)
 
+const desktop = typeof window !== 'undefined' ? window.videomind : undefined
+const appInfo = ref<AppInfo | null>(null)
+const updateState = ref<UpdateState | null>(null)
+const checkingUpdate = ref(false)
+let unsubscribeUpdate: (() => void) | undefined
+
 const sourceLabel = computed(() => ({
   saved: '本机设置',
   env: '环境变量',
@@ -41,6 +48,8 @@ const sourceLabel = computed(() => ({
 }[modelMeta.value?.source ?? 'default']))
 const sourceType = computed(() => ({ saved: 'success', env: 'warning', default: 'info' }[modelMeta.value?.source ?? 'default'] as 'success' | 'warning' | 'info'))
 const hasKey = computed(() => modelMeta.value?.has_key === true)
+const resolvedAsr = computed(() => engineMeta.value?.asr.resolved ?? engineMeta.value?.asr.current ?? '')
+const usingMock = computed(() => resolvedAsr.value === 'mock')
 
 async function load() {
   loading.value = true
@@ -64,6 +73,72 @@ async function load() {
   }
 }
 onMounted(load)
+
+const updateAlert = computed<{ type: 'info' | 'warning' | 'success' | 'error'; title: string; description?: string }>(() => {
+  const s = updateState.value
+  if (!s || s.status === 'idle') return { type: 'info', title: '尚未检查更新' }
+  if (s.status === 'checking') return { type: 'info', title: '正在检查更新…' }
+  if (s.status === 'available') {
+    return {
+      type: 'warning',
+      title: `发现新版本 v${s.latestVersion ?? '—'}（当前 v${s.currentVersion}）`,
+      description: [s.releaseName, s.releaseNotes].filter(Boolean).join('\n')
+    }
+  }
+  if (s.status === 'up-to-date') return { type: 'success', title: `已是最新版本 v${s.currentVersion}` }
+  if (s.status === 'downloading') return { type: 'info', title: `正在下载 v${s.latestVersion ?? '—'}…` }
+  if (s.status === 'downloaded') return { type: 'success', title: `v${s.latestVersion ?? '—'} 已下载，重启应用完成安装` }
+  if (s.status === 'unsupported') return { type: 'info', title: '当前模式不支持自动更新', description: s.error }
+  return { type: 'error', title: '检查更新失败', description: s.error ?? '未知错误' }
+})
+
+async function loadDesktop() {
+  if (!desktop) return
+  try {
+    appInfo.value = await desktop.getAppInfo()
+    updateState.value = await desktop.getUpdateState()
+    unsubscribeUpdate = desktop.onUpdateState((state) => {
+      updateState.value = state
+      if (state.status !== 'checking') checkingUpdate.value = false
+    })
+  } catch (err) {
+    ElMessage.error(`桌面信息读取失败：${err instanceof Error ? err.message : err}`)
+  }
+}
+onMounted(loadDesktop)
+onBeforeUnmount(() => unsubscribeUpdate?.())
+
+async function checkUpdate() {
+  if (!desktop) return
+  checkingUpdate.value = true
+  try {
+    updateState.value = await desktop.checkForUpdates()
+  } catch (err) {
+    ElMessage.error(`检查更新失败：${err instanceof Error ? err.message : err}`)
+  } finally {
+    checkingUpdate.value = false
+  }
+}
+
+async function downloadUpdate() {
+  if (!desktop) return
+  try {
+    updateState.value = await desktop.downloadUpdate()
+    if (updateState.value?.status === 'error') ElMessage.error(updateState.value.error ?? '下载失败')
+  } catch (err) {
+    ElMessage.error(`下载更新失败：${err instanceof Error ? err.message : err}`)
+  }
+}
+
+async function installUpdate() {
+  if (!desktop) return
+  try {
+    const r = await desktop.installUpdate()
+    if (!r.ok) ElMessage.warning('更新尚未下载完成')
+  } catch (err) {
+    ElMessage.error(`重启安装失败：${err instanceof Error ? err.message : err}`)
+  }
+}
 
 function onProviderChange() {
   const preset = PRESETS[provider.value]
@@ -218,18 +293,76 @@ async function saveEngines() {
         <p v-if="!hasKey" class="hint warn">未配置 Key 时解析仍可完成，但结构化阶段会使用规则兜底，质量有限。</p>
       </el-card>
 
+      <el-card v-if="desktop" shadow="never" class="card">
+        <template #header>
+          <div class="card-head">
+            <b>应用更新</b>
+            <el-tag size="small">当前 v{{ appInfo?.version ?? updateState?.currentVersion ?? '—' }}</el-tag>
+          </div>
+        </template>
+        <p class="hint">从 GitHub Releases 检查新版本；下载完成后可选择立即重启安装。桌面版才提供此项。</p>
+        <div class="actions">
+          <el-button :loading="checkingUpdate" @click="checkUpdate">检查更新</el-button>
+          <el-button
+            v-if="updateState?.status === 'available'"
+            type="primary"
+            @click="downloadUpdate"
+          >下载更新</el-button>
+          <el-button
+            v-if="updateState?.status === 'downloaded'"
+            type="success"
+            @click="installUpdate"
+          >重启并安装</el-button>
+        </div>
+        <el-progress
+          v-if="updateState?.status === 'downloading'"
+          class="result"
+          :percentage="Math.round(updateState.progress ?? 0)"
+        />
+        <el-alert
+          class="result"
+          :type="updateAlert.type"
+          :closable="false"
+          show-icon
+          :title="updateAlert.title"
+        >
+          <div v-if="updateAlert.description" class="release-notes">{{ updateAlert.description }}</div>
+        </el-alert>
+      </el-card>
+
       <el-card shadow="never" class="card">
-        <template #header><b>解析引擎</b></template>
+        <template #header>
+          <div class="card-head">
+            <b>解析引擎</b>
+            <el-tag v-if="engineMeta" size="small" :type="usingMock ? 'warning' : 'success'">
+              当前转写：{{ ASR_LABEL[resolvedAsr] ?? resolvedAsr }}
+            </el-tag>
+          </div>
+        </template>
         <p class="hint">这些是全局默认值，新建批次时生效；上传页会显示当前摘要。</p>
         <el-form label-position="top" class="form">
           <el-form-item label="ASR 引擎">
             <el-select v-model="asr" class="field">
-              <el-option v-for="o in engineMeta?.asr.available ?? []" :key="o" :label="o" :value="o" />
+              <el-option
+                v-for="o in engineMeta?.asr.available ?? []"
+                :key="o"
+                :label="ASR_LABEL[o] ?? o"
+                :value="o"
+              />
             </el-select>
+            <p class="hint">
+              <b>自动</b>会优先使用已安装的本地真实引擎；<b>演示样例（mock）只回放内置样例，不会读取你上传的视频内容</b>。
+              Whisper 首次使用会自动下载约 75MB 的 tiny 模型，下载期间转写阶段会等待。
+            </p>
           </el-form-item>
           <el-form-item label="OCR 引擎">
             <el-select v-model="ocr" class="field">
-              <el-option v-for="o in engineMeta?.ocr.available ?? []" :key="o" :label="o" :value="o" />
+              <el-option
+                v-for="o in engineMeta?.ocr.available ?? []"
+                :key="o"
+                :label="OCR_LABEL[o] ?? o"
+                :value="o"
+              />
             </el-select>
           </el-form-item>
           <el-form-item label="默认产物集">
@@ -239,6 +372,16 @@ async function saveEngines() {
             <p class="hint">至少保留一种；未生成的产物 tab 会显示空态。</p>
           </el-form-item>
         </el-form>
+        <el-alert
+          v-if="usingMock"
+          type="warning"
+          :closable="false"
+          show-icon
+          class="result"
+          title="当前 ASR 是演示样例：真实视频的笔记会与内容无关。"
+        >
+          请把 ASR 引擎切换为「自动」或「Whisper 本地转写」后保存，再对已有批次执行「整批重跑」。
+        </el-alert>
         <div class="actions">
           <el-button type="primary" :loading="savingEngines" @click="saveEngines">保存解析引擎</el-button>
         </div>
@@ -261,6 +404,7 @@ async function saveEngines() {
 .hint.warn { color: #b45309; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .result { margin-top: 12px; }
+.release-notes { white-space: pre-wrap; font-size: 12px; line-height: 1.6; max-height: 180px; overflow: auto; }
 @media (max-width: 800px) {
   .settings { padding: 0; }
   .actions :deep(.el-button) { flex: 1 1 auto; }
