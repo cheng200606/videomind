@@ -43,6 +43,8 @@ export const STAGE_STATUS_LABEL: Record<string, string> = {
   done: '完成',
   failed: '失败',
   skipped: '降级跳过',
+  succeeded: '成功',
+  partial: '部分成功',
   video_start: '开始解析',
   video_failed: '单条失败'
 }
@@ -53,6 +55,8 @@ export const STAGE_STATUS_TYPE: Record<string, TagType> = {
   done: 'success',
   failed: 'danger',
   skipped: 'warning',
+  succeeded: 'success',
+  partial: 'warning',
   video_failed: 'danger'
 }
 
@@ -61,6 +65,19 @@ export const ARTIFACT_LABEL: Record<string, string> = {
   key_points: '知识要点',
   uml_draft: 'UML 草稿',
   code_blocks: '代码块'
+}
+
+/** F4 不确定性分级：产物与检索结果共用 */
+export const CONFIDENCE_LABEL: Record<string, string> = {
+  explicit: '明述',
+  inferred: '推断',
+  low: '低置信'
+}
+
+export const CONFIDENCE_TYPE: Record<string, TagType> = {
+  explicit: 'success',
+  inferred: 'warning',
+  low: 'danger'
 }
 
 export const REVISION_LABEL: Record<string, string> = {
@@ -95,6 +112,11 @@ export const OCR_LABEL: Record<string, string> = {
   rapid: 'RapidOCR',
   paddle: 'PaddleOCR',
   vision: '视觉模型'
+}
+
+export const MODEL_PROVIDER_LABEL: Record<string, string> = {
+  deepseek: 'DeepSeek',
+  custom: '自定义模型'
 }
 
 /** 讲义状态机（图 7 右半，与 backend/app/enums.py 的 REVISION_TRANSITIONS 同源） */

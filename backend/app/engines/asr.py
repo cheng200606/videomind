@@ -127,10 +127,17 @@ class WhisperAsr:
                     "首次使用需要联网下载模型；国内网络可设置 HF_ENDPOINT=https://hf-mirror.com。"
                 ) from exc
 
+        vad_parameters = None
+        if vad_filter:
+            # 长视频若整段做 STFT，28 分钟需要 500 MB 以上的临时数组；限制单段语音 30 秒
+            from faster_whisper.vad import VadOptions
+
+            vad_parameters = VadOptions(max_speech_duration_s=30)
+
         try:
             segments, info = model.transcribe(
                 video_path, language=language, beam_size=5, vad_filter=vad_filter,
-                condition_on_previous_text=False,
+                vad_parameters=vad_parameters, condition_on_previous_text=False,
             )
         except Exception as exc:
             if device in ("auto", "cuda"):
@@ -186,8 +193,10 @@ class YueyingAsr:
         else:
             args = _split_args(YUEYING_CLI_ARGS.format(outdir=str(outdir)))
             args.append(video_path)
-        cmd = [sys.executable, "-m", "yueying", *args]
-        proc = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+        # 走 compat 入口：给 VAD 单段长度设上限，长视频不再整段做 STFT
+        cmd = [sys.executable, "-m", "app.engines.yueying_compat", *args]
+        # yueying 输出 UTF-8；Windows 默认 GBK 解码会在 reader 线程里抛 UnicodeDecodeError
+        proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800)
         if proc.returncode != 0:
             # 后台错误直接进 UI：优先给最后一行异常，而不是整段 traceback 的前 500 字
             raw = (proc.stderr or proc.stdout or "").strip()

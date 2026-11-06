@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 .env
-tests/
+tests/*
+!tests/fixtures
 .pytest_cache/
 data/

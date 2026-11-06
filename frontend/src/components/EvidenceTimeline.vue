@@ -22,9 +22,10 @@ const percent = computed(() => pct(current.value, total.value))
 
 function seek(ms: number) {
   if (!video.value) return
-  video.value.currentTime = ms / 1000
-  current.value = ms
-  emit('time', ms)
+  const clamped = Math.min(total.value, Math.max(0, ms))
+  video.value.currentTime = clamped / 1000
+  current.value = clamped
+  emit('time', clamped)
 }
 
 function onTimeUpdate() {
@@ -44,6 +45,17 @@ function onVideoError() {
 function onTrackClick(ev: MouseEvent) {
   const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect()
   seek(((ev.clientX - rect.left) / rect.width) * total.value)
+}
+
+/** 轨道可键盘操作：方向键 ±5s，Home/End 到首尾；刻度按钮上的按键不冒泡触发 */
+function onTrackKey(ev: KeyboardEvent) {
+  if (ev.target !== ev.currentTarget) return
+  if (ev.key === 'ArrowRight') seek(current.value + 5000)
+  else if (ev.key === 'ArrowLeft') seek(current.value - 5000)
+  else if (ev.key === 'Home') seek(0)
+  else if (ev.key === 'End') seek(total.value)
+  else return
+  ev.preventDefault()
 }
 
 watch(() => props.src, () => {
@@ -71,17 +83,27 @@ onBeforeUnmount(() => video.value?.pause())
       <div v-if="videoError" class="video-error">{{ videoError }}</div>
     </div>
 
-    <div class="track" @click="onTrackClick">
+    <div
+      class="track"
+      role="slider"
+      tabindex="0"
+      aria-label="播放进度与证据刻度"
+      :aria-valuemin="0"
+      :aria-valuemax="total"
+      :aria-valuenow="current"
+      :aria-valuetext="clock(current)"
+      @click="onTrackClick"
+      @keydown="onTrackKey"
+    >
       <div class="played" :style="{ width: percent + '%' }" />
-      <button
+      <span
         v-for="(m, i) in marks"
         :key="i"
-        type="button"
         class="tick"
         :class="m.kind ?? 'item'"
         :style="{ left: pct(m.ms, total) + '%' }"
         :title="m.label"
-        :aria-label="`跳转到 ${clock(m.ms)}：${m.label}`"
+        aria-hidden="true"
         @click.stop="seek(m.ms)"
       />
       <div class="head" :style="{ left: percent + '%' }" />
@@ -104,10 +126,10 @@ onBeforeUnmount(() => video.value?.pause())
   border-radius: 6px; font-size: 13px; line-height: 1.7;
 }
 .track { position: relative; height: 26px; margin-top: 10px; background: #2a3040; border-radius: 13px; cursor: pointer; }
+.track:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .played { position: absolute; inset: 0 auto 0 0; background: var(--el-color-primary, #3d6fd6); border-radius: 13px; }
 .head { position: absolute; top: 3px; width: 4px; height: 20px; margin-left: -2px; background: #fff; border-radius: 2px; }
 .tick { position: absolute; top: 5px; width: 8px; height: 16px; padding: 0; border: none; border-radius: 3px; cursor: pointer; transform: translateX(-4px); }
-.tick:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .tick.chapter { background: #f0a202; }
 .tick.item { background: #6ee7b7; }
 .tick.evidence { background: #f87171; }

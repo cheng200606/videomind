@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { MdPreview } from 'md-editor-v3'
-import { computed, onMounted, ref } from 'vue'
+import 'md-editor-v3/lib/preview.css'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { exportUrl, getBatch } from '../api/client'
@@ -9,7 +10,7 @@ import type { BatchState } from '../api/types'
 
 const route = useRoute()
 const router = useRouter()
-const id = Number(route.params.id)
+const id = computed(() => Number(route.params.id))
 
 const batch = ref<BatchState | null>(null)
 const md = ref('')
@@ -24,12 +25,12 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    batch.value = await getBatch(id)
+    batch.value = await getBatch(id.value)
     if (!isTerminal.value) {
       md.value = ''
       return
     }
-    const resp = await fetch(exportUrl(id))
+    const resp = await fetch(exportUrl(id.value))
     if (!resp.ok) {
       let detail = `HTTP ${resp.status}`
       try {
@@ -47,7 +48,7 @@ async function load() {
     loading.value = false
   }
 }
-onMounted(load)
+watch(() => route.params.id, () => void load(), { immediate: true })
 
 function download() {
   if (!isTerminal.value || !md.value) return
@@ -57,7 +58,8 @@ function download() {
   a.href = url
   a.download = `${batch.value?.name ?? 'videomind'}.md`
   a.click()
-  URL.revokeObjectURL(url)
+  // 立即 revoke 在部分浏览器上会让下载中断
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 </script>
 
@@ -95,7 +97,7 @@ function download() {
       title="批次尚未解析完成，导出暂不可用；请等待批次进入终态后再试。"
     />
     <el-alert
-      v-else
+      v-else-if="!loading && !error"
       type="info"
       :closable="false"
       show-icon

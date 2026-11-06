@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { bindTag, dismissTag, getItem, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
@@ -11,7 +12,7 @@ import EvidenceTimeline from '../components/EvidenceTimeline.vue'
 
 const route = useRoute()
 const router = useRouter()
-const videoId = Number(route.params.id)
+const videoId = computed(() => Number(route.params.id))
 
 const video = ref<VideoMeta | null>(null)
 const items = ref<Item[]>([])
@@ -40,7 +41,7 @@ const noteLabel = computed(() => {
 })
 
 async function loadTags() {
-  tags.value = (await listTags('video', videoId)).filter((t) => t.bound)
+  tags.value = (await listTags('video', videoId.value)).filter((t) => t.bound)
 }
 
 function openQueryItem() {
@@ -50,12 +51,23 @@ function openQueryItem() {
   if (item) select(item)
 }
 
-onMounted(async () => {
+const loadSeq = ref(0)
+
+async function load() {
+  const mine = ++loadSeq.value
+  loadError.value = ''
+  video.value = null
+  items.value = []
+  transcript.value = []
+  tags.value = []
+  selected.value = null
+  drawer.value = false
   try {
     // 三个接口本来互不依赖，并行拉比串行省一半白屏时间
     const [v, its, trs] = await Promise.all([
-      getVideo(videoId), getItems(videoId), getTranscript(videoId)
+      getVideo(videoId.value), getItems(videoId.value), getTranscript(videoId.value)
     ])
+    if (mine !== loadSeq.value) return
     video.value = v
     items.value = its
     transcript.value = trs
@@ -63,9 +75,12 @@ onMounted(async () => {
     // 标签失败不阻塞工作台主体
     await loadTags().catch(() => { tags.value = [] })
   } catch (err) {
+    if (mine !== loadSeq.value) return
     loadError.value = err instanceof Error ? err.message : String(err)
   }
-})
+}
+
+watch(() => route.params.id, () => void load(), { immediate: true })
 watch(() => route.query.item, openQueryItem)
 
 function seek(ms: number) {
@@ -93,22 +108,38 @@ function noteFromSelected() {
 }
 
 /** B5 两层标签的人工侧：AI 建议可采纳/驳回，也可手动绑定新标签（video 级） */
+const tagBusy = ref(false)
+
+async function runTag(action: () => Promise<void>, success: string) {
+  if (tagBusy.value) return
+  tagBusy.value = true
+  try {
+    await action()
+    await loadTags()
+    ElMessage.success(success)
+  } catch (err) {
+    ElMessage.error(err instanceof Error ? err.message : '标签操作失败')
+  } finally {
+    tagBusy.value = false
+  }
+}
+
 async function adoptTag(t: TagInfo) {
-  await bindTag(t.name, 'video', videoId)
-  await loadTags()
+  await runTag(() => bindTag(t.name, 'video', videoId.value), '已采纳 AI 标签建议')
 }
 
 async function dismissTagChip(t: TagInfo) {
-  await dismissTag(t.id, 'video', videoId)
-  await loadTags()
+  const message = t.suggested_by_ai ? '已驳回 AI 标签建议' : '已移除标签'
+  await runTag(() => dismissTag(t.id, 'video', videoId.value), message)
 }
 
 async function addTag() {
   const name = newTag.value.trim()
   if (!name) return
-  await bindTag(name, 'video', videoId)
-  newTag.value = ''
-  await loadTags()
+  await runTag(async () => {
+    await bindTag(name, 'video', videoId.value)
+    newTag.value = ''
+  }, '标签已绑定')
 }
 </script>
 
@@ -131,9 +162,15 @@ async function addTag() {
     <div class="workbench">
       <div class="col left">
         <h3 class="t">章节大纲</h3>
-        <ul class="outline">
-          <li
+        <el-empty
+          v-if="!chapters.length"
+          description="暂无章节大纲：可能仍在解析，或该视频没有结构化结果"
+          :image-size="48"
+        />
+        <div v-else class="outline">
+          <div
             v-for="(c, i) in chapters" :key="i"
+            class="outline-item"
             role="button" tabindex="0"
             @click="seek(c.start_ms)"
             @keydown.enter="seek(c.start_ms)"
@@ -144,13 +181,15 @@ async function addTag() {
               <div>{{ c.title }}</div>
               <div class="gist">{{ c.gist }}</div>
             </div>
-          </li>
-        </ul>
+          </div>
+        </div>
 
         <h3 class="t">原话转写（{{ transcript.length }} 句）</h3>
-        <ul class="outline scroll">
-          <li
+        <el-empty v-if="!transcript.length" description="暂无转写：可能仍在解析" :image-size="48" />
+        <div v-else class="outline scroll">
+          <div
             v-for="(s, i) in transcript" :key="i"
+            class="outline-item"
             role="button" tabindex="0"
             @click="seek(s.start_ms)"
             @keydown.enter="seek(s.start_ms)"
@@ -158,8 +197,8 @@ async function addTag() {
           >
             <span class="ts">{{ clock(s.start_ms) }}</span>
             <span class="txt">{{ s.text }}</span>
-          </li>
-        </ul>
+          </div>
+        </div>
       </div>
 
       <div class="col center">
@@ -189,10 +228,15 @@ async function addTag() {
             class="tchip"
           >
             {{ t.name }}<template v-if="t.suggested_by_ai"> · AI 建议</template>
-            <el-link v-if="t.suggested_by_ai" type="primary" class="op" @click="adoptTag(t)">采纳</el-link>
-            <el-link type="danger" class="op" @click="dismissTagChip(t)">驳回</el-link>
+            <el-link v-if="t.suggested_by_ai" type="primary" class="op" :disabled="tagBusy" @click="adoptTag(t)">采纳</el-link>
+            <el-link type="danger" class="op" :disabled="tagBusy" @click="dismissTagChip(t)">
+              {{ t.suggested_by_ai ? '驳回' : '移除' }}
+            </el-link>
           </el-tag>
-          <el-input v-model="newTag" size="small" placeholder="加标签，回车绑定" class="tag-input" @keyup.enter="addTag" />
+          <el-input
+            v-model="newTag" size="small" placeholder="加标签，回车绑定"
+            class="tag-input" :disabled="tagBusy" @keyup.enter="addTag"
+          />
         </div>
         <ArtifactPanel :items="items" @select="select" @seek="seek" />
       </div>
@@ -211,20 +255,19 @@ async function addTag() {
 .alert { margin-bottom: 12px; }
 /* 三列弹性收缩：1280 默认窗宽不溢出，窄窗按断点单列堆叠（产物列不可见是此前实测缺陷） */
 .workbench { display: grid; grid-template-columns: minmax(220px, 300px) minmax(320px, 1fr) minmax(320px, 420px); gap: 14px; align-items: start; }
-@media (max-width: 1080px) {
+@media (max-width: 1140px) {
   .workbench { grid-template-columns: 1fr; }
-  .col { min-height: auto; }
   /* 窄屏先给播放器与产物，大纲/转写放后面，避免一屏全是转写 */
   .col.center { order: 1; }
   .col.right { order: 2; }
   .col.left { order: 3; }
 }
-.col { background: #fff; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 8px; padding: 12px; min-height: 70vh; }
+.col { background: #fff; border: 1px solid var(--vm-border, #e6e8eb); border-radius: 8px; padding: 12px; min-width: 0; }
 .t { font-size: 13px; color: var(--vm-text-secondary, #4b5563); margin: 6px 0 8px; }
-.outline { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.outline li { display: flex; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
-.outline li:hover { background: #f2f5fb; }
-.outline li:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
+.outline { margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.outline-item { display: flex; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+.outline-item:hover { background: #f2f5fb; }
+.outline-item:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .outline.scroll { max-height: 40vh; overflow: auto; }
 .ts { color: var(--el-color-primary, #3d6fd6); font-variant-numeric: tabular-nums; flex: none; width: 48px; }
 .gist { color: var(--vm-muted, #5f6b7d); font-size: 12px; }

@@ -7,6 +7,7 @@
 import queue
 import shutil
 import threading
+from collections import OrderedDict, deque
 from dataclasses import asdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -28,6 +29,7 @@ from app.enums import (
 )
 from app.engines.base import AsrEngine, KeyFrame, OcrEngine, build_asr, build_ocr
 from app.llm import structure
+from app.media import display_name
 from app.models import (
     Artifact,
     ConflictRecord,
@@ -44,29 +46,65 @@ from app.models import (
 
 
 class ProgressBus:
-    """内存事件总线，供 SSE 订阅。进程重启即丢——队列持久化明确在范围外。"""
+    """内存事件总线，供 SSE 订阅。进程重启即丢——队列持久化明确在范围外。
+
+    每个批次保留最近 256 条事件：进度页刷新后订阅仍能回放本次运行的事件，
+    而不是只剩一条终态。全局最多保留 64 个批次，避免长期运行内存无界增长。
+    """
+
+    HISTORY_LIMIT = 256
+    BATCH_LIMIT = 64
 
     def __init__(self) -> None:
         self._subs: list[queue.Queue] = []
         self._lock = threading.Lock()
+        self._history: OrderedDict[int, deque[dict]] = OrderedDict()
+        self._seq: dict[int, int] = {}
 
-    def subscribe(self) -> queue.Queue:
+    def subscribe(self, batch_id: int) -> tuple[queue.Queue, list[dict]]:
+        """先注册队列再复制历史，保证订阅瞬间不会漏掉并发 emit 的事件。"""
         q: queue.Queue = queue.Queue(maxsize=256)
         with self._lock:
             self._subs.append(q)
-        return q
+            hist = self._history.get(batch_id)
+            if hist is not None:
+                self._history.move_to_end(batch_id)
+            snapshot = list(hist) if hist is not None else []
+        return q, snapshot
 
     def unsubscribe(self, q: queue.Queue) -> None:
         with self._lock:
             if q in self._subs:
                 self._subs.remove(q)
 
-    def emit(self, batch_id: int, video_id: int | None, stage: str, status: str, message: str = "") -> None:
-        event = {
-            "batch_id": batch_id, "video_id": video_id, "stage": stage, "status": status,
-            "message": message, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        }
+    def reset(self, batch_id: int) -> None:
+        """重跑/重试前清空历史，但保留 seq 单调递增——在线订阅者的去重集合不会误吞新事件。"""
         with self._lock:
+            self._history.pop(batch_id, None)
+
+    def forget(self, batch_id: int) -> None:
+        """批次删除后彻底清理；SQLite 可能复用主键，不能把旧事件回放给新批次。"""
+        with self._lock:
+            self._history.pop(batch_id, None)
+            self._seq.pop(batch_id, None)
+
+    def emit(self, batch_id: int, video_id: int | None, stage: str, status: str, message: str = "") -> None:
+        with self._lock:
+            seq = self._seq.get(batch_id, 0) + 1
+            self._seq[batch_id] = seq
+            event = {
+                "batch_id": batch_id, "video_id": video_id, "stage": stage, "status": status,
+                "message": message, "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                "seq": seq,
+            }
+            hist = self._history.get(batch_id)
+            if hist is None:
+                hist = deque(maxlen=self.HISTORY_LIMIT)
+                self._history[batch_id] = hist
+                while len(self._history) > self.BATCH_LIMIT:
+                    self._history.popitem(last=False)
+            hist.append(event)
+            self._history.move_to_end(batch_id)
             for q in list(self._subs):
                 if q.full():
                     continue
@@ -339,8 +377,18 @@ def _bind_tag(session: Session, target_type: TagTarget, target_id: int, name: st
         session.add(TagBinding(tag_id=tag.id, target_type=target_type, target_id=target_id))
 
 
+def _emit_video_terminal(batch_id: int, video: Video) -> None:
+    """单条视频终态事件：stage=batch 但 video_id 非空，前端据此实时更新矩阵。
+
+    批次终态仍是 video_id=None；SSE 消费者必须用 video_id 区分，避免把单条结束当成整批结束。
+    """
+    bus.emit(batch_id, video.id, "batch", video.status.value,
+             display_name(video.path, video.batch_id))
+
+
 def parse_batch(session: Session, batch: VideoBatch) -> None:
     """顺序处理整批（范围外：并发调度）。任何异常都必须让批次落终态。"""
+    bus.reset(batch.id)   # 新一次运行不把上一次的事件回放给刷新页面的人
     batch.status = BatchStatus.RUNNING
     session.add(batch)
     session.commit()
@@ -350,9 +398,11 @@ def parse_batch(session: Session, batch: VideoBatch) -> None:
     try:
         for video in videos:
             # 事件流面向使用者，只给文件名——本机绝对路径不该上 UI
-            bus.emit(batch.id, video.id, "batch", "video_start", Path(video.path).name)
+            bus.emit(batch.id, video.id, "batch", "video_start",
+                     display_name(video.path, video.batch_id))
             try:
-                parse_video(session, video)
+                done = parse_video(session, video)
+                _emit_video_terminal(batch.id, done)
             except Exception as exc:
                 # 单条未预期异常不能拖垮整批：标失败后继续下一条
                 session.rollback()
@@ -362,8 +412,7 @@ def parse_batch(session: Session, batch: VideoBatch) -> None:
                     failed.error = f"{failed.error}\n{type(exc).__name__}: {exc}".strip()[:500]
                     session.add(failed)
                     session.commit()
-                    bus.emit(batch.id, failed.id, "batch", "video_failed",
-                             f"{Path(failed.path).name} 解析异常")
+                    _emit_video_terminal(batch.id, failed)
     finally:
         status = _recompute_batch_status(session, batch.id)
         bus.emit(batch.id, None, "batch", status.value)
@@ -374,12 +423,17 @@ def retry_video(session: Session, video_id: int) -> Video | None:
     if video is None:
         return None
     batch_id = video.batch_id
+    bus.reset(batch_id)
     for stage in STAGES:
         setattr(video, f"{stage.value}_status", StageStatus.PENDING)
     session.add(video)
     session.commit()
+    bus.emit(batch_id, video.id, "batch", "video_start",
+             display_name(video.path, video.batch_id))
     try:
         result = parse_video(session, video)
+        if result is not None:
+            _emit_video_terminal(batch_id, result)
     except Exception as exc:
         session.rollback()
         failed = session.get(Video, video_id)
@@ -388,6 +442,7 @@ def retry_video(session: Session, video_id: int) -> Video | None:
             failed.error = f"{failed.error}\n{type(exc).__name__}: {exc}".strip()[:500]
             session.add(failed)
             session.commit()
+            _emit_video_terminal(batch_id, failed)
         result = failed
     finally:
         status = _recompute_batch_status(session, batch_id)

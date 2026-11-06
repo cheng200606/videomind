@@ -5,14 +5,18 @@ import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { createBatch, getEngines, getModelSettings } from '../api/client'
-import { ASR_LABEL } from '../api/labels'
+import { ASR_LABEL, MODEL_PROVIDER_LABEL, OCR_LABEL } from '../api/labels'
 import type { EngineSettings, ModelSettings } from '../api/types'
+import { useLeaveGuard } from '../composables/useLeaveGuard'
 
 const router = useRouter()
 const name = ref('未命名批次')
 const fileList = ref<UploadUserFile[]>([])
 const busy = ref(false)
 const uploadPercent = ref<number | null>(null)
+const controller = ref<AbortController | null>(null)
+const leavingForResult = ref(false)
+let cancelled = false
 const MAX_BYTES = 2 * 1024 ** 3
 
 const engines = ref<EngineSettings | null>(null)
@@ -42,24 +46,42 @@ async function submit() {
     ElMessage.error(`${tooLarge.name} 超过 2GB，请先压缩或分段`)
     return
   }
+  const ac = new AbortController()
+  controller.value = ac
+  cancelled = false
   busy.value = true
   uploadPercent.value = 0
   try {
     const { id, rejected } = await createBatch(
       name.value.trim() || '未命名批次', files,
-      (p) => { uploadPercent.value = p }
+      (p) => { uploadPercent.value = p },
+      ac.signal
     )
+    if (cancelled) return
     if (rejected.length) {
       ElMessage.warning(`已跳过 ${rejected.length} 个文件：${rejected.map((r) => `${r.filename}（${r.reason}）`).join('、')}`)
     }
+    // 批次已创建：此时离开是去结果页，不能被“未保存”保护拦下
+    leavingForResult.value = true
     router.push(`/batches/${id}`)
   } catch (err) {
-    ElMessage.error(`上传失败：${err instanceof Error ? err.message : err}`)
+    if (cancelled) ElMessage.info('已取消上传；若批次已创建，可在视频库删除')
+    else ElMessage.error(`上传失败：${err instanceof Error ? err.message : err}`)
   } finally {
+    controller.value = null
     busy.value = false
     uploadPercent.value = null
+    cancelled = false
   }
 }
+
+function cancelUpload() {
+  if (!controller.value) return
+  cancelled = true
+  controller.value.abort()
+}
+
+useLeaveGuard(() => !leavingForResult.value && (fileList.value.length > 0 || busy.value))
 </script>
 
 <template>
@@ -68,7 +90,7 @@ async function submit() {
 
     <el-form label-width="88px">
       <el-form-item label="批次名称">
-        <el-input v-model="name" maxlength="40" show-word-limit placeholder="一次导入的 N 条视频归为一个批次" />
+        <el-input v-model="name" maxlength="80" show-word-limit placeholder="一次导入的 N 条视频归为一个批次" />
       </el-form-item>
       <el-form-item label="视频文件">
         <el-upload
@@ -76,6 +98,7 @@ async function submit() {
           drag
           multiple
           :auto-upload="false"
+          :disabled="busy"
           accept=".mp4,.mov,.mkv,.avi,.webm"
         >
           <div class="drop">把本地视频拖进来，或点击选择多个文件</div>
@@ -90,14 +113,14 @@ async function submit() {
               <span class="k">大模型</span>
               <el-tag v-if="modelMeta?.has_key" size="small" type="success">已配置</el-tag>
               <el-tag v-else size="small" type="warning">未配置 · 规则兜底</el-tag>
-              <span class="v">{{ modelMeta ? `${modelMeta.provider} · ${modelMeta.model}` : '读取中…' }}</span>
+              <span class="v">{{ modelMeta ? `${MODEL_PROVIDER_LABEL[modelMeta.provider] ?? modelMeta.provider} · ${modelMeta.model}` : '读取中…' }}</span>
               <el-button link type="primary" @click="router.push('/settings')">去设置</el-button>
             </div>
             <div class="srow">
               <span class="k">解析引擎</span>
               <span class="v">
                 ASR {{ ASR_LABEL[resolvedAsr] ?? resolvedAsr }} ·
-                OCR {{ engines?.ocr.current ?? '—' }} ·
+                OCR {{ OCR_LABEL[engines?.ocr.current ?? ''] ?? engines?.ocr.current ?? '—' }} ·
                 {{ engines?.output_schemas.length ?? 0 }} 类产物
               </span>
               <el-button link type="primary" @click="router.push('/settings')">修改</el-button>
@@ -133,6 +156,7 @@ async function submit() {
 
     <el-progress v-if="busy && uploadPercent !== null" :percentage="uploadPercent" class="progress" />
     <el-button type="primary" :loading="busy" @click="submit">开始解析</el-button>
+    <el-button v-if="busy" @click="cancelUpload">取消上传</el-button>
   </el-card>
 </template>
 

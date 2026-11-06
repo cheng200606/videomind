@@ -48,7 +48,7 @@ export interface VideoState {
 export interface BatchState {
   id: number
   name: string
-  status: string
+  status: VideoStatus
   videos: VideoState[]
 }
 
@@ -59,7 +59,7 @@ export interface VideoMeta extends VideoState {
 export interface BatchSummary {
   id: number
   name: string
-  status: string
+  status: VideoStatus
   video_count: number
   created_at: string
 }
@@ -80,6 +80,8 @@ export interface StageEvent {
   status: string
   message: string
   ts: string
+  /** 服务端每批单调递增；重连回放时用于去重 */
+  seq?: number
 }
 
 export interface EngineSettings {

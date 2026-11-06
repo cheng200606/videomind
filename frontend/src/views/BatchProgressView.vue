@@ -24,9 +24,17 @@ onUnmounted(() => store.stopProgress())
 const isRunning = computed(() => ['pending', 'running'].includes(store.current?.status ?? ''))
 const isTerminal = computed(() => ['succeeded', 'partial', 'failed'].includes(store.current?.status ?? ''))
 
-/** 表格插槽里的 row 是 any，经这里转成有类型的索引，避免以 any 下标撞 Record */
-function statusOf(row: VideoState, stage: Stage): StageStatus {
-  return row.stages[stage]
+/** 表格插槽里的 row 是 DefaultRow，经这里收窄成 VideoState，避免 any 下标撞 Record */
+function statusOf(row: unknown, stage: Stage): StageStatus {
+  return (row as VideoState).stages[stage]
+}
+
+function retryRow(row: unknown) {
+  void retry(row as VideoState)
+}
+
+function openWorkbench(row: unknown) {
+  void router.push(`/videos/${(row as VideoState).id}`)
 }
 
 async function confirm(message: string, title: string): Promise<boolean> {
@@ -90,8 +98,18 @@ async function retry(row: VideoState) {
       title="批次部分成功：失败条目可单条重试，已成功的结果不会重跑"
       class="alert"
     />
+    <el-alert
+      v-if="store.connectionLost"
+      type="warning"
+      :closable="false"
+      show-icon
+      title="实时连接中断，已切换为快照刷新；后端恢复后会自动继续"
+      class="alert"
+    >
+      <el-button size="small" @click="store.open(id)">重新连接</el-button>
+    </el-alert>
 
-    <el-table :data="store.current.videos" border>
+    <el-table :data="store.current.videos" border class="desktop-table">
       <el-table-column label="视频" min-width="220">
         <template #default="{ row }">
           <div class="file" :title="row.file_name || row.path">{{ row.file_name || row.path.split(/[\\/]/).pop() }}</div>
@@ -120,17 +138,41 @@ async function retry(row: VideoState) {
       </el-table-column>
       <el-table-column label="操作" width="190" align="center" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" :disabled="isRunning || row.status === 'running'" @click="retry(row)">重试本条</el-button>
-          <el-button size="small" type="primary" :disabled="row.status === 'pending' || row.status === 'running'" @click="router.push(`/videos/${row.id}`)">
+          <el-button size="small" :disabled="isRunning || row.status === 'running'" @click="retryRow(row)">重试本条</el-button>
+          <el-button size="small" type="primary" :disabled="row.status === 'pending' || row.status === 'running'" @click="openWorkbench(row)">
             工作台
           </el-button>
         </template>
       </el-table-column>
     </el-table>
 
+    <div class="mobile-list">
+      <el-card v-for="v in store.current.videos" :key="v.id" shadow="never" class="vcard">
+        <div class="vhead">
+          <span class="file">{{ v.file_name || v.path.split(/[\\/]/).pop() }}</span>
+          <el-tag size="small" :type="STATUS_TYPE[v.status] ?? 'info'">{{ STATUS_LABEL[v.status] ?? v.status }}</el-tag>
+        </div>
+        <div class="stages">
+          <el-tag
+            v-for="(label, key) in STAGE_LABEL" :key="key" size="small"
+            :type="STAGE_STATUS_TYPE[statusOf(v, key as Stage)]" disable-transitions
+          >{{ label }} · {{ STAGE_STATUS_LABEL[statusOf(v, key as Stage)] }}</el-tag>
+        </div>
+        <div v-if="v.error" class="err">{{ v.error }}</div>
+        <div class="vacts">
+          <el-button size="small" :disabled="isRunning || v.status === 'running'" @click="retry(v)">重试本条</el-button>
+          <el-button
+            size="small" type="primary"
+            :disabled="v.status === 'pending' || v.status === 'running'"
+            @click="openWorkbench(v)"
+          >工作台</el-button>
+        </div>
+      </el-card>
+    </div>
+
     <el-card class="stream" shadow="never">
       <template #header><b>解析事件流</b><span class="muted">（SSE 实时推送）</span></template>
-      <div v-for="(e, i) in store.events.slice(-12)" :key="i" class="evt">
+      <div v-for="(e, i) in store.events.slice(-12)" :key="e.seq ?? i" class="evt">
         <span class="muted">{{ fmtTime(e.ts) }}</span>
         <el-tag size="small" :type="STAGE_STATUS_TYPE[e.status as StageStatus] ?? 'info'">
           {{ EVENT_STAGE_LABEL[e.stage] ?? e.stage }} ·
@@ -138,7 +180,11 @@ async function retry(row: VideoState) {
         </el-tag>
         <span>{{ e.message }}</span>
       </div>
-      <el-empty v-if="!store.events.length" description="暂无事件" :image-size="60" />
+      <el-empty
+        v-if="!store.events.length"
+        description="暂无事件：解析开始后自动推送，刷新页面会回放本次运行的事件"
+        :image-size="60"
+      />
     </el-card>
   </div>
   <el-alert
@@ -164,7 +210,16 @@ async function retry(row: VideoState) {
 .stream { margin-top: 16px; }
 .evt { display: flex; align-items: center; gap: 10px; font-size: 12px; padding: 3px 0; flex-wrap: wrap; }
 .muted { color: var(--vm-muted, #5f6b7d); }
+.mobile-list { display: none; }
 @media (max-width: 800px) {
   .head-actions { margin-left: 0; }
+}
+@media (max-width: 700px) {
+  /* 四阶段矩阵在窄屏会被固定操作列挤掉，改为卡片逐条展示 */
+  .desktop-table { display: none; }
+  .mobile-list { display: flex; flex-direction: column; gap: 10px; }
+  .vhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .stages { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .vacts { display: flex; gap: 8px; margin-top: 10px; }
 }
 </style>

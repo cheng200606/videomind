@@ -7,7 +7,7 @@ import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlmodel import Session, delete, select
 from sse_starlette.sse import EventSourceResponse
 
@@ -43,12 +43,28 @@ def _video_view(video: Video) -> dict:
     }
 
 
-def _terminal_event(batch: VideoBatch) -> dict:
+def _terminal_event(batch: VideoBatch, seq: int | None = None) -> dict:
     """给「订阅前批次已结束」的重连者补一条终态事件，字段形状与 ProgressBus.emit 一致。"""
-    return {
+    event = {
         "batch_id": batch.id, "video_id": None, "stage": "batch", "status": batch.status.value,
         "message": "", "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+    if seq is not None:
+        event["seq"] = seq
+    return event
+
+
+_TERMINAL_VIDEO_VALUES = tuple(s.value for s in (VideoStatus.SUCCEEDED, VideoStatus.PARTIAL, VideoStatus.FAILED))
+
+
+def _is_video_terminal(event: dict) -> bool:
+    return (event.get("video_id") is not None and event.get("stage") == "batch"
+            and event.get("status") in _TERMINAL_VIDEO_VALUES)
+
+
+def _is_batch_terminal(event: dict) -> bool:
+    return (event.get("video_id") is None and event.get("stage") == "batch"
+            and event.get("status") in _TERMINAL_VALUES)
 
 
 def _run_batch(batch_id: int) -> None:
@@ -148,6 +164,7 @@ async def create_batch(
     session.add(batch)
     session.commit()
     session.refresh(batch)
+    bus.forget(batch.id)   # SQLite 可能复用主键：新批次绝不能回放已删除批次的旧事件
 
     background.add_task(_run_batch, batch.id)
     return {"id": batch.id, "name": batch.name, "video_count": batch.video_count, "rejected": rejected}
@@ -181,7 +198,8 @@ def reparse_batch(batch_id: int, background: BackgroundTasks, session: Session =
         raise HTTPException(404, "批次不存在")
     if batch.status not in _TERMINAL:
         raise HTTPException(409, "批次解析中，结束后才能重跑")
-    # 同步置 RUNNING：否则前端 POST 后立刻打开 SSE 会先收到旧终态并断流
+    # 同步置 RUNNING 并清掉旧事件：否则前端 POST 后立刻打开 SSE 会先收到旧终态并断流
+    bus.reset(batch_id)
     batch.status = BatchStatus.RUNNING
     videos = session.exec(select(Video).where(Video.batch_id == batch_id)).all()
     for video in videos:
@@ -230,6 +248,7 @@ def delete_batch(batch_id: int, session: Session = Depends(get_session)):
     session.exec(delete(Video).where(Video.batch_id == batch_id))
     session.delete(batch)
     session.commit()
+    bus.forget(batch_id)
     return None
 
 
@@ -243,6 +262,7 @@ def retry(video_id: int, background: BackgroundTasks, session: Session = Depends
     if video.status == VideoStatus.RUNNING or (batch and batch.status == BatchStatus.RUNNING):
         raise HTTPException(409, "该视频或批次正在解析中，结束后才能重试")
 
+    bus.reset(video.batch_id)
     video.status = VideoStatus.RUNNING
     video.error = ""
     for stage in STAGES:
@@ -262,21 +282,34 @@ def retry(video_id: int, background: BackgroundTasks, session: Session = Depends
 
 
 @router.get("/batches/{batch_id}/progress", response_class=EventSourceResponse)
-async def progress(batch_id: int):
+async def progress(batch_id: int, video_events: bool = Query(False)):
     """批次进度 SSE。FastAPI 只有显式指定 EventSourceResponse 才走 text/event-stream 分支，
-    否则生成器端点按 application/jsonl 输出，浏览器 EventSource 直接收不到。"""
+    否则生成器端点按 application/jsonl 输出，浏览器 EventSource 直接收不到。
+
+    video_events=1 时额外下发单条视频终态事件（video_id 非空）；默认关闭以兼容
+    仍按「stage=batch 即整批结束」判断的旧前端。新前端订阅时显式开启。
+    """
     with Session(engine) as probe:
         batch = probe.get(VideoBatch, batch_id)
     if batch is None:
         # 404 必须在开流前抛：生成器里的异常发生在响应已开始之后，Starlette 无法再改状态码
         raise HTTPException(404, "批次不存在")
 
+    def _keep(event: dict) -> bool:
+        return video_events or not _is_video_terminal(event)
+
     async def _stream():
-        q = bus.subscribe()
+        q, history = bus.subscribe(batch_id)
         try:
-            # 订阅前批次可能已经跑完（进度页刷新后重连），先探测终态，否则流只会空转 ping
+            for event in history:
+                if event.get("batch_id") == batch_id and _keep(event):
+                    yield {"event": "stage", "data": json.dumps(event, ensure_ascii=False)}
+            if history and _is_batch_terminal(history[-1]):
+                return
+            # 订阅前批次可能已经跑完（进度页刷新后重连），历史为空时补一条终态
             if batch.status in _TERMINAL:
-                yield {"event": "stage", "data": json.dumps(_terminal_event(batch), ensure_ascii=False)}
+                seq = (history[-1].get("seq", 0) + 1) if history else None
+                yield {"event": "stage", "data": json.dumps(_terminal_event(batch, seq), ensure_ascii=False)}
                 return
             while True:
                 try:
@@ -286,14 +319,15 @@ async def progress(batch_id: int):
                     with Session(engine) as reprobe:
                         latest = reprobe.get(VideoBatch, batch_id)
                     if latest is not None and latest.status in _TERMINAL:
-                        yield {"event": "stage", "data": json.dumps(_terminal_event(latest), ensure_ascii=False)}
+                        seq = (history[-1].get("seq", 0) + 1) if history else None
+                        yield {"event": "stage", "data": json.dumps(_terminal_event(latest, seq), ensure_ascii=False)}
                         return
                     yield {"event": "ping", "data": "{}"}
                     continue
-                if event["batch_id"] != batch_id:
+                if event["batch_id"] != batch_id or not _keep(event):
                     continue
                 yield {"event": "stage", "data": json.dumps(event, ensure_ascii=False)}
-                if event["stage"] == "batch" and event["status"] in _TERMINAL_VALUES:
+                if _is_batch_terminal(event):
                     break
         finally:
             bus.unsubscribe(q)

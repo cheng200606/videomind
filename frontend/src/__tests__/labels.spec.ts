@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   ARTIFACT_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, STAGE_LABEL,
-  STAGE_STATUS_LABEL, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
+  STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
 } from '@/api/labels'
 
 describe('枚举中文映射', () => {
@@ -24,6 +24,10 @@ describe('枚举中文映射', () => {
     expect(STAGE_STATUS_LABEL.video_start).toBe('开始解析')
     expect(STAGE_STATUS_LABEL.video_failed).toBe('单条失败')
     expect(STAGE_STATUS_LABEL.skipped).toBe('降级跳过')
+    expect(STAGE_STATUS_LABEL.succeeded).toBe('成功')
+    expect(STAGE_STATUS_LABEL.partial).toBe('部分成功')
+    expect(STAGE_STATUS_TYPE.succeeded).toBe('success')
+    expect(STAGE_STATUS_TYPE.partial).toBe('warning')
   })
 
   it('产物类型与讲义状态映射齐备', () => {

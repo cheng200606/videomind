@@ -11,13 +11,37 @@ from app.db import engine, init_db
 from app.enums import ArtifactType, BatchStatus, Confidence, RevisionState, StageStatus, VideoStatus
 from app.export import build_batch_markdown, ts
 from app.models import Artifact, ConflictRecord, Evidence, KnowledgeItem, Segment, Video, VideoBatch
-from app.pipeline import _persist, parse_batch, parse_video, recover_orphan_runs, retry_video
+from app.pipeline import ProgressBus, _persist, parse_batch, parse_video, recover_orphan_runs, retry_video
 from app.routers.knowledge import _brief
 
 
 @pytest.fixture(scope="module", autouse=True)
 def _db():
     init_db()
+
+
+def test_progress_bus_history_is_bounded_and_reset_keeps_seq():
+    """历史最多 256 条；reset 清历史但 seq 继续递增，避免在线订阅者去重误吞新事件。"""
+    bus = ProgressBus()
+    _, empty = bus.subscribe(42)
+    assert empty == []
+    for _ in range(300):
+        bus.emit(42, None, "batch", "running")
+    _, hist = bus.subscribe(42)
+    assert len(hist) == 256
+    assert hist[0]["seq"] == 45 and hist[-1]["seq"] == 300
+
+    bus.reset(42)
+    _, cleared = bus.subscribe(42)
+    assert cleared == []
+    bus.emit(42, None, "batch", "succeeded")
+    _, after_reset = bus.subscribe(42)
+    assert after_reset[-1]["seq"] == 301
+
+    bus.forget(42)
+    bus.emit(42, None, "batch", "running")
+    _, after_forget = bus.subscribe(42)
+    assert after_forget[-1]["seq"] == 1
 
 
 @pytest.fixture()

@@ -80,7 +80,12 @@ class RapidOcr:
         if RapidOcr._engine is None:
             from rapidocr import RapidOCR
 
-            RapidOcr._engine = RapidOCR()
+            # 默认 ONNX Runtime 按 CPU 核数建线程池，实测常驻约 1.6 GB；
+            # 长视频里还要同时跑 ASR 子进程，限制到 2 线程可降到约 0.9 GB
+            RapidOcr._engine = RapidOCR(params={
+                "EngineConfig.onnxruntime.intra_op_num_threads": 2,
+                "EngineConfig.onnxruntime.inter_op_num_threads": 1,
+            })
         return RapidOcr._engine
 
     def recognize(self, frames: Sequence[KeyFrame]) -> list[FrameText]:

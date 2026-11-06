@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { getEngines, getModelSettings, setEngines, setModelSettings, testModelSettings } from '../api/client'
 import { ARTIFACT_LABEL, ASR_LABEL, OCR_LABEL } from '../api/labels'
 import type { EngineSettings, ModelProvider, ModelSettings, ModelSettingsInput, ModelTestResult } from '../api/types'
+import { useLeaveGuard } from '../composables/useLeaveGuard'
 import type { AppInfo, UpdateState } from '../desktop'
 
 const ALL_SCHEMAS = ['summary', 'key_points', 'uml_draft', 'code_blocks']
@@ -28,6 +29,7 @@ const modelName = ref('')
 const apiKey = ref('')
 const saving = ref(false)
 const testing = ref(false)
+const clearing = ref(false)
 const testResult = ref<ModelTestResult | null>(null)
 
 const asr = ref('mock')
@@ -50,6 +52,17 @@ const sourceType = computed(() => ({ saved: 'success', env: 'warning', default: 
 const hasKey = computed(() => modelMeta.value?.has_key === true)
 const resolvedAsr = computed(() => engineMeta.value?.asr.resolved ?? engineMeta.value?.asr.current ?? '')
 const usingMock = computed(() => resolvedAsr.value === 'mock')
+const modelDirty = computed(() => {
+  const saved = modelMeta.value
+  return !!saved && (provider.value !== saved.provider || baseUrl.value !== saved.base_url
+    || modelName.value !== saved.model || apiKey.value.trim() !== '')
+})
+const engineDirty = computed(() => {
+  const saved = engineMeta.value
+  return !!saved && (asr.value !== saved.asr.current || ocr.value !== saved.ocr.current
+    || schemas.value.join(',') !== saved.output_schemas.join(','))
+})
+useLeaveGuard(() => modelDirty.value || engineDirty.value)
 
 async function load() {
   loading.value = true
@@ -192,11 +205,15 @@ async function clearKey() {
   } catch {
     return
   }
+  const saved = modelMeta.value
+  if (!saved) return
+  clearing.value = true
   try {
+    // 只清 Key，不把表单里尚未保存的 provider/base_url/model 顺带落盘
     modelMeta.value = await setModelSettings({
-      provider: provider.value,
-      base_url: baseUrl.value.trim() || PRESETS[provider.value].base_url,
-      model: modelName.value.trim() || PRESETS[provider.value].model,
+      provider: saved.provider,
+      base_url: saved.base_url,
+      model: saved.model,
       clear_api_key: true
     })
     apiKey.value = ''
@@ -204,6 +221,8 @@ async function clearKey() {
     ElMessage.success('Key 已清除')
   } catch (err) {
     ElMessage.error(`清除失败：${err instanceof Error ? err.message : err}`)
+  } finally {
+    clearing.value = false
   }
 }
 
@@ -235,7 +254,9 @@ async function saveEngines() {
     </div>
 
     <el-skeleton v-if="loading" :rows="8" animated />
-    <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`设置加载失败：${loadError}`" />
+    <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`设置加载失败：${loadError}`">
+      <el-button size="small" @click="load">重试</el-button>
+    </el-alert>
 
     <template v-else>
       <el-card shadow="never" class="card">
@@ -277,7 +298,7 @@ async function saveEngines() {
         <div class="actions">
           <el-button type="primary" :loading="saving" @click="saveModel">保存配置</el-button>
           <el-button :loading="testing" :disabled="!hasKey" @click="testConnection">测试连接</el-button>
-          <el-button :disabled="!hasKey" @click="clearKey">清除 Key</el-button>
+          <el-button :disabled="!hasKey" :loading="clearing" @click="clearKey">清除 Key</el-button>
         </div>
 
         <el-alert

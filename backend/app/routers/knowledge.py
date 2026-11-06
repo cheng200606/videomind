@@ -221,11 +221,18 @@ def search(tag: int | None = None, q: str | None = None, confidence: str | None 
             raise HTTPException(422, "未知置信度，可选 explicit / inferred / low")
         stmt = stmt.where(KnowledgeItem.confidence == level)
     if tag:
-        bindings = session.exec(select(TagBinding).where(
-            TagBinding.tag_id == tag, TagBinding.target_type == TagTarget.ITEM)).all()
-        item_ids = [b.target_id for b in bindings]
-        if not item_ids:
+        item_ids = [b.target_id for b in session.exec(select(TagBinding).where(
+            TagBinding.tag_id == tag, TagBinding.target_type == TagTarget.ITEM)).all()]
+        video_ids = [b.target_id for b in session.exec(select(TagBinding).where(
+            TagBinding.tag_id == tag, TagBinding.target_type == TagTarget.VIDEO)).all()]
+        # 视频级标签作用于该视频当前全部条目（重跑新增条目自动继承），条目级只命中自身
+        conditions = []
+        if item_ids:
+            conditions.append(KnowledgeItem.id.in_(item_ids))
+        if video_ids:
+            conditions.append(KnowledgeItem.video_id.in_(video_ids))
+        if not conditions:
             return []
-        stmt = stmt.where(KnowledgeItem.id.in_(item_ids))
+        stmt = stmt.where(or_(*conditions))
     return [_brief(session, i) for i in session.exec(stmt.order_by(
         KnowledgeItem.video_id, KnowledgeItem.ordinal)).all()]

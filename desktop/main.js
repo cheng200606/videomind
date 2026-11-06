@@ -13,7 +13,10 @@ const UPDATE_URL = process.env.VMIND_UPDATE_URL || ''
 const BACKEND_EXE = isDev
   ? path.join(__dirname, '..', 'backend', 'dist', 'VideoMindBackend', 'VideoMindBackend.exe')
   : path.join(process.resourcesPath, 'backend', 'VideoMindBackend.exe')
-const DATA_DIR = path.join(app.getPath('appData'), 'VideoMind', 'data')
+// 允许测试/便携场景把数据目录移到隔离位置；默认仍是 %APPDATA%/VideoMind/data
+const DATA_DIR = process.env.VMIND_APP_DATA_DIR
+  ? path.resolve(process.env.VMIND_APP_DATA_DIR)
+  : path.join(app.getPath('appData'), 'VideoMind', 'data')
 const LOG_DIR = path.join(DATA_DIR, 'logs')
 
 fs.mkdirSync(LOG_DIR, { recursive: true })

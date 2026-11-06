@@ -6,12 +6,36 @@ import type {
 
 const http = axios.create({ baseURL: '/api', timeout: 60000 })
 
+/** FastAPI 的 422 detail 是数组；直接 JSON.stringify 会把原始字段名甩给中文用户。 */
+export function formatDetail(detail: unknown): string {
+  if (!detail) return ''
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail.map((entry) => {
+      if (typeof entry === 'string') return entry
+      if (entry && typeof entry === 'object') {
+        const item = entry as { loc?: unknown; msg?: unknown }
+        const loc = Array.isArray(item.loc)
+          ? item.loc.filter((p) => p !== 'body' && p !== 'query').join('.')
+          : ''
+        const msg = item.msg == null ? JSON.stringify(entry) : String(item.msg)
+        return loc ? `${loc}：${msg}` : msg
+      }
+      return String(entry)
+    }).join('；')
+  }
+  if (typeof detail === 'object' && detail && 'msg' in detail) {
+    return String((detail as { msg: unknown }).msg)
+  }
+  return JSON.stringify(detail)
+}
+
 /** 把 FastAPI 的 detail 提到 Error.message 上，前端提示才知道是"状态机拒绝"还是"引擎不可用" */
 http.interceptors.response.use(
   (r) => r,
   (error) => {
     const detail = error.response?.data?.detail
-    if (detail) error.message = typeof detail === 'string' ? detail : JSON.stringify(detail)
+    if (detail) error.message = formatDetail(detail)
     return Promise.reject(error)
   }
 )
@@ -24,7 +48,8 @@ export async function listBatches(): Promise<BatchSummary[]> {
 export async function createBatch(
   name: string,
   files: File[],
-  onProgress?: (percent: number) => void
+  onProgress?: (percent: number) => void,
+  signal?: AbortSignal
 ): Promise<{ id: number; rejected: { filename: string; reason: string }[] }> {
   const form = new FormData()
   form.append('name', name)
@@ -33,6 +58,7 @@ export async function createBatch(
     '/batches', form, {
       // 上传大视频不能套 60s REST 超时；进度只在浏览器给出 total 时更新
       timeout: 0,
+      signal,
       onUploadProgress: (e) => {
         if (e.total) onProgress?.(Math.min(100, Math.round((e.loaded / e.total) * 100)))
       }
@@ -151,15 +177,43 @@ export function exportUrl(batchId: number): string {
 /** 与 stores/batch.ts 共用：终态批次不再订阅 */
 export const TERMINAL_BATCH_STATUSES = ['succeeded', 'partial', 'failed'] as const
 
-export function openProgress(batchId: number, onEvent: (e: StageEvent) => void): () => void {
-  const source = new EventSource(`/api/batches/${batchId}/progress`)
+/** 只有 video_id 为空的 batch 事件才是整批结束；单条视频终态不能关闭整条事件流。 */
+export function isBatchTerminalEvent(e: StageEvent): boolean {
+  return e.stage === 'batch' && e.video_id == null
+    && (TERMINAL_BATCH_STATUSES as readonly string[]).includes(e.status)
+}
+
+export interface ProgressHooks {
+  onOpen?: () => void
+  onError?: () => void
+}
+
+export function openProgress(
+  batchId: number,
+  onEvent: (e: StageEvent) => void,
+  hooks: ProgressHooks = {}
+): () => void {
+  let closed = false
+  // video_events=1：新前端需要单条视频终态来实时更新矩阵；默认关闭保证旧前端不会被提前断流
+  const source = new EventSource(`/api/batches/${batchId}/progress?video_events=1`)
+  source.onopen = () => {
+    if (!closed) hooks.onOpen?.()
+  }
+  source.onerror = () => {
+    // 不在这里 close：EventSource 会自动重连；store 同时用快照轮询兜底
+    if (!closed) hooks.onError?.()
+  }
   source.addEventListener('stage', (ev: MessageEvent) => {
     const e = JSON.parse(ev.data) as StageEvent
     onEvent(e)
-    // 服务端推完终态就收流；EventSource 默认 ~3s 自动重连，不主动 close 会无限重复收终态
-    if (e.stage === 'batch' && (TERMINAL_BATCH_STATUSES as readonly string[]).includes(e.status)) {
+    // 服务端推完整批终态就收流；EventSource 默认 ~3s 自动重连，不主动 close 会无限重复收终态
+    if (isBatchTerminalEvent(e)) {
+      closed = true
       source.close()
     }
   })
-  return () => source.close()
+  return () => {
+    closed = true
+    source.close()
+  }
 }

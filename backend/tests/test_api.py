@@ -164,6 +164,115 @@ def test_search_confidence_filter(client: TestClient):
     assert client.get("/api/search", params={"confidence": "不存在"}).status_code == 422
 
 
+def test_search_tag_scope_covers_video_and_item_level(client: TestClient, tmp_path: Path):
+    """视频级标签命中该视频全部条目；条目级标签只命中自身；无绑定标签返回空。"""
+    src = tmp_path / "tag_scope.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "标签作用域批次"},
+                        files=[("files", ("tag_scope.mp4", fh, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    vid = client.get(f"/api/batches/{r.json()['id']}").json()["videos"][0]["id"]
+    items = client.get(f"/api/videos/{vid}/items").json()
+    assert items
+
+    video_tag = client.post("/api/tags/bind", json={
+        "name": "本批视频级标签", "target_type": "video", "target_id": vid})
+    assert video_tag.status_code == 201
+    video_tag_id = video_tag.json()["id"]
+    by_video = client.get("/api/search", params={"tag": video_tag_id}).json()
+    assert len(by_video) == len(items)
+    assert {x["video_id"] for x in by_video} == {vid}
+
+    item_id = items[0]["id"]
+    bound = client.post("/api/tags/bind", json={
+        "name": "仅条目标签", "target_type": "item", "target_id": item_id})
+    assert bound.status_code == 201
+    by_item = client.get("/api/search", params={"tag": bound.json()["id"]}).json()
+    assert [x["id"] for x in by_item] == [item_id]
+
+    assert client.get("/api/search", params={
+        "tag": video_tag_id, "q": "一定不存在的关键词"}).json() == []
+
+    temp = client.post("/api/tags/bind", json={
+        "name": "临时无绑定标签", "target_type": "item", "target_id": item_id}).json()
+    assert client.post(f"/api/tags/{temp['id']}/dismiss",
+                       params={"target_type": "item", "target_id": item_id}).status_code == 200
+    assert client.get("/api/search", params={"tag": temp["id"]}).json() == []
+
+
+def _sse_events(body: str) -> list[dict]:
+    return [json.loads(line[len("data: "):]) for line in body.splitlines()
+            if line.startswith("data: ")]
+
+
+def test_sse_replays_history_and_video_terminal_is_opt_in(client: TestClient, tmp_path: Path):
+    """刷新进度页要能回放历史事件；单条终态只在 video_events=1 时下发，兼容旧前端。"""
+    src = tmp_path / "sse_history.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "SSE 回放批次"},
+                        files=[("files", ("sse_history.mp4", fh, "video/mp4"))])
+    batch_id = r.json()["id"]
+
+    with client.stream("GET", f"/api/batches/{batch_id}/progress") as resp:
+        first = _sse_events(b"".join(resp.iter_bytes()).decode("utf-8"))
+    assert first, "终态批次重连也要回放历史，不能只给一条合成终态"
+    seqs = [e["seq"] for e in first]
+    assert seqs == sorted(seqs) and len(seqs) == len(set(seqs))
+    batch_terminals = [e for e in first if e["stage"] == "batch"
+                       and e["video_id"] is None and e["status"] in ("succeeded", "partial", "failed")]
+    assert len(batch_terminals) == 1
+    assert not [e for e in first if e["video_id"] is not None and e["stage"] == "batch"
+                and e["status"] in ("succeeded", "partial", "failed")], "默认不下发单条终态"
+
+    with client.stream("GET", f"/api/batches/{batch_id}/progress",
+                       params={"video_events": 1}) as resp:
+        opted = _sse_events(b"".join(resp.iter_bytes()).decode("utf-8"))
+    video_terminals = [e for e in opted if e["video_id"] is not None and e["stage"] == "batch"
+                       and e["status"] in ("succeeded", "partial", "failed")]
+    assert len(video_terminals) == 1
+    assert opted[-1]["stage"] == "batch" and opted[-1]["video_id"] is None
+    assert not any(e["message"].startswith(f"{batch_id}_") for e in opted if e["message"]), \
+        "事件流只应展示原始文件名，不能暴露落盘批次前缀"
+
+    with client.stream("GET", f"/api/batches/{batch_id}/progress") as resp:
+        again = _sse_events(b"".join(resp.iter_bytes()).decode("utf-8"))
+    assert [e["seq"] for e in again] == seqs, "同一批次的回放必须稳定"
+
+
+def test_revise_with_content_updates_item_and_snapshot(client: TestClient, tmp_path: Path):
+    """修订接口带 content 时正文与版本快照同时更新；只跳状态时保留正文。"""
+    src = tmp_path / "revision_content.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "修订正文批次"},
+                        files=[("files", ("revision_content.mp4", fh, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    vid = client.get(f"/api/batches/{r.json()['id']}").json()["videos"][0]["id"]
+    item_id = client.get(f"/api/videos/{vid}/items").json()[0]["id"]
+
+    assert client.post(f"/api/items/{item_id}/revision",
+                       json={"content": "修订后的正文"}).status_code == 200
+    detail = client.get(f"/api/items/{item_id}").json()
+    assert detail["content"] == "修订后的正文"
+    assert detail["revisions"][-1]["snapshot"] == "修订后的正文"
+    assert detail["revisions"][-1]["state"] == "draft"
+
+    assert client.post(f"/api/items/{item_id}/revision",
+                       json={"state": "pending_confirm", "content": "确认版正文"}).status_code == 200
+    detail = client.get(f"/api/items/{item_id}").json()
+    assert detail["content"] == "确认版正文"
+    assert detail["revisions"][-1]["state"] == "pending_confirm"
+    assert detail["revisions"][-1]["snapshot"] == "确认版正文"
+
+    assert client.post(f"/api/items/{item_id}/revision",
+                       json={"state": "confirmed"}).status_code == 200
+    detail = client.get(f"/api/items/{item_id}").json()
+    assert detail["content"] == "确认版正文"
+    assert detail["revisions"][-1]["snapshot"] == "确认版正文"
+
+
 def test_missing_batch_is_404(client: TestClient):
     assert client.get("/api/batches/987654").status_code == 404
     assert client.get("/api/batches/987654/export.md").status_code == 404

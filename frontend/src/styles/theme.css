@@ -1,5 +1,6 @@
 /* 全局视觉 token：统一自绘蓝与 Element Plus 主色，提高弱化文字对比度。 */
-:root {
+/* :root:root 提高优先级：按需注入的组件 CSS 可能晚于本文件加载 */
+:root:root {
   --el-color-primary: #3d6fd6;
   --el-color-primary-light-3: #6f95e3;
   --el-color-primary-light-5: #9eb7eb;
@@ -29,3 +30,25 @@ body {
   color: var(--vm-text);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
 }
+
+/* 证据抽屉固定 420px 会在窄屏越界；全局约束到视口的 92% */
+.el-drawer {
+  max-width: 92vw;
+}
+
+/* WCAG AA：Element Plus 浅色变体的默认前景偏浅，统一压深（axe color-contrast） */
+.el-tag.el-tag--primary { --el-tag-text-color: #2f5fbf !important; }
+.el-tag.el-tag--success { --el-tag-text-color: #2f7d1f !important; }
+.el-tag.el-tag--warning { --el-tag-text-color: #8a5a00 !important; }
+.el-tag.el-tag--danger { --el-tag-text-color: #b03a3a !important; }
+.el-tag.el-tag--info { --el-tag-text-color: #5f6b7d !important; }
+.el-alert--info.is-light .el-alert__title,
+.el-alert--info.is-light .el-alert__description { color: #4b5563 !important; }
+.el-alert--warning.is-light .el-alert__title,
+.el-alert--warning.is-light .el-alert__description { color: #8a5a00 !important; }
+.el-input__count-inner { color: #6b7280 !important; }
+.el-link.el-link--danger { --el-link-text-color: #b03a3a !important; }
+.el-button--danger.is-plain { --el-button-text-color: #b03a3a !important; }
+.side .el-menu-item.is-active { color: #a8c0f0 !important; }
+.side .el-menu { --el-menu-active-color: #a8c0f0 !important; }
+.md-editor-preview code { color: #1f5fa8 !important; }

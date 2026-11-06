@@ -58,7 +58,8 @@ def test_mock_fallback_requires_explicit_test_switch(tmp_path: Path, monkeypatch
     assert [s.text for s in result.segments] == ["兜底样例"]
 
 def test_yueying_parses_manifest(tmp_path: Path, monkeypatch):
-    def fake_run(cmd, capture_output=True, text=True, timeout=None):
+    def fake_run(cmd, capture_output=True, text=True, timeout=None, **kwargs):
+        assert "app.engines.yueying_compat" in cmd
         outdir = Path(cmd[cmd.index("--out") + 1])
         frame = outdir / "frames" / "f001.jpg"
         frame.parent.mkdir(parents=True, exist_ok=True)
@@ -84,7 +85,7 @@ def test_yueying_parses_manifest(tmp_path: Path, monkeypatch):
 
 
 def test_yueying_error_uses_last_stderr_line(monkeypatch):
-    def fake_run(cmd, capture_output=True, text=True, timeout=None):
+    def fake_run(cmd, capture_output=True, text=True, timeout=None, **kwargs):
         return CompletedProcess(
             cmd, 1, stdout="",
             stderr="Traceback (most recent call last):\n  ...\n"
@@ -95,3 +96,22 @@ def test_yueying_error_uses_last_stderr_line(monkeypatch):
         YueyingAsr().transcribe("demo.mp4")
     assert "ArrayMemoryError" in str(err.value)
     assert "Traceback" not in str(err.value)
+
+
+def test_vad_cap_limits_long_speech_chunks(monkeypatch):
+    import faster_whisper.transcribe as ft
+    import faster_whisper.vad as fv
+
+    seen = []
+
+    def fake_vad(audio, vad_options=None, **kwargs):
+        seen.append(vad_options)
+        return []
+
+    monkeypatch.setattr(ft, "get_speech_timestamps", fake_vad)
+    monkeypatch.setattr(fv, "get_speech_timestamps", fake_vad)
+    from app.engines import yueying_compat
+
+    yueying_compat.cap_vad_chunks()
+    ft.get_speech_timestamps(None, None)
+    assert seen[-1].max_speech_duration_s == yueying_compat.MAX_SPEECH_SECONDS

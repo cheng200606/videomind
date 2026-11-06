@@ -1,25 +1,46 @@
 <script setup lang="ts">
-import mermaid from 'mermaid'
 import { onMounted, ref, watch } from 'vue'
+
+type Mermaid = typeof import('mermaid').default
 
 const props = defineProps<{ code: string }>()
 const host = ref<HTMLElement | null>(null)
 const failed = ref('')
 
-mermaid.initialize({
-  startOnLoad: false,
-  securityLevel: 'strict',
-  theme: 'base',
-  themeVariables: {
-    primaryColor: '#eef3fd',
-    primaryTextColor: '#1f2937',
-    primaryBorderColor: '#3d6fd6',
-    lineColor: '#3d6fd6',
-    fontSize: '13px'
-  }
-})
-
+let mermaid: Mermaid | null = null
+let loading: Promise<Mermaid> | null = null
 let seq = 0
+
+async function getMermaid(): Promise<Mermaid> {
+  if (mermaid) return mermaid
+  if (!loading) {
+    loading = import('mermaid').then((mod) => {
+      const instance = mod.default
+      instance.initialize({
+        startOnLoad: false,
+        securityLevel: 'strict',
+        theme: 'base',
+        // Mermaid 12 默认用 ELK，会多拉 1.5 MB 的布局块；产物里没有复杂布局需求，固定 dagre
+        layout: 'dagre',
+        themeVariables: {
+          primaryColor: '#eef3fd',
+          primaryTextColor: '#1f2937',
+          primaryBorderColor: '#3d6fd6',
+          lineColor: '#3d6fd6',
+          fontSize: '13px'
+        }
+      })
+      mermaid = instance
+      return instance
+    })
+  }
+  try {
+    return await loading
+  } catch (err) {
+    loading = null
+    throw err
+  }
+}
 
 async function render() {
   if (!host.value) return
@@ -29,10 +50,11 @@ async function render() {
   }
   failed.value = ''
   try {
-    const out = await mermaid.render(`vm-diagram-${++seq}`, props.code)
+    const mm = await getMermaid()
+    const out = await mm.render(`vm-diagram-${++seq}`, props.code)
     host.value.innerHTML = out.svg
   } catch (err) {
-    // LLM 生成的 mermaid 偶尔语法不合法；这里保留原文，不让整页崩
+    // LLM 生成的 mermaid 偶发语法错误，或按需加载失败；保留原文，不让整页崩
     failed.value = err instanceof Error ? err.message.slice(0, 180) : '渲染失败'
   }
 }
