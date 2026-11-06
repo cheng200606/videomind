@@ -290,3 +290,4 @@
 - **程夏（组长）**：后端 pytest 91 例全绿（83 → 91：分块/截断/块失败容忍/收尾/OCR 时间归属 6 例 + av 合成视频抽帧/去重/坏文件降级 3 例）；前端 vitest 29 例全绿，`npm run build` 通过
 - **程夏（组长）**：打包烟雾验证（三轮，对最终 sidecar）：`/api/settings/engines` 列出 whisper+rapid；上传合成视频（h264+静音 aac）走完四阶段——faster-whisper(ctranslate2) 推理、VAD(onnxruntime)、av 抽帧、RapidOCR 识别在同一冻结进程内共存无冲突，批次 succeeded；打包产物上以 Edge 实测库页/设置页/工作台渲染与提示文案
 - **程夏（组长）**：审视结论与验收记录见 docs/测试与迭代报告_v0.12.md；桌面版从 v0.11.0 经「检查更新」或重新安装升级
+- **程夏（组长）**：发布 GitHub Release [v0.12.0](https://github.com/cheng200606/videomind/releases/tag/v0.12.0)——安装包 259MB + latest.yml + blockmap 三资产齐全；线上 latest.yml 已核验（version 0.12.0 + sha512），桌面端「检查更新」可从 v0.11.0 升级
