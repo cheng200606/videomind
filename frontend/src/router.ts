@@ -4,6 +4,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   { path: '/', name: 'library', component: () => import('./views/LibraryView.vue'), meta: { title: '视频库' } },
   { path: '/upload', name: 'upload', component: () => import('./views/UploadView.vue'), meta: { title: '批量上传' } },
+  { path: '/search', name: 'search', component: () => import('./views/SearchView.vue'), meta: { title: '知识检索' } },
   { path: '/batches/:id', name: 'progress', component: () => import('./views/BatchProgressView.vue'), meta: { title: '批次进度' } },
   { path: '/videos/:id', name: 'workbench', component: () => import('./views/WorkbenchView.vue'), meta: { title: '知识工作台' } },
   { path: '/notes/:id', name: 'notes', component: () => import('./views/NotesView.vue'), meta: { title: '笔记' } },
