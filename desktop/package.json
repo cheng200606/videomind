@@ -1,7 +1,7 @@
 {
   "name": "videomind-desktop",
   "productName": "VideoMind",
-  "version": "0.7.1",
+  "version": "0.11.0",
   "private": true,
   "description": "VideoMind 视析 桌面版：Electron 壳 + PyInstaller 打包的 FastAPI 后端 sidecar",
   "main": "main.js",
