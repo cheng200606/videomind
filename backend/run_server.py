@@ -4,6 +4,7 @@ Electron 主进程通过环境变量传入 VMIND_PORT / VMIND_DATA_DIR；独立�
 用默认端口 8765 与（打包态）%APPDATA%/VideoMind/data。
 """
 
+import importlib.util
 import os
 import sys
 from pathlib import Path
@@ -26,7 +27,9 @@ def _prepare() -> None:
     os.environ.setdefault("CACHE_ROOT", str(Path(data_dir) / "cache"))
     os.environ.setdefault("REDIS_URL", "")
     os.environ.setdefault("ASR_ENGINE", "auto")
-    os.environ.setdefault("OCR_ENGINE", "none")
+    # v0.12 起桌面版内置 RapidOCR：默认开启画面通道；缺运行时的环境自动退回关闭
+    ocr_default = "rapid" if importlib.util.find_spec("rapidocr") else "none"
+    os.environ.setdefault("OCR_ENGINE", ocr_default)
     os.environ.setdefault("VMIND_WHISPER_MODEL", "tiny")
     # 桌面版用户多在国内网络；模型下载走镜像，源码环境不强制（用户可自行覆盖）
     os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")

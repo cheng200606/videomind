@@ -2,14 +2,24 @@
 
 from PyInstaller.utils.hooks import collect_all
 
-# 桌面版内置 Whisper 本地转写（faster-whisper / ctranslate2 / av / tokenizers）。
-# 其余重引擎（yueying、RapidOCR、Paddle、FunASR、torch）仍排除，避免安装包无限膨胀。
+# 桌面版内置 Whisper 本地转写（faster-whisper / ctranslate2 / av / tokenizers）+
+# RapidOCR 画面通道（v0.12 起：onnxruntime 推理后端不与 ctranslate2 的 OpenMP 同名冲突，
+# 已在打包烟雾验证；Paddle/FunASR/torch 仍排除，避免安装包无限膨胀）。
 _whisper_packages = (
     'faster_whisper', 'ctranslate2', 'av', 'tokenizers',
     'huggingface_hub', 'httpx2', 'httpcore2', 'numpy',
 )
 extra_datas, extra_binaries, extra_hidden = [], [], []
 for _pkg in _whisper_packages:
+    _d, _b, _h = collect_all(_pkg)
+    extra_datas += _d
+    extra_binaries += _b
+    extra_hidden += _h
+
+# 画面通道：rapidocr 模型随 wheel 内置（离线可用），onnxruntime/cv2/PIL 是它的运行时。
+# imagehash/scipy 仍排除——抽帧去重用 app/engines/frames.py 的 numpy 手写均值差替代。
+_ocr_packages = ('rapidocr', 'onnxruntime', 'cv2', 'PIL', 'shapely', 'pyclipper')
+for _pkg in _ocr_packages:
     _d, _b, _h = collect_all(_pkg)
     extra_datas += _d
     extra_binaries += _b
@@ -34,11 +44,11 @@ a = Analysis(
     runtime_hooks=[],
     excludes=[
         'yueying', 'funasr', 'torch', 'torchaudio',
-        'rapidocr', 'onnxruntime', 'cv2', 'scipy', 'shapely', 'pyclipper', 'PIL', 'imagehash',
+        'scipy', 'imagehash',
         'paddle', 'paddleocr', 'paddlepaddle',
         'mcp', 'mcp_types', 'cryptography', 'pyjwt', 'jsonschema',
-        'yt_dlp', 'imageio_ffmpeg', 'colorlog', 'omegaconf',
-        'flatbuffers', 'protobuf', 'win32', 'pywintypes', 'hf_xet',
+        'yt_dlp', 'imageio_ffmpeg',
+        'win32', 'pywintypes', 'hf_xet',
     ],
     noarchive=False,
     optimize=0,

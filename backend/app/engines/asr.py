@@ -110,8 +110,8 @@ class WhisperAsr:
         device = os.environ.get("VMIND_WHISPER_DEVICE", "cpu")
         compute_type = os.environ.get("VMIND_WHISPER_COMPUTE", "int8")
         language = os.environ.get("VMIND_WHISPER_LANG") or None
-        # VAD 需要 onnxruntime；桌面版不打包它（避免和 ctranslate2 的 OpenMP 运行库冲突），
-        # 源码环境装了 RapidOCR 时会自动启用
+        # VAD 需要 onnxruntime；v0.12 起桌面版随 RapidOCR 内置了它（实测与 ctranslate2
+        # 无 OpenMP 同名冲突，打包烟雾已验证），VAD 会自动启用；缺运行时时静默关闭
         vad_filter = _has_module("onnxruntime")
 
         try:
