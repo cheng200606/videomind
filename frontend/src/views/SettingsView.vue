@@ -384,6 +384,10 @@ async function saveEngines() {
                 :value="o"
               />
             </el-select>
+            <p class="hint">
+              列表只显示当前环境可用的引擎：桌面版已内置 RapidOCR 画面通道；PaddleOCR 等其他引擎需在源码环境安装
+              requirements-engines.txt 后才会出现。关闭后解析只走音频转写通道。
+            </p>
           </el-form-item>
           <el-form-item label="默认产物集">
             <el-select v-model="schemas" multiple class="field">
