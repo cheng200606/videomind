@@ -137,3 +137,40 @@
 
 - **C**：安装包代码签名（消除 SmartScreen 提示）；设置页 Key 配置写入数据目录 .env
 - **A**：桌面版关于页 / 更新进度条 UI；检索结果分页或条数上限展示
+
+---
+
+## [v0.7] — 迭代 5：真实引擎端到端测试、自定义模型设置与交互优化（2026-11-06）
+
+### 目标：在真实 ASR/OCR/DeepSeek 下走完整链路，补齐界面内自定义大模型能力，按 P0/P1/P2 修复正确性、交互与响应式问题（组长直推，按新规留痕）
+
+测试覆盖：后端 API 边界/异常/幂等/SSE/导出/设置；浏览器真实上传→四阶段→证据帧→检索深链→笔记状态机→导出→删除；1280/800 两档 7 个视图截图；真实 DeepSeek 2 分钟片段与完整 27:56 视频；本地 OpenAI 兼容 mock LLM 确定性回归。证据本地留档 `output/e2e-v0.7/`，不入库。
+
+- **程夏（组长）**：新增设置页与自定义大模型——`/settings` 视图 + `GET/PUT /api/settings/model` + `POST /api/settings/model/test`；支持 DeepSeek 与自定义 OpenAI 兼容接口，保存/测试连接/清除 Key，GET 只返回 `has_key`、不回显明文；Key 仅写本机 `backend/data/model_settings.json`
+- **程夏（组长）**：改造 `app/llm.py` 使用运行时模型配置，兼容自定义 base_url/model/key；JSON mode 不受支持时自动降级重试；新增 `app/model_config.py`、`app/routers/settings.py`、`app/net.py` 与本机代理环境规范化
+- **程夏（组长）**：校准 yueying 0.2.1 真实适配器——实际 CLI 为 `--out` + `manifest.json`（含 segments/frames），替换旧 `--frames-dir`/`transcript.json` 假设；修复 Windows `shlex` 吃掉路径反斜杠；失败时 UI 展示最后一行异常而非 traceback 前 500 字
+- **程夏（组长）**：锁定真实引擎兼容版本——`requirements-engines.txt` 补 `faster-whisper==1.2.1` 与 `av==18.1.0`（av 19 移除 `metadata_errors` 导致 yueying 失败）
+- **程夏（组长）**：修复 RapidOCR 3.10 返回 numpy 数组时 `_unwrap` 布尔歧义异常，OCR 阶段不再误报失败；真实 8 帧 OCR 产出代码块
+- **程夏（组长）**：修复解析阶段④异常穿出后台任务导致批次永久 RUNNING/不可删除；新增 `_recompute_batch_status`、逐条兜底、finally 终态 emit、启动恢复孤儿 RUNNING/PENDING 行；单条重试后批次状态重算
+- **程夏（组长）**：重跑/重试守卫——非终态 409，提交前同步置 RUNNING/重置阶段，避免前端 POST 后立即订阅收到旧终态；前端重跑/重试按钮禁用 + 二次确认（提示笔记/修订会被清除）
+- **程夏（组长）**：边界修复——空产物集 422；transcript/items 不存在视频 404、非法 type 422；非终态导出/结构化 409；structured 去绝对路径；F2 冲突时间戳化；导出空批次明确说明；小时时间戳进位
+- **程夏（组长）**：上传健壮性——同名 casefold、单文件 2GB 上限、写盘异常清理、空 PENDING 可删；前端上传进度与大小预检
+- **程夏（组长）**：前端批次 store 事件驱动——SSE 阶段矩阵实时更新、video_start/单条失败事件、切换批次清旧状态、open 失败错误态、终态快照重拉；进度页补状态列/失败原因/错误态/返回/fixed 操作列
+- **程夏（组长）**：笔记去重——工作台不再预创建，已有笔记跳转 `?note=`，笔记页编辑指定/最新一条并提示多条；后端 notes 稳定排序
+- **程夏（组长）**：时间/证据/错误展示统一——`pct` clamp、共享 `clock`、编辑者中文、产物类型中文、视频 error 展示；时间轴 aria/键盘/播放器错误覆盖层；检索结果 `?item=` 深链自动打开证据抽屉
+- **程夏（组长）**：响应式与视觉一致性——新增 `styles/theme.css` 统一主色与文字对比度；笔记 1080 断点、工作台窄屏播放器优先、进度/导出/库页头部换行、150px 侧栏、笔记编辑器工具栏换行；1280/800 共 14 张截图无页面级溢出
+- **程夏（组长）**：状态与导航——库页 loading/error/empty、进度/导出/工作台/笔记错误态与返回入口、未知路由 catch-all、document.title、侧栏设置入口与高亮
+- **程夏（组长）**：前端 Dockerfile 静态修正——使用 lockfile + `npm ci`，preview 端口与 compose/CORS 统一 5173（未做 Docker 运行验证）
+- **程夏（组长）**：测试 29 → 65 例（后端）、14 → 18 例（前端）全绿；`npm run build` 通过；真实 DeepSeek 2 分钟片段 13 条产物、完整 27:56 视频重跑成功 29 条产物、导出 5856 字符
+- **程夏（组长）**：安全修复——发现 `backend/.env.example` 被写入真实 DeepSeek Key，已恢复 `sk-xxxx` 占位符且未提交；建议轮换该 Key；真实 Key 仅保存在本机隔离测试数据目录，正常启动需在设置页重新填写或放入本机 `backend/.env`
+
+### 评估结论摘要（详单见 `docs/测试与迭代报告_v0.7.md`）
+
+- 功能层：核心链路在真实 ASR/RapidOCR/DeepSeek 下跑通；修复永久 RUNNING、状态不重算、重跑竞态、空产物、非终态导出、上传孤儿、笔记重复等 P0；长视频第一次内存分配失败可在重跑后恢复
+- 美观层：主色/对比度/中文枚举/时间格式统一；加载/错误/空态、返回、深链、键盘、800 宽堆叠补齐；剩余扣分为长视频内存边界、LLM 12k 截断与单进程 SSE 限制
+
+### 后续（v0.7.x 候选）
+
+- **程夏（组长）**：长视频 ASR 分片/流式与自动重试；LLM 长转写分段结构化后再合并
+- **程夏（组长）**：移除 `get_batch`/`get_video` 的绝对 `path` 兼容字段；Docker 运行验证与依赖锁文件复核
+- **程夏（组长）**：真实移动端/全站 WCAG 审计；历史旧标签与旧导出稿迁移
