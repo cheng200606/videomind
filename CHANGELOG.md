@@ -264,3 +264,4 @@
 
 - **程夏（组长）**：后端 pytest 83 例全绿（71 → 83），前端 vitest 29 例全绿（28 → 29），`npm run build` 通过；浏览器实测坏深链中文提示、检索禁用态与总数展示、工作台切换器
 - **程夏（组长）**：审视结论与验收记录见 docs/测试与迭代报告_v0.11.md；明确不做：分块结构化、向量检索、暗色模式（范围外）
+- **程夏（组长）**：发布 GitHub Release [v0.11.0](https://github.com/cheng200606/videomind/releases/tag/v0.11.0)——NSIS 安装包 + latest.yml + blockmap 三资产齐全，桌面端在「设置 → 应用更新」点「检查更新」即可从 v0.7.1 升级
