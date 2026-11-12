@@ -48,6 +48,11 @@
   --vm-tick-chapter: #f0a202;
   --vm-tick-item: #6ee7b7;
   --vm-tick-evidence: #f87171;
+
+  /* 内容区顶部单向渐变洗层（App.vue .main 使用） */
+  --vm-main-wash: #eef2f9;
+  /* 检索命中高亮底（mark.hl） */
+  --vm-hit-bg: #fde68a;
 }
 
 body {
@@ -154,6 +159,63 @@ h2.vm-page-title {
 .side .el-menu-item.is-active { color: #a8c0f0 !important; }
 .side .el-menu { --el-menu-active-color: #a8c0f0 !important; }
 .md-editor-preview code { color: #1f5fa8 !important; }
+
+/* 暗色模式（v0.13）：html.dark 类由 useTheme.ts 切换，EP 组件变量走 dark/css-vars.css。
+   :root:root 特异性高于 html.dark，亮值必须在这里显式压回；签名元素（时间码芯片、
+   播放器深色岛、侧栏夜空）本来就是深色系，两套主题共用不需要变。 */
+:root:root.dark {
+  color-scheme: dark;
+  background: #10141d;
+
+  --el-color-primary: #6f95e3;
+  --el-color-primary-light-3: #3d6fd6;
+  --el-color-primary-light-5: #2c55a8;
+  --el-color-primary-light-7: #1e3a70;
+  --el-color-primary-light-8: #182c53;
+  --el-color-primary-light-9: #131f3a;
+  --el-color-primary-dark-2: #9eb7eb;
+
+  --el-text-color-primary: #e5e7eb;
+  --el-text-color-regular: #c7cdd8;
+  --el-text-color-secondary: #8b95a7;
+  --el-text-color-placeholder: #6b7585;
+  --el-border-color-light: #2a3142;
+  --el-bg-color-page: #10141d;
+
+  --vm-text: #e5e7eb;
+  --vm-text-secondary: #c7cdd8;
+  --vm-muted: #8b95a7;
+  --vm-border: #2a3142;
+  --vm-bg: #10141d;
+  --vm-quote-bg: #171d2a;
+  --vm-surface: #161c2a;
+  --vm-main-wash: #0d1119;
+  --vm-hover-tint: #1c2436;
+  --vm-hit-bg: #b45309;
+  --vm-shadow-rest: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --vm-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
+  --vm-warning-text: #f0a202;
+  --vm-danger-text: #f87171;
+}
+
+/* 暗色下的对比度对位：亮色态压深的文字色在深底上不可读，换浅色档（与侧栏激活色同族） */
+html.dark .el-tag.el-tag--primary { --el-tag-text-color: #a8c0f0 !important; }
+html.dark .el-tag.el-tag--success { --el-tag-text-color: #6ee7b7 !important; }
+html.dark .el-tag.el-tag--warning { --el-tag-text-color: #f0a202 !important; }
+html.dark .el-tag.el-tag--danger { --el-tag-text-color: #f87171 !important; }
+html.dark .el-tag.el-tag--info { --el-tag-text-color: #8b95a7 !important; }
+html.dark .el-alert--info.is-light .el-alert__title,
+html.dark .el-alert--info.is-light .el-alert__description { color: #c7cdd8 !important; }
+html.dark .el-alert--warning.is-light .el-alert__title,
+html.dark .el-alert--warning.is-light .el-alert__description { color: #f0a202 !important; }
+html.dark .el-input__count-inner { color: #8b95a7 !important; }
+html.dark .el-link.el-link--danger { --el-link-text-color: #f87171 !important; }
+html.dark .el-button--danger.is-plain { --el-button-text-color: #f87171 !important; }
+html.dark .md-editor-preview code { color: #9eb7eb !important; }
+html.dark .el-input__wrapper.is-focus,
+html.dark .el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary, #6f95e3) inset, 0 0 0 3px rgba(111, 149, 227, 0.28) !important;
+}
 
 /* 动效一票关闭：系统声明减少动效时，页面过渡/骨架屏/悬浮全部静止 */
 @media (prefers-reduced-motion: reduce) {

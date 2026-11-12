@@ -99,7 +99,7 @@ html, body, #app { height: 100%; margin: 0; }
 .brand strong { font-size: 15px; line-height: 1.2; }
 .brand span { font-size: 12px; color: #9aa6b8; }
 .hint { padding: 12px 16px; font-size: 12px; color: #9aa6b8; }
-.main { background: linear-gradient(180deg, #eef2f9 0%, var(--vm-bg, #f4f6fa) 280px, var(--vm-bg, #f4f6fa) 100%); min-width: 0; }
+.main { background: linear-gradient(180deg, var(--vm-main-wash, #eef2f9) 0%, var(--vm-bg, #f4f6fa) 280px, var(--vm-bg, #f4f6fa) 100%); min-width: 0; }
 .el-menu { border-right: none; background: transparent; }
 /* 菜单项胶囊化：内缩留出圆角空间，激活态用主色弱底 */
 .side .el-menu { padding: 0 10px; }

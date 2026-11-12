@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { bindTag, dismissTag, getBatch, getItem, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
 import { clock } from '../api/labels'
 import type { Item, ItemDetail, Mark, TagInfo, VideoMeta, VideoState } from '../api/types'
+import { useProgressiveList } from '../composables/useProgressiveList'
 import ArtifactPanel from '../components/ArtifactPanel.vue'
 import EvidenceDrawer from '../components/EvidenceDrawer.vue'
 import EvidenceTimeline from '../components/EvidenceTimeline.vue'
@@ -27,6 +28,12 @@ const player = ref<InstanceType<typeof EvidenceTimeline> | null>(null)
 /** 同批次的其他视频：给工作台一个不回退进度页的横向切换入口 */
 const batchVideos = ref<VideoState[]>([])
 const TRANSCRIPT_LIMIT = 5000   // 与后端 transcript 端点的上限一致
+
+// 长讲座 2000+ 段一次性挂 DOM 会卡：渐进渲染（哨兵滚动加载），跳转 seek 仍读全量 transcript
+const {
+  visible: visibleTranscript, hasMore: transcriptHasMore,
+  loadMore: loadMoreTranscript, bindSentinel: bindTranscriptSentinel,
+} = useProgressiveList(transcript, 400)
 
 const chapters = computed(() => {
   const summary = items.value.find((i) => i.type === 'summary')
@@ -232,7 +239,7 @@ async function addTag() {
         <el-empty v-if="!transcript.length" description="暂无转写：可能仍在解析" :image-size="48" />
         <div v-else class="outline scroll">
           <div
-            v-for="(s, i) in transcript" :key="i"
+            v-for="(s, i) in visibleTranscript" :key="i"
             class="outline-item"
             role="button" tabindex="0"
             @click="seek(s.start_ms)"
@@ -241,6 +248,9 @@ async function addTag() {
           >
             <span class="vm-ts">{{ clock(s.start_ms) }}</span>
             <span class="txt">{{ s.text }}</span>
+          </div>
+          <div v-if="transcriptHasMore" class="load-more" :ref="bindTranscriptSentinel">
+            <el-button link type="primary" @click="loadMoreTranscript">显示更多转写（已显示 {{ visibleTranscript.length }} / {{ transcript.length }} 段）</el-button>
           </div>
         </div>
       </div>
@@ -312,6 +322,7 @@ async function addTag() {
 .outline-item:hover { background: var(--vm-hover-tint, #f2f5fb); }
 .outline-item:focus-visible { outline: 2px solid var(--el-color-primary, #3d6fd6); outline-offset: 1px; }
 .outline.scroll { max-height: 40vh; overflow: auto; }
+.load-more { display: flex; justify-content: center; padding: 6px 0 2px; }
 /* 时间码芯片定宽居中，保证多行列表的内容起始边对齐 */
 .outline-item .vm-ts { width: 56px; }
 .gist { color: var(--vm-muted, #5f6b7d); font-size: 12px; }
