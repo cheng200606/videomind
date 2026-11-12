@@ -4,7 +4,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlmodel import Session, or_, select
 
 from app.db import get_session
@@ -292,6 +292,13 @@ def search(tag: int | None = None, q: str | None = None, confidence: str | None 
 
     base = select(KnowledgeItem).where(*conds)
     total = session.exec(select(func.count()).select_from(KnowledgeItem).where(*conds)).one()
-    items = session.exec(base.order_by(
-        KnowledgeItem.video_id, KnowledgeItem.ordinal).limit(_SEARCH_LIMIT)).all()
+    if q and q.strip():
+        # 相关度排序（v0.13）：标题命中 ×3 > 内容命中 ×1，双命中叠加；同分按视频与时间锚点稳定序。
+        # 在 SQL 里算 rank 保持单查询；仍是标签过滤而非语义检索，排序只反映字面命中强度。
+        rank = (case((KnowledgeItem.title.like(like, escape="\\"), 3), else_=0)
+                + case((KnowledgeItem.content.like(like, escape="\\"), 1), else_=0))
+        order = (rank.desc(), KnowledgeItem.video_id, KnowledgeItem.anchor_ms)
+    else:
+        order = (KnowledgeItem.video_id, KnowledgeItem.anchor_ms)
+    items = session.exec(base.order_by(*order).limit(_SEARCH_LIMIT)).all()
     return {"total": total, "items": _brief_many(session, items)}

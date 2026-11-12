@@ -660,3 +660,44 @@ def test_validation_error_is_chinese(client: TestClient):
     detail = r.json()["detail"]
     assert detail.startswith("请求参数格式不正确")
     assert "video_id" in detail and "应为整数" in detail
+
+
+def test_search_ranks_keyword_hits_by_relevance(client: TestClient):
+    """v0.13 相关度排序：双命中 > 标题命中 > 内容命中；无关键词时保持视频+时间锚稳定序。"""
+    from app.enums import ArtifactType, Confidence
+    from app.models import Evidence, KnowledgeItem
+
+    with Session(engine) as session:
+        batch = VideoBatch(name="相关度批次")
+        session.add(batch)
+        session.commit()
+        session.refresh(batch)
+        video = Video(batch_id=batch.id, path="relevance_probe.mp4")
+        session.add(video)
+        session.commit()
+        session.refresh(video)
+        ev = Evidence(video_id=video.id, start_ms=0, end_ms=1000, quote="原话", channel="asr")
+        session.add(ev)
+        session.commit()
+        session.refresh(ev)
+
+        def add(title: str, content: str, anchor_ms: int, ordinal: int) -> None:
+            session.add(KnowledgeItem(
+                video_id=video.id, type=ArtifactType.KEY_POINTS, title=title, content=content,
+                confidence=Confidence.EXPLICIT, anchor_ms=anchor_ms, evidence_id=ev.id,
+                ordinal=ordinal))
+
+        add("普通条目一", "内容不含关键词的普通长文", 1000, 1)
+        add("内容命中样例", "正文里才出现标记词 qrank13 的条目", 2000, 2)
+        add("标题命中 qrank13 样例", "正文没有该词", 3000, 3)
+        add("qrank13 双命中", "qrank13 同时出现在标题与正文", 4000, 4)
+        session.commit()
+        video_id = video.id   # 会话关闭前取 id（expire_on_commit 下出会话再取会报 Detached）
+
+    body = client.get("/api/search", params={"q": "qrank13"}).json()
+    assert body["total"] == 3
+    assert [i["title"] for i in body["items"]] == [
+        "qrank13 双命中", "标题命中 qrank13 样例", "内容命中样例"]
+
+    stable = client.get("/api/search", params={"video_id": video_id}).json()
+    assert [i["anchor_ms"] for i in stable["items"]] == [1000, 2000, 3000, 4000]
