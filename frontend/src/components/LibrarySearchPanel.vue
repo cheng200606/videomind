@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { listTags, search } from '../api/client'
+import { highlightSegments, matchSnippet } from '../api/highlight'
 import { ARTIFACT_LABEL, clock } from '../api/labels'
 import type { Item, TagInfo } from '../api/types'
 import ConfidenceTag from './ConfidenceTag.vue'
@@ -20,10 +21,20 @@ const total = ref(0)
 const searched = ref(false)
 const searching = ref(false)
 const searchError = ref('')
+/** 高亮用「已提交的关键词」而非输入框实时值：条件改了但未重新检索时，旧结果高亮不乱跳 */
+const lastQuery = ref('')
 
 /** 空条件等于「浏览全库」，随数据量变慢且误导：至少要给一个条件才允许检索 */
 const hasCriteria = computed(() => tagId.value !== undefined || !!keyword.value.trim() || !!conf.value)
 const clipped = computed(() => total.value > results.value.length)
+
+function segments(text: string) {
+  return highlightSegments(text, lastQuery.value)
+}
+
+function snippet(text: string) {
+  return highlightSegments(matchSnippet(text, lastQuery.value), lastQuery.value)
+}
 
 // 条件变了就收起上次的“无结果”提示，避免用户以为新条件也没有结果
 watch([tagId, keyword, conf], () => { searched.value = false })
@@ -45,6 +56,7 @@ async function runSearch() {
     results.value = resp.items
     total.value = resp.total
     searched.value = true
+    lastQuery.value = keyword.value.trim()
   } catch (err) {
     results.value = []
     total.value = 0
@@ -79,6 +91,7 @@ async function runSearch() {
     <template v-if="results.length">
       <p class="total vm-num">
         共 {{ total }} 条<template v-if="clipped">，已显示前 {{ SEARCH_LIMIT }} 条，请缩小条件</template>
+        <template v-if="lastQuery">· 按相关度排序（标题命中优先）</template>
       </p>
       <el-table
         :data="results"
@@ -86,7 +99,24 @@ async function runSearch() {
         class="rt"
         @row-click="(r: Item) => router.push({ name: 'workbench', params: { id: r.video_id }, query: { item: String(r.id) } })"
       >
-        <el-table-column prop="title" label="条目" min-width="220" />
+        <el-table-column label="条目" min-width="220">
+          <template #default="{ row }">
+            <span class="tcell">
+              <template v-for="(s, i) in segments(row.title)" :key="i"
+                ><mark v-if="s.hit" class="hl">{{ s.text }}</mark
+                ><template v-else>{{ s.text }}</template></template>
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column label="摘要" min-width="260">
+          <template #default="{ row }">
+            <span class="tcell snip">
+              <template v-for="(s, i) in snippet(row.content)" :key="i"
+                ><mark v-if="s.hit" class="hl">{{ s.text }}</mark
+                ><template v-else>{{ s.text }}</template></template>
+            </span>
+          </template>
+        </el-table-column>
         <el-table-column label="类型" width="110">
           <template #default="{ row }">{{ ARTIFACT_LABEL[row.type as string] ?? row.type }}</template>
         </el-table-column>
@@ -112,4 +142,7 @@ async function runSearch() {
 .hint { margin: 0 0 10px; font-size: 12px; color: var(--vm-muted, #5f6b7d); }
 .total { margin: 4px 0 8px; font-size: 12px; color: var(--vm-muted, #5f6b7d); }
 .rt :deep(tbody tr) { cursor: pointer; }
+.tcell { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.snip { color: var(--vm-text-secondary, #4b5563); font-size: 12px; }
+.hl { background: var(--vm-hit-bg, #fde68a); color: inherit; border-radius: 2px; padding: 0 1px; }
 </style>
