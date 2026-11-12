@@ -6,6 +6,7 @@ import { getEngines, getModelSettings, setEngines, setModelSettings, testModelSe
 import { ARTIFACT_LABEL, ASR_LABEL, OCR_LABEL } from '../api/labels'
 import type { EngineSettings, ModelProvider, ModelSettings, ModelSettingsInput, ModelTestResult } from '../api/types'
 import { useLeaveGuard } from '../composables/useLeaveGuard'
+import { useThemeMode } from '../composables/useTheme'
 import PageHeader from '../components/PageHeader.vue'
 import type { AppInfo, UpdateState } from '../desktop'
 
@@ -37,6 +38,13 @@ const asr = ref('mock')
 const ocr = ref('none')
 const schemas = ref<string[]>([])
 const savingEngines = ref(false)
+
+// v0.13：外观（亮/暗）——useTheme 模块级单例已在挂载前应用过一次，这里只提供开关
+const { mode: themeMode, setMode: setThemeMode } = useThemeMode()
+
+function toggleDark(v: string | number | boolean) {
+  setThemeMode(v ? 'dark' : 'light')
+}
 
 const desktop = typeof window !== 'undefined' ? window.videomind : undefined
 const appInfo = ref<AppInfo | null>(null)
@@ -410,12 +418,34 @@ async function saveEngines() {
           <el-button type="primary" :loading="savingEngines" @click="saveEngines">保存解析引擎</el-button>
         </div>
       </el-card>
+
+      <el-card shadow="never" class="card">
+        <template #header>
+          <div class="card-head"><b>外观与关于</b></div>
+        </template>
+        <div class="about-row">
+          <span>深色模式</span>
+          <el-switch :model-value="themeMode === 'dark'" @update:model-value="toggleDark" aria-label="深色模式开关" />
+        </div>
+        <p class="hint">仅影响本机界面配色；选择会被记住，下次启动保持一致。</p>
+        <template v-if="desktop">
+          <div class="about-row">
+            <span>当前版本</span>
+            <span class="vm-num">v{{ appInfo?.version ?? '—' }}</span>
+          </div>
+          <p class="hint">
+            VideoMind 视析 · 本地知识视频结构化 · MIT License ·
+            <el-link href="https://github.com/cheng200606/videomind" target="_blank" underline="never">项目仓库</el-link>
+          </p>
+        </template>
+      </el-card>
     </template>
   </div>
 </template>
 
 <style scoped>
 .settings { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.about-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--vm-text, #1f2937); margin: 8px 0; }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .form { max-width: 620px; }
