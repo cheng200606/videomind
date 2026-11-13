@@ -62,6 +62,24 @@ def _evidence_line(session: Session, item: KnowledgeItem) -> str:
     return f"> 证据 `[{ts(ev.start_ms)}]` · {where} · 「{quote}」 · 识别结果仅供参考"
 
 
+def coverage_notices(session: Session, video: Video, items: list[KnowledgeItem]) -> list[str]:
+    """解析阶段的诚实提示，导出文稿与结构化快照共用同一口径。
+
+    来源有二：① 视频终态非「成功」；② 摘要产物 payload.notice（分块失败、单段超长
+    截断、长转写已分块完整结构化）。工作台横幅读的是同一份 notice——文稿被导出后
+    脱离应用，更必须自带这条声明，否则「可带走」的产物会显得比实际更完整。
+    """
+    parts: list[str] = []
+    if video.status in (VideoStatus.PARTIAL, VideoStatus.FAILED):
+        parts.append(f"该视频解析状态为「{_VIDEO_STATUS[video.status]}」，以下产物可能不完整")
+    summary = next((i for i in items if i.type == ArtifactType.SUMMARY), None)
+    if summary:
+        note = str(_payload(session, summary).get("notice") or "").strip()
+        if note:
+            parts.append(note)
+    return parts
+
+
 def build_batch_markdown(session: Session, batch_id: int) -> str:
     batch = session.get(VideoBatch, batch_id)
     if batch is None:
@@ -75,6 +93,12 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
         f"> 由 VideoMind 视析 生成 · {now} · 共 {len(videos)} 条视频",
         "> 所有结论均由 ASR / OCR + 大模型识别产出，**识别结果仅供参考**，请以原片为准。",
         "",
+    ]
+    incomplete = [v for v in videos if v.status in (VideoStatus.PARTIAL, VideoStatus.FAILED)]
+    if incomplete:
+        out += [f"> ⚠ 本批次有 {len(incomplete)} 条视频解析状态非「成功」，对应文稿可能不完整；"
+                "具体缺失区间见各视频的「解析覆盖提示」。", ""]
+    out += [
         "## 批次概览",
         "",
         "| 视频 | 时长 | 状态 | 标签 |",
@@ -95,6 +119,13 @@ def build_batch_markdown(session: Session, batch_id: int) -> str:
         items = session.exec(select(KnowledgeItem).where(
             KnowledgeItem.video_id == v.id).order_by(KnowledgeItem.ordinal)).all()
         out += ["---", "", f"## {display_name(v.path, v.batch_id)}", ""]
+
+        # 诚实边界随文稿一起带走：工作台横幅里的覆盖提示不能只在界面上可见
+        notices = coverage_notices(session, v, items)
+        if notices:
+            out += ["> ⚠ **解析覆盖提示**", ">"]
+            out += [f"> - {n}" for n in notices]
+            out += [">", "> 识别结果仅供参考，请回看原片核对。", ""]
 
         summary = next((i for i in items if i.type == ArtifactType.SUMMARY), None)
         if summary:

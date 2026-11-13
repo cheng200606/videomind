@@ -1,6 +1,7 @@
 """`OcrEngine` 的三个实现 + 关键帧去重。画面通道（阶段 ②）在此。"""
 
 import importlib.util
+import logging
 import os
 from collections.abc import Sequence
 from pathlib import Path
@@ -8,7 +9,9 @@ from typing import Any
 
 from app.config import get_settings
 from app.engines.base import FrameText, KeyFrame, register_ocr
+from app.engines.frames import SIMILAR_THRESHOLD, abs_diff, file_thumbnail
 
+logger = logging.getLogger(__name__)
 _settings = get_settings()
 
 
@@ -19,26 +22,30 @@ def _has_module(name: str) -> bool:
         return False
 
 
-def dedupe_frames(frames: Sequence[KeyFrame], threshold: int = 8) -> list[KeyFrame]:
-    """满屏代码的课件连续帧几乎相同，去重后才送 OCR / LLM——直接省 token 与显存排队时间。"""
-    try:
-        import imagehash
-        from PIL import Image
-    except ImportError:
-        return list(frames)
+def dedupe_frames(frames: Sequence[KeyFrame],
+                  threshold: float = SIMILAR_THRESHOLD) -> list[KeyFrame]:
+    """满屏代码的课件连续帧几乎相同，去重后才送 OCR / LLM——省 token 与推理时间。
 
+    与抽帧阶段（`app/engines/frames.py`）共用 16x16 灰度均值差口径，只依赖 Pillow +
+    numpy（OCR 运行时自带、桌面包内亦有）。旧实现用 imagehash.phash，而桌面发行版
+    明确排除 imagehash/scipy，`ImportError` 分支会静默跳过去重——降级既不可见，也让
+    正式发布物与源码行为不一致。现在读图失败只保留该帧并记 warning，不丢画面。
+    """
     kept: list[KeyFrame] = []
     seen: list[Any] = []
+    unavailable = False
     for frame in frames:
-        try:
-            digest = imagehash.phash(Image.open(frame.path))
-        except Exception:
+        thumb = file_thumbnail(frame.path)
+        if thumb is None:
+            unavailable = True
             kept.append(frame)
             continue
-        if any(abs(digest - prev) <= threshold for prev in seen):
+        if any(abs_diff(thumb, prev) < threshold for prev in seen):
             continue
-        seen.append(digest)
+        seen.append(thumb)
         kept.append(frame)
+    if unavailable:
+        logger.warning("关键帧去重部分不可用（无法读取帧缩略图），相关帧已原样保留送 OCR")
     return kept or list(frames)
 
 

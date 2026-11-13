@@ -14,7 +14,6 @@ python-multipart==0.0.33      # Apache-2.0 批量上传 multipart 解析
 httpx==0.28.1                 # BSD-3  DeepSeek 客户端与健康检查
                               #        不用 openai SDK + instructor：二者都依赖 jiter，
                               #        而 jiter 0.18.0 只发到 win_amd64/cp313，本机 Python 3.14 装不上
-imagehash==4.3.2              # BSD-2  关键帧感知哈希去重，减少 OCR 与 LLM token
-Pillow==13.0.0                # MIT-CMU imagehash 的图像后端
+Pillow==13.0.0                # MIT-CMU 关键帧读写与 16x16 灰度缩略图去重
 
 pytest==9.2.0                 # MIT  切片自检（tests/test_pipeline.py），W5 出截图前先跑一遍

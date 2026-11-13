@@ -7,7 +7,7 @@ from sqlmodel import Session, select
 
 from app.db import get_session
 from app.enums import BatchStatus
-from app.export import build_batch_markdown
+from app.export import build_batch_markdown, coverage_notices
 from app.media import display_name, media_url
 from app.models import KnowledgeItem, Video, VideoBatch
 from app.routers.knowledge import _brief_many
@@ -55,6 +55,8 @@ def structured(batch_id: int, session: Session = Depends(get_session)):
             "status": video.status.value,
             "duration_ms": video.duration_ms,
             "item_count": len(items),
+            # 与导出文稿同源：外部 Agent 拿到快照也要能看到内容覆盖范围的诚实声明
+            "coverage_notice": "；".join(coverage_notices(session, video, items)),
             "items": _brief_many(session, items, video=video),
         })
     return {"batch_id": batch_id, "name": batch.name, "disclaimer": "识别结果仅供参考", "videos": payload}

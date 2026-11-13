@@ -8,12 +8,13 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
+from app.config import get_settings
 from app.db import engine
-from app.enums import BatchStatus, StageStatus, VideoStatus
+from app.enums import ArtifactType, BatchStatus, StageStatus, VideoStatus
 from app.main import app
-from app.models import Video, VideoBatch
+from app.models import Artifact, KnowledgeItem, Video, VideoBatch
 
 
 @pytest.fixture(scope="module")
@@ -344,7 +345,9 @@ def test_upload_same_name_twice_keeps_first_file_intact(client: TestClient, tmp_
 
     batch = client.get(f"/api/batches/{data['id']}").json()
     assert batch["status"] == "succeeded", batch
-    assert Path(batch["videos"][0]["path"]).exists(), "首条文件的落盘文件必须还在"
+    # 落盘名统一是 {batch_id}_{filename}；API 已不再回显绝对路径，测试自行按规则核验
+    stored = Path(get_settings().media_root) / f"{data['id']}_same_name.mp4"
+    assert stored.exists(), "首条文件的落盘文件必须还在"
 
 
 def test_sse_unknown_batch_is_404(client: TestClient):
@@ -379,7 +382,7 @@ def test_delete_batch_cascades(client: TestClient, tmp_path: Path):
     batch_id = r.json()["id"]
     batch = client.get(f"/api/batches/{batch_id}").json()
     vid = batch["videos"][0]["id"]
-    video_path = Path(batch["videos"][0]["path"])
+    video_path = Path(get_settings().media_root) / f"{batch_id}_todelete.mp4"
     assert client.get(f"/api/videos/{vid}/items").json()
 
     assert client.delete(f"/api/batches/{batch_id}").status_code == 204
@@ -400,6 +403,75 @@ def test_export_markdown_chinese_labels(client: TestClient, tmp_path: Path):
     md = client.get(f"/api/batches/{batch_id}/export.md").text
     assert "成功" in md and "succeeded" not in md
     assert "（明述）" in md or "（推断）" in md
+
+
+def _seed_coverage(client: TestClient, tmp_path: Path, *, name: str, filename: str,
+                   notice: str, status: VideoStatus = VideoStatus.SUCCEEDED) -> int:
+    """造一个已解析批次，并把解析阶段的诚实提示直接写进摘要产物 payload。"""
+    src = tmp_path / filename
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": name},
+                        files=[("files", (filename, fh, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    batch_id = r.json()["id"]
+    with Session(engine) as session:
+        video = session.exec(select(Video).where(Video.batch_id == batch_id)).first()
+        assert video is not None
+        items = session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == video.id)).all()
+        summary = next((i for i in items if i.type == ArtifactType.SUMMARY), None)
+        assert summary is not None, "默认产物策略应产出内容总结"
+        art = session.exec(select(Artifact).where(Artifact.item_id == summary.id)).first()
+        assert art is not None
+        payload = dict(art.payload or {})
+        payload["notice"] = notice
+        art.payload = payload  # 重新赋值，确保 JSON 列被标记为已修改
+        session.add(art)
+        if status != VideoStatus.SUCCEEDED:
+            video.status = status
+            session.add(video)
+            batch = session.get(VideoBatch, batch_id)
+            assert batch is not None
+            batch.status = BatchStatus.PARTIAL
+            session.add(batch)
+        session.commit()
+    return batch_id
+
+
+def test_export_markdown_carries_coverage_notice(client: TestClient, tmp_path: Path):
+    """工作台的覆盖提示必须随文稿导出，且结构化快照同源可查。"""
+    notice = "第 2 段结构化失败，对应区间内容可能缺失"
+    batch_id = _seed_coverage(client, tmp_path, name="覆盖提示批次",
+                              filename="coverage.mp4", notice=notice)
+    md = client.get(f"/api/batches/{batch_id}/export.md").text
+    assert "**解析覆盖提示**" in md
+    assert notice in md
+    assert "请回看原片核对" in md
+    snapshot = client.get(f"/api/batches/{batch_id}/structured").json()
+    assert notice in snapshot["videos"][0]["coverage_notice"]
+
+
+def test_export_markdown_marks_partial_video(client: TestClient, tmp_path: Path):
+    """部分成功批次：批次头汇总 + 视频段状态/notice 双提示都要出现。"""
+    notice = "转写较长，已按时间切 3 段完整结构化"
+    batch_id = _seed_coverage(client, tmp_path, name="部分成功批次",
+                              filename="partial.mp4", notice=notice,
+                              status=VideoStatus.PARTIAL)
+    md = client.get(f"/api/batches/{batch_id}/export.md").text
+    assert "1 条视频解析状态非「成功」" in md
+    assert "该视频解析状态为「部分成功」，以下产物可能不完整" in md
+    assert notice in md
+
+
+def test_export_markdown_has_no_notice_block_when_clean(client: TestClient, tmp_path: Path):
+    """无提示、状态成功时不产生空提示块，避免把正常文稿写得像有问题。"""
+    batch_id = _seed_coverage(client, tmp_path, name="干净批次",
+                              filename="clean.mp4", notice="")
+    md = client.get(f"/api/batches/{batch_id}/export.md").text
+    assert "**解析覆盖提示**" not in md
+    assert "解析状态非" not in md
+    snapshot = client.get(f"/api/batches/{batch_id}/structured").json()
+    assert snapshot["videos"][0]["coverage_notice"] == ""
 
 
 def test_empty_output_schemas_are_422(client: TestClient):
@@ -443,6 +515,28 @@ def test_export_and_structured_require_terminal_batch(client: TestClient):
             if obj:
                 session.delete(obj)
                 session.commit()
+
+
+def test_video_views_have_no_absolute_path(client: TestClient, tmp_path: Path):
+    """面向 UI 的视频视图不得回显本机绝对落盘路径（v0.14 移除 path 兼容字段）。"""
+    src = tmp_path / "no_path.mp4"
+    src.write_bytes(b"\x00" * 32)
+    with src.open("rb") as fh:
+        r = client.post("/api/batches", data={"name": "路径脱敏批次"},
+                        files=[("files", ("no_path.mp4", fh, "video/mp4"))])
+    assert r.status_code == 201, r.text
+    batch_id = r.json()["id"]
+    batch_resp = client.get(f"/api/batches/{batch_id}")
+    vid = batch_resp.json()["videos"][0]["id"]
+    detail_resp = client.get(f"/api/videos/{vid}")
+
+    for resp, view in ((batch_resp, batch_resp.json()["videos"][0]),
+                       (detail_resp, detail_resp.json())):
+        assert resp.status_code == 200
+        assert "path" not in view
+        assert view["file_name"] == "no_path.mp4"
+        assert view["media_url"].startswith("/media/")
+        assert ".pytest_tmp" not in resp.text, "响应体不得夹带本机运行时目录"
 
 
 def test_structured_snapshot_has_no_absolute_path(client: TestClient, tmp_path: Path):

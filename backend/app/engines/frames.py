@@ -14,7 +14,7 @@ from app.engines.base import KeyFrame
 # 采样间隔（秒）：30s 对讲座类内容足够密，1h 视频约 120 帧，RapidOCR 2 线程约 1-2 分钟
 FRAME_INTERVAL_S = 30.0
 _MAX_FRAMES = 400          # 兜底上限：异常超长视频不至于拖死解析
-_SIMILAR_THRESHOLD = 6.0   # 16x16 灰度均值差低于该值视为同页课件，丢弃
+SIMILAR_THRESHOLD = 6.0    # 16x16 灰度均值差低于该值视为同页课件，丢弃（OCR 阶段同口径复用）
 
 
 def _interval_from_env() -> float:
@@ -62,7 +62,7 @@ def sample_frames(video_path: str, interval_s: float | None = None,
                 if ts is None or ts + 1e-6 < next_ts:
                     continue
                 thumb = frame.reformat(width=16, height=16, format="gray").to_ndarray()
-                if last_thumb is not None and _abs_diff(thumb, last_thumb) < _SIMILAR_THRESHOLD:
+                if last_thumb is not None and abs_diff(thumb, last_thumb) < SIMILAR_THRESHOLD:
                     next_ts = ts + interval
                     continue
                 path = tmp / f"frame_{int(ts * 1000)}.jpg"
@@ -80,7 +80,26 @@ def sample_frames(video_path: str, interval_s: float | None = None,
     return out
 
 
-def _abs_diff(a: "np.ndarray", b: "np.ndarray") -> float:
+def abs_diff(a: "np.ndarray", b: "np.ndarray") -> float:
+    """两张 16x16 灰度缩略图的平均绝对差——抽帧与 OCR 两阶段共用的去重口径。"""
     import numpy as np
 
     return float(np.abs(a.astype("float32") - b).mean())
+
+
+def file_thumbnail(path: str) -> "np.ndarray | None":
+    """把已落盘的帧图读成 16x16 灰度缩略图，供 OCR 阶段复用同一套去重口径。
+
+    Pillow / numpy 都是 OCR 运行时自带的依赖（桌面安装包内亦有）；读图失败返回
+    None，调用方必须原样保留该帧——去重是优化，绝不能因它丢画面。
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        return None
+    try:
+        with Image.open(path) as im:
+            return np.asarray(im.convert("L").resize((16, 16)), dtype="float32")
+    except Exception:
+        return None

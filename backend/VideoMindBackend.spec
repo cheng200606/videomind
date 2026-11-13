@@ -17,7 +17,7 @@ for _pkg in _whisper_packages:
     extra_hidden += _h
 
 # 画面通道：rapidocr 模型随 wheel 内置（离线可用），onnxruntime/cv2/PIL 是它的运行时。
-# imagehash/scipy 仍排除——抽帧去重用 app/engines/frames.py 的 numpy 手写均值差替代。
+# imagehash/scipy 仍排除——抽帧与 OCR 帧去重统一走 app/engines/frames.py 的 numpy 均值差。
 _ocr_packages = ('rapidocr', 'onnxruntime', 'cv2', 'PIL', 'shapely', 'pyclipper')
 for _pkg in _ocr_packages:
     _d, _b, _h = collect_all(_pkg)

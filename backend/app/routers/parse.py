@@ -36,10 +36,9 @@ _TERMINAL_VALUES = tuple(s.value for s in _TERMINAL)
 
 
 def _video_view(video: Video) -> dict:
-    """UI 只需要原始文件名和 /media URL；仍保留 path 兼容现有测试/旧前端。"""
+    """UI 只需要原始文件名和 /media URL；不回显本机绝对落盘路径。"""
     return {
         "id": video.id,
-        "path": video.path,
         "file_name": display_name(video.path, video.batch_id),
         "media_url": media_url(video.path),
         "duration_ms": video.duration_ms,
