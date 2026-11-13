@@ -267,3 +267,18 @@ def test_sanitize_error_strips_local_paths():
     assert "/tmp/" not in msg2 and "本机路径" in msg2
     assert sanitize_error("普通错误信息保持原样") == "普通错误信息保持原样"
     assert sanitize_error("") == ""
+
+
+def test_whisper_cache_key_tracks_model_size(monkeypatch):
+    """v0.16：whisper 模型档位必须参与缓存键，tiny/base 不得命中彼此的缓存。"""
+    from types import SimpleNamespace
+
+    from app.pipeline import _asr_cache_name
+
+    monkeypatch.setenv("VMIND_WHISPER_MODEL", "tiny")
+    tiny = _asr_cache_name(SimpleNamespace(name="whisper", cache_variant="tiny"))
+    monkeypatch.setenv("VMIND_WHISPER_MODEL", "base")
+    base = _asr_cache_name(SimpleNamespace(name="whisper", cache_variant="base"))
+    mock = _asr_cache_name(SimpleNamespace(name="mock"))
+    assert tiny != base, "换档位后不得复用旧缓存"
+    assert mock == "asr:mock", "无档位概念的引擎保持原键格式"

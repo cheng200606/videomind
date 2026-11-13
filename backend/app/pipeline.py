@@ -280,6 +280,12 @@ def _recompute_batch_status(session: Session, batch_id: int) -> BatchStatus:
     return status
 
 
+def _asr_cache_name(asr: AsrEngine) -> str:
+    """缓存键带引擎名与档位：whisper 的 tiny/base 不得命中彼此的缓存（v0.16 实测风险）。"""
+    variant = getattr(asr, "cache_variant", "")
+    return f"asr:{asr.name}:{variant}" if variant else f"asr:{asr.name}"
+
+
 def parse_video(session: Session, video: Video, settings: Settings | None = None) -> Video:
     settings = settings or get_settings()
     video.status = VideoStatus.RUNNING
@@ -298,7 +304,7 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
     # ① 音频通道
     _set_stage(session, video, Stage.TRANSCRIBE, StageStatus.RUNNING)
     try:
-        cache_key = cache.key_of(video.path, f"asr:{asr.name}")
+        cache_key = cache.key_of(video.path, _asr_cache_name(asr))
         hit = cache.get(cache_key)
         if hit:
             from app.engines.base import AsrResult, TranscriptSegment

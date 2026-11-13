@@ -82,6 +82,11 @@ class WhisperAsr:
     name = "whisper"
     _models: dict[tuple[str, str, str], object] = {}
 
+    @property
+    def cache_variant(self) -> str:
+        """模型档位参与解析缓存键：tiny/base 不得命中彼此的缓存（v0.16）。"""
+        return os.environ.get("VMIND_WHISPER_MODEL", "tiny")
+
     @staticmethod
     def is_available() -> bool:
         return _has_module("faster_whisper") and _has_module("av")
