@@ -1,38 +1,33 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 
+import { useThemeMode } from '../composables/useTheme'
+
 type Mermaid = typeof import('mermaid').default
 
 const props = defineProps<{ code: string }>()
 const host = ref<HTMLElement | null>(null)
 const failed = ref('')
+/** 主题切换要重渲染：mermaid 只吃 JS 常量读不到 CSS 变量（v0.16 补 v0.13 的遗留） */
+const { mode } = useThemeMode()
 
 let mermaid: Mermaid | null = null
 let loading: Promise<Mermaid> | null = null
 let seq = 0
 
+function themeVariables(dark: boolean) {
+  // 与 theme.css 的 :root:root / :root:root.dark 保持同值：primaryColor=primary-light-9/-8，text=--vm-text，border/line=主色
+  return dark
+    ? { primaryColor: '#182c53', primaryTextColor: '#e5e7eb', primaryBorderColor: '#6f95e3', lineColor: '#6f95e3', fontSize: '13px' }
+    : { primaryColor: '#eef3fd', primaryTextColor: '#1f2937', primaryBorderColor: '#3d6fd6', lineColor: '#3d6fd6', fontSize: '13px' }
+}
+
 async function getMermaid(): Promise<Mermaid> {
   if (mermaid) return mermaid
   if (!loading) {
     loading = import('mermaid').then((mod) => {
-      const instance = mod.default
-      instance.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        theme: 'base',
-        // Mermaid 12 默认用 ELK，会多拉 1.5 MB 的布局块；产物里没有复杂布局需求，固定 dagre
-        layout: 'dagre',
-        themeVariables: {
-          // 与 theme.css 的 token 保持同值（mermaid 初始化只吃 JS 常量，读不到 CSS 变量）：primaryColor=--el-color-primary-light-9，text=--vm-text，border/line=--el-color-primary
-          primaryColor: '#eef3fd',
-          primaryTextColor: '#1f2937',
-          primaryBorderColor: '#3d6fd6',
-          lineColor: '#3d6fd6',
-          fontSize: '13px'
-        }
-      })
-      mermaid = instance
-      return instance
+      mermaid = mod.default
+      return mermaid
     })
   }
   try {
@@ -52,6 +47,14 @@ async function render() {
   failed.value = ''
   try {
     const mm = await getMermaid()
+    mm.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      // Mermaid 12 默认用 ELK，会多拉 1.5 MB 的布局块；产物里没有复杂布局需求，固定 dagre
+      layout: 'dagre',
+      themeVariables: themeVariables(mode.value === 'dark')
+    })
     const out = await mm.render(`vm-diagram-${++seq}`, props.code)
     host.value.innerHTML = out.svg
   } catch (err) {
@@ -62,6 +65,7 @@ async function render() {
 
 onMounted(render)
 watch(() => props.code, render)
+watch(mode, render)
 </script>
 
 <template>

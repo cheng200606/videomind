@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import { Film, Search, Setting, Upload } from '@element-plus/icons-vue'
-import { computed, markRaw, onBeforeUnmount, onMounted, ref, type Component } from 'vue'
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, watch, type Component } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -32,10 +32,21 @@ let media: MediaQueryList | null = null
 function syncMobile(event: MediaQueryListEvent | MediaQueryList) {
   mobile.value = event.matches
 }
+function menuAriaPatch() {
+  document.querySelectorAll('.el-menu .el-menu-item-group, .el-menu .el-menu-item-group > ul, .el-menu .el-menu-item-group__title')
+    .forEach((el) => el.setAttribute('role', 'none'))
+}
+
 onMounted(() => {
+  // v0.16 axe：el-menu-item-group 的中间容器会打断 menubar 的 ARIA 父子关系，
+  // 按 WAI-ARIA menubar 惯例把分组容器标为 presentation（role=none）
+  menuAriaPatch()
+
   media = window.matchMedia('(max-width: 900px)')
   syncMobile(media)
   media.addEventListener('change', syncMobile)
+  // 断点切换会重建菜单，重建后必须重新打 role 补丁
+  watch(mobile, () => void nextTick(menuAriaPatch))
 })
 onBeforeUnmount(() => media?.removeEventListener('change', syncMobile))
 
@@ -50,7 +61,7 @@ const activeMenu = computed(() => {
 <template>
   <el-config-provider :locale="zhCn">
     <el-container class="shell" :class="{ mobile }">
-      <el-aside class="side">
+      <el-aside class="side" aria-label="侧边导航">
         <div class="brand">
           <img class="logo" src="/favicon.svg" alt="" aria-hidden="true" />
           <div class="bt">
@@ -74,7 +85,7 @@ const activeMenu = computed(() => {
         </el-menu>
         <p class="hint">识别结果仅供参考</p>
       </el-aside>
-      <el-main class="main">
+      <el-main class="main" aria-label="内容区">
         <RouterView v-slot="{ Component }">
           <Transition name="page" mode="out-in">
             <component :is="Component" />

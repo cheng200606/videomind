@@ -18,6 +18,12 @@ const router = useRouter()
 const itemId = computed(() => Number(route.params.id))
 
 const detail = ref<ItemDetail | null>(null)
+
+// 面包屑依赖 detail，错误态降级为无 crumbs 的纯标题
+const crumbs = computed(() => detail.value ? [
+  { label: '视频库', to: '/' },
+  { label: detail.value.video_name || '知识工作台', to: `/videos/${detail.value.video_id}` }
+] : undefined)
 const noteId = ref<number | null>(null)
 const noteDraft = ref('')
 const lectureDraft = ref('')
@@ -176,15 +182,12 @@ function insertAnchor() {
 </script>
 
 <template>
-  <div v-if="detail">
+  <div>
     <PageHeader
       title="笔记与讲义"
-      :crumbs="[
-        { label: '视频库', to: '/' },
-        { label: detail.video_name || '知识工作台', to: `/videos/${detail.video_id}` }
-      ]"
+      :crumbs="crumbs"
     />
-    <div class="notes">
+    <div v-if="detail" class="notes">
       <el-card class="src" shadow="never">
         <template #header><b>来源条目</b></template>
         <div class="row">
@@ -192,7 +195,7 @@ function insertAnchor() {
           <span class="ts">{{ clock(detail.anchor_ms) }}</span>
           <span class="muted">{{ detail.video_name }}</span>
         </div>
-        <h3 class="title">{{ detail.title }}</h3>
+        <h2 class="title">{{ detail.title }}</h2>
         <p class="content">{{ detail.content }}</p>
         <blockquote v-if="detail.evidence" class="quote">{{ detail.evidence.quote }}</blockquote>
         <p v-if="detail.conflicts.length" class="conflict">
@@ -259,11 +262,11 @@ function insertAnchor() {
         </el-timeline>
       </el-card>
     </div>
+    <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`笔记加载失败：${loadError}`">
+      <el-button size="small" @click="router.push('/')">返回视频库</el-button>
+    </el-alert>
+    <el-skeleton v-else :rows="8" animated />
   </div>
-  <el-alert v-else-if="loadError" type="error" :closable="false" show-icon :title="`笔记加载失败：${loadError}`">
-    <el-button size="small" @click="router.push('/')">返回视频库</el-button>
-  </el-alert>
-  <el-skeleton v-else :rows="8" animated />
 </template>
 
 <style scoped>

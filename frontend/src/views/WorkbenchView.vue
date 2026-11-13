@@ -209,7 +209,7 @@ async function addTag() {
     />
     <div class="workbench">
       <div class="col vm-card left">
-        <h3 class="t">章节大纲</h3>
+        <h2 class="t">章节大纲</h2>
         <el-empty
           v-if="!chapters.length"
           description="暂无章节大纲：可能仍在解析，或该视频没有结构化结果"
@@ -232,7 +232,7 @@ async function addTag() {
           </div>
         </div>
 
-        <h3 class="t">原话转写（{{ transcript.length }} 句）</h3>
+        <h2 class="t">原话转写（{{ transcript.length }} 句）</h2>
         <p v-if="transcript.length >= TRANSCRIPT_LIMIT" class="tip">
           转写过长，仅显示前 {{ TRANSCRIPT_LIMIT }} 段
         </p>
@@ -269,7 +269,7 @@ async function addTag() {
 
       <div class="col vm-card right">
         <div class="panel-head">
-          <h3 class="t">结构化产物</h3>
+          <h2 class="t">结构化产物</h2>
           <el-button size="small" :disabled="!selected" @click="noteFromSelected">{{ noteLabel }}</el-button>
         </div>
         <div class="tagbar">

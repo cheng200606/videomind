@@ -20,7 +20,7 @@ defineProps<{
       </el-breadcrumb-item>
     </el-breadcrumb>
     <div class="row">
-      <h2 class="vm-page-title">{{ title }}</h2>
+      <h1 class="vm-page-title">{{ title }}</h1>
       <slot name="tag" />
       <div class="acts">
         <slot name="actions" />

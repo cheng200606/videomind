@@ -95,7 +95,7 @@ useLeaveGuard(() => !leavingForResult.value && (fileList.value.length > 0 || bus
     <PageHeader title="批量上传" subtitle="一次导入的 N 条本地视频归为一个批次，解析全程在本机完成" />
     <div class="box vm-card">
       <el-form label-width="88px" class="form">
-        <h3 class="sec"><span class="no vm-num">1</span>选择视频</h3>
+        <h2 class="sec"><span class="no vm-num">1</span>选择视频</h2>
         <el-form-item label="批次名称">
           <el-input v-model="name" maxlength="80" show-word-limit placeholder="一次导入的 N 条视频归为一个批次" />
         </el-form-item>
@@ -113,7 +113,7 @@ useLeaveGuard(() => !leavingForResult.value && (fileList.value.length > 0 || bus
           <p class="hint">支持 mp4 / mov / mkv / avi / webm；单文件不超过 2GB；单批最多 20 个文件；批内同名文件会被判重复并跳过（保留第一份）。</p>
         </el-form-item>
 
-        <h3 class="sec"><span class="no vm-num">2</span>解析参数</h3>
+        <h2 class="sec"><span class="no vm-num">2</span>解析参数</h2>
         <el-form-item label="当前配置">
           <div class="summary">
             <div v-if="summaryError" class="srow err">设置状态读取失败：{{ summaryError }}</div>
@@ -139,7 +139,7 @@ useLeaveGuard(() => !leavingForResult.value && (fileList.value.length > 0 || bus
         </el-form-item>
       </el-form>
 
-      <h3 class="sec"><span class="no vm-num">3</span>开始解析</h3>
+      <h2 class="sec"><span class="no vm-num">3</span>开始解析</h2>
       <el-alert
         v-if="modelMeta && !modelMeta.has_key"
         type="warning"

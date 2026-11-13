@@ -12,7 +12,7 @@
   --el-text-color-primary: #1f2937;
   --el-text-color-regular: #4b5563;
   --el-text-color-secondary: #5f6b7d;
-  --el-text-color-placeholder: #7a8598;
+  --el-text-color-placeholder: #6b7280;   /* axe：#7a8598 在输入底上 4.47:1 不达标 */
   --el-border-color-light: #e6e8eb;
   --el-bg-color-page: #f4f6fa;
   --el-border-radius-base: 6px;
@@ -98,14 +98,14 @@ body {
   letter-spacing: 0.02em;
 }
 
-h2.vm-page-title {
+h1.vm-page-title {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
   line-height: 1.4;
 }
 @media (max-width: 900px) {
-  h2.vm-page-title { font-size: 18px; }
+  h1.vm-page-title { font-size: 18px; }
   .el-card { --el-card-padding: 16px; }
 }
 
@@ -138,6 +138,10 @@ h2.vm-page-title {
   box-shadow: 0 0 0 1px var(--el-color-primary, #3d6fd6) inset, 0 0 0 3px rgba(61, 111, 214, 0.14) !important;
 }
 
+/* axe（v0.16）：warning 底上的主色链接 4.4:1 不达标，压深到与 warning 文字同档 */
+.el-tag--warning .el-link--primary { --el-link-text-color: #8a5a00 !important; }
+html.dark .el-tag--warning .el-link--primary { --el-link-text-color: #f0a202 !important; }
+
 /* 卡片标题：从默认 <b> 的 700 收到 600，层级更从容 */
 .el-card__header b {
   font-weight: 600;
@@ -151,6 +155,10 @@ h2.vm-page-title {
 .el-tag.el-tag--info { --el-tag-text-color: #5f6b7d !important; }
 .el-alert--info.is-light .el-alert__title,
 .el-alert--info.is-light .el-alert__description { color: #4b5563 !important; }
+.el-alert--error.is-light .el-alert__title,
+.el-alert--error.is-light .el-alert__description { color: #b03030 !important; }
+.el-alert--success.is-light .el-alert__title,
+.el-alert--success.is-light .el-alert__description { color: #2f7d1f !important; }
 .el-alert--warning.is-light .el-alert__title,
 .el-alert--warning.is-light .el-alert__description { color: #8a5a00 !important; }
 .el-input__count-inner { color: #6b7280 !important; }
@@ -178,7 +186,7 @@ h2.vm-page-title {
   --el-text-color-primary: #e5e7eb;
   --el-text-color-regular: #c7cdd8;
   --el-text-color-secondary: #8b95a7;
-  --el-text-color-placeholder: #6b7585;
+  --el-text-color-placeholder: #8b95a7;
   --el-border-color-light: #2a3142;
   --el-bg-color-page: #10141d;
 
