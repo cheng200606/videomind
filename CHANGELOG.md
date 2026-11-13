@@ -314,3 +314,31 @@
 
 - **程夏（组长）**：后端 pytest 92 例全绿（91 → 92，新增相关度排序用例），前端 vitest 38 例全绿（29 → 38：高亮 5 + 渐进渲染 4），`npm run build` 通过
 - **程夏（组长）**：Edge 暗色走查设置/视频库/知识检索/工作台/批次进度五页，检索「vue3」确认暗色高亮可读且前三行均为标题命中；方案与结果见 docs/迭代方案_v0.13.md；本版**未发布 Release**
+
+---
+
+## [v0.14] — 交付诚实性与口径一致性收口（2026-11-13，未发布 Release）
+
+### 目标：让「可信 / 可带走」在导出物上自洽，清掉多次列为遗留的路径泄露与静默降级债，把第一入口文档拉回实况（改动留在 develop 工作区，待提交）
+
+### P0 正确性（组长留痕）
+
+- **程夏（组长）**：解析覆盖提示贯通导出物——`app/export.py` 新增 `coverage_notices()` 单一口径（视频终态非成功 + 摘要产物 `payload.notice`）；批次级 Markdown 在批次头汇总非「成功」视频、各视频段输出「解析覆盖提示」区块与「请回看原片核对」；`/api/batches/{id}/structured` 每条视频新增 `coverage_notice`，外部插件快照与文稿同源；此前工作台横幅里的「第 N 段失败 / 内容可能缺失」在导出后完全丢失
+- **程夏（组长）**：移除 API 本机绝对路径——`parse.py::_video_view` 删 `path` 字段，`/api/batches/{id}` 与 `/api/videos/{id}` 只给 `file_name` + `media_url`；`types.ts` 的 `VideoState` 两字段转必填，`BatchProgressView.vue` / `WorkbenchView.vue` 共 5 处 `file_name || path.split(...)` 历史 fallback 收敛；`test_api.py` 两处落盘断言改用 `get_settings().media_root` + `{batch_id}_{filename}`。v0.7 §9-4、v0.8 §八-8 两次列为「后续移除」的遗留至此清掉
+- **程夏（组长）**：OCR 帧去重不再静默失效——`frames.py` 公开 `SIMILAR_THRESHOLD` / `abs_diff` 并新增 `file_thumbnail`，`ocr.py::dedupe_frames` 改用同一套 16×16 灰度均值差（Pillow + numpy，桌面包内已有），移除对 `imagehash` 的依赖；读图失败只保留该帧并记 warning；`requirements.txt` 删 imagehash 行、Pillow 注释校准，`VideoMindBackend.spec` 注释同步。旧写法在桌面发行版（spec 排除 imagehash/scipy）里等于没去重且无任何提示
+
+### P1 口径与体验
+
+- **程夏（组长）**：README 全文校准——技术栈改为 SQLite/FastAPI/原生 video/faster-whisper + RapidOCR/Electron 实况，进度改为代码线版本状态并指向分工任务卡，桌面版说明改为手动更新流程 + 全量通道预期，澄清 mock 只回放同名内置样例、真实视频需本地引擎与 Key；保留合规声明与逐人署名，无红线禁用的无据表述
+- **程夏（组长）**：`.env.example` 修正「用 openai SDK 指过来」的错误表述（实际为 httpx 直连 OpenAI 兼容协议），并补默认本地 SQLite 说明；导出页 API 说明补 `coverage_notice` 与覆盖提示
+- **程夏（组长）**：测试卫生——`pageheader.spec.ts` / `ConfidenceTag.spec.ts` 注册 `el-*` 轻量 stub，`useProgressiveList.ts` 用 `getCurrentInstance()` 守卫卸载钩子，消除 vitest 的组件解析与生命周期告警
+
+### P2 留痕
+
+- **程夏（组长）**：新增 `docs/迭代方案_v0.14.md`（含现状盘点、验收标准、实施结果与关键决策）；`AGENTS.md` 同步三条新契约（覆盖提示随交付物、视频视图无绝对路径、OCR 去重不依赖 imagehash）
+
+### 验证
+
+- **程夏（组长）**：后端 pytest **92 → 99 例全绿**（导出覆盖提示 3 + 路径脱敏 1 + OCR 去重 3）；前端 vitest **38 例全绿**且 `[Vue warn]` 计数为 **0**；`npm run build`（vue-tsc + vite）通过；`git diff --check` 通过
+- **程夏（组长）**：契约残留复核——全仓无 `video.path` 消费、无 `_abs_diff`/`_SIMILAR_THRESHOLD` 引用；`/structured` 为外部插件端点，前端不消费，新增可选字段无需同步 `types.ts`
+- **程夏（组长）**：明确不做——真实 Key 长视频回归、阶段 2 增量更新应用端（周会件）、C 级引擎分离、CHANGELOG v0.8/v0.8.1 缺口（逐人署名红线，不代组员补录）；**未发 Release、未改 desktop 版本号、未提交推送**；方案与决策详见 `docs/迭代方案_v0.14.md`
