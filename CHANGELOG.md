@@ -357,3 +357,21 @@
 ### 验证
 
 - **程夏（组长）**：后端 pytest **102 例全绿**（99 → 102），前端 vitest 38 例全绿；四轮真 Key E2E 数据与决策记录见 docs/迭代方案_v0.15.md；测试批次落在 dev 库（可删）；**本版未发布 Release**
+
+---
+
+## [v0.16] — 可达性全量扫描、图表暗色适配与转写档位实测（2026-11-14，未发布 Release）
+
+### P0 可达性与暗色补全（组长直推，按规留痕）
+
+- **程夏（组长）**：axe 可达性全量扫描——引入 axe-core（devDependency），亮/暗 × 8 页全量扫描并修复全部 violation：菜单分组容器按 WAI-ARIA 惯例 `role="none"`（critical 四类同根因，断点切换后重打补丁）；PageHeader 标题 h2→h1、section 标题 h3→h2（heading-order）；占位符与 error/success alert 标题对比度 AA 对位；aside/main 加 aria-label。**亮/暗 × 8 页最终 0 violation**
+- **程夏（组长）**：Mermaid 图表暗色适配——v0.13 暗色上线时未回访该组件（主题变量硬编码亮色）；改为主题感知渲染（监听主题切换、按 `:root:root.dark` 同值变量重新 initialize），并用 v0.15 真 Key 产物（批次 2 真实 UML 草稿）亮/暗双截图验证；新增 3 例组件测试（含渲染失败降级）
+
+### P1 转写档位实测
+
+- **程夏（组长）**：whisper tiny vs base 同素材对比（36.7min 合成讲座）：tiny 101s / 562 段 vs base 210s（2.1×）/ 330 段，质量接近（传统字 609 vs 595、关键术语 7/7 vs 6/7）——**维持默认 tiny**，数据入档供答辩引用
+- **程夏（组长）**：修复**转写缓存键不含模型档位**的隐患（换 VMIND_WHISPER_MODEL 会命中旧缓存）：`_asr_cache_name` 让档位参与键；新增 1 例单测
+
+### 验证
+
+- **程夏（组长）**：后端 pytest **103 例全绿**（102 → 103），前端 vitest **41 例全绿**（38 → 41），`npm run build` 通过；axe 亮/暗 × 8 页 0 violation；暗色真实 UML 渲染截图确认。方案与数据见 docs/迭代方案_v0.16.md；**本版未发布 Release**
