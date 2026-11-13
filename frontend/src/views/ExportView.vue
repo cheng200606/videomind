@@ -117,7 +117,7 @@ async function copyMd() {
       show-icon
       class="bar"
       title="导出的 UML 草稿为 Mermaid 源码，提交到 GitHub 后可原生渲染"
-      description="/api/batches/{id}/structured 是给外部插件只读消费的结构化快照。"
+      description="导出的 Markdown 自带解析覆盖提示（缺失区间随文稿一起带走）；/api/batches/{id}/structured 是给外部插件的只读快照，含 coverage_notice 字段。"
     />
 
     <div class="export vm-card">

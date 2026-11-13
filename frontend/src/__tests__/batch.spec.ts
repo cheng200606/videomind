@@ -40,7 +40,7 @@ function snapshot(status = 'running') {
   return {
     id: 1, name: 'X', status,
     videos: [{
-      id: 10, path: 'C:\\data\\1_demo.mp4', file_name: 'demo.mp4', duration_ms: 1000,
+      id: 10, file_name: 'demo.mp4', media_url: '/media/1_demo.mp4', duration_ms: 1000,
       status: 'running', error: '', stages: {
         transcribe: 'pending', visual: 'pending', structure: 'pending', artifact: 'pending'
       }

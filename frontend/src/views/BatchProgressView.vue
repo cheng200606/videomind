@@ -120,7 +120,7 @@ async function retry(row: VideoState) {
     <el-table :data="store.current.videos" border class="desktop-table">
       <el-table-column label="视频" min-width="220">
         <template #default="{ row }">
-          <div class="file" :title="row.file_name || row.path">{{ row.file_name || row.path.split(/[\\/]/).pop() }}</div>
+          <div class="file" :title="row.file_name">{{ row.file_name }}</div>
           <div v-if="row.error" class="err" :title="row.error">{{ row.error }}</div>
         </template>
       </el-table-column>
@@ -157,7 +157,7 @@ async function retry(row: VideoState) {
     <div class="mobile-list">
       <el-card v-for="v in store.current.videos" :key="v.id" shadow="never" class="vcard">
         <div class="vhead">
-          <span class="file">{{ v.file_name || v.path.split(/[\\/]/).pop() }}</span>
+          <span class="file">{{ v.file_name }}</span>
           <el-tag size="small" :type="STATUS_TYPE[v.status] ?? 'info'">{{ STATUS_LABEL[v.status] ?? v.status }}</el-tag>
         </div>
         <div class="stages">

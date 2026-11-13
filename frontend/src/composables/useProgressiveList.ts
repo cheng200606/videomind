@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, watch, type ComponentPublicInstance, type Ref } from 'vue'
+import { computed, getCurrentInstance, onBeforeUnmount, ref, watch, type ComponentPublicInstance, type Ref } from 'vue'
 
 /**
  * 长列表渐进渲染：首屏只挂 step 条，哨兵进入视口再追加——零依赖替代虚拟滚动。
@@ -35,7 +35,11 @@ export function useProgressiveList<T>(source: Ref<T[]>, step = 400) {
     observer.observe(target)
   }
 
-  onBeforeUnmount(() => observer?.disconnect())
+  // 单测会在组件实例外直接调用本组合式函数；无实例时跳过卸载钩子注册，
+  // 否则 Vue 会报 "onBeforeUnmount is called when there is no active component instance"
+  if (getCurrentInstance()) {
+    onBeforeUnmount(() => observer?.disconnect())
+  }
 
   return { visible, hasMore, visibleCount, loadMore, reset: () => { visibleCount.value = step }, bindSentinel }
 }

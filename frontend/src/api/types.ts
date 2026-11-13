@@ -34,11 +34,11 @@ export interface ItemDetail extends Item {
   notes: { id: number; content: string; anchor_ms: number }[]
 }
 
+/** 后端不回显本机绝对落盘路径；UI 只用 file_name 与 /media URL（v0.14） */
 export interface VideoState {
   id: number
-  path: string
-  file_name?: string
-  media_url?: string
+  file_name: string
+  media_url: string
   duration_ms: number
   status: VideoStatus
   error: string

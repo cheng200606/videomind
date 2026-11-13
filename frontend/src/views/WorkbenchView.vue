@@ -3,7 +3,7 @@ import { ElMessage } from 'element-plus'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { bindTag, dismissTag, getBatch, getItem, getItems, getTranscript, getVideo, listTags, mediaUrl } from '../api/client'
+import { bindTag, dismissTag, getBatch, getItem, getItems, getTranscript, getVideo, listTags } from '../api/client'
 import { clock } from '../api/labels'
 import type { Item, ItemDetail, Mark, TagInfo, VideoMeta, VideoState } from '../api/types'
 import { useProgressiveList } from '../composables/useProgressiveList'
@@ -171,7 +171,7 @@ async function addTag() {
 <template>
   <div v-if="video">
     <PageHeader
-      :title="video.file_name || video.path.split(/[\\/]/).pop() || '知识工作台'"
+      :title="video.file_name || '知识工作台'"
       :crumbs="[{ label: '视频库', to: '/' }, { label: '批次进度', to: `/batches/${video.batch_id}` }]"
     >
       <template #actions>
@@ -186,7 +186,7 @@ async function addTag() {
         >
           <el-option
             v-for="v in batchVideos" :key="v.id" :value="v.id"
-            :label="`${v.id === videoId ? '当前 · ' : ''}${v.file_name || v.path.split(/[\\/]/).pop()}`"
+            :label="`${v.id === videoId ? '当前 · ' : ''}${v.file_name}`"
           />
         </el-select>
       </template>
@@ -258,7 +258,7 @@ async function addTag() {
       <div class="col vm-card center">
         <EvidenceTimeline
           ref="player"
-          :src="video.media_url || mediaUrl(video.path)"
+          :src="video.media_url"
           :marks="marks"
           :duration-ms="video.duration_ms"
         />
