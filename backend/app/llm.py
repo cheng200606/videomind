@@ -53,6 +53,7 @@ class StructuredDraft(BaseModel):
 _SYSTEM = (
     "你是视频知识结构化助手。输入是一条知识/讲解类视频的带时间戳转写，以及画面 OCR 文本。"
     "只输出输入中出现过的信息，禁止补全未见过的内容；每条结论都要给 anchor_ms 与支撑原话 quote。"
+    "items 不超过 15 条，每条 content 不超过 120 字，quote 只摘支撑该结论的关键原话（不超过 60 字）。"
     "识别结果仅供参考。"
 )
 
@@ -134,7 +135,24 @@ def _parse(text: str) -> StructuredDraft:
 
 
 _TRANSCRIPT_LIMIT = 12000
+_MAX_TOKENS_STRUCTURE = 8000   # v0.15 实测：4000 会在稠密转写上截断 JSON（Unterminated string）
 _OCR_LIMIT = 6000
+
+
+def _salvage_truncated(body: str) -> StructuredDraft | None:
+    """max_tokens 截断时的抢救路径：截到最后一个完整闭合的对象，补全数组与外层括号后解析。
+
+    抢救只保留已完整的条目/章节，丢失的尾部在 report 里如实上报——部分可用优于全盘失败，
+    但绝不允许静默假装完整。
+    """
+    cut = body.rfind("}")
+    if cut <= 0:
+        return None
+    candidate = body[:cut + 1].rstrip().rstrip(",") + "]}"
+    try:
+        return StructuredDraft.model_validate(json.loads(candidate))
+    except Exception:
+        return None
 
 
 def _chunk_transcript(transcript: list[tuple[int, int, str]],
@@ -175,8 +193,8 @@ def _allocate_ocr(ocr_text: list[tuple[int, str]],
 
 
 def _structure_chunk(chunk: list[tuple[int, int, str]], ocr: list[tuple[int, str]],
-                     duration_ms: int, chunk_note: str) -> tuple[StructuredDraft, bool]:
-    """单块结构化，返回 (草稿, 本块是否被物理截断)。解析失败重试一次。"""
+                     duration_ms: int, chunk_note: str) -> tuple[StructuredDraft, bool, bool]:
+    """单块结构化，返回 (草稿, 本块是否被物理截断, 输出是否经抢救)。解析失败重试一次。"""
     body = "\n".join(f"[{s / 1000:.1f}s-{e / 1000:.1f}s] {t}" for s, e, t in chunk)
     ocr_body = "\n".join(f"[{ms / 1000:.1f}s] {t}" for ms, t in ocr) or "（画面通道未启用或无文字）"
 
@@ -194,13 +212,21 @@ def _structure_chunk(chunk: list[tuple[int, int, str]], ocr: list[tuple[int, str
 
     last_error: Exception | None = None
     for attempt in range(2):
+        raw = ""
         try:
-            return _parse(_chat(messages, active_model_config(), json_mode=True)), truncated
+            raw = _chat(messages, active_model_config(), json_mode=True,
+                        max_tokens=_MAX_TOKENS_STRUCTURE)
+            return _parse(raw), truncated, False
         except Exception as exc:
             last_error = exc
+            # 输出被上限截断时先抢救已完整的部分，抢救结果同样如实上报（salvaged=True）
+            salvaged = _salvage_truncated(raw) if raw else None
+            if salvaged is not None:
+                return salvaged, truncated, True
             messages = [*messages, {
                 "role": "user",
-                "content": f"上一次输出无法解析（{type(exc).__name__}: {exc}）。重新只输出合法 JSON。",
+                "content": "上一次输出无法解析（可能是被输出上限截断）。"
+                           "请精简：items 最多 10 条、每条 content 不超过 80 字，重新只输出合法 JSON。",
             }]
     raise RuntimeError(f"DeepSeek 结构化失败：{last_error}")
 
@@ -243,6 +269,25 @@ def _refine_summary(draft: StructuredDraft) -> None:
         pass
 
 
+def _rebase_draft(draft: StructuredDraft, span_start: int, span_end: int) -> None:
+    """把分块草稿里「相对本段开始」的毫秒锚点回移为整条视频的绝对时间，并夹取进本段范围。
+
+    相对输入 + 代码回移是唯一确定性的做法：v0.15 三轮实测证明，靠提示词约束模型直接输出
+    绝对毫秒不可靠（会相对化、甚至把分钟数当毫秒）。单位混淆按越界处理，夹取到本段边界。
+    """
+    def fix(ms: int) -> int:
+        return max(span_start, min(span_end, ms + span_start))
+
+    for c in draft.chapters:
+        c.start_ms = fix(c.start_ms)
+        c.end_ms = fix(c.end_ms)
+    for item in draft.items:
+        item.anchor_ms = fix(item.anchor_ms)
+    for conflict in draft.conflicts:
+        conflict.source_a_ms = fix(conflict.source_a_ms)
+        conflict.source_b_ms = fix(conflict.source_b_ms)
+
+
 def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, str]],
               duration_ms: int, report: dict | None = None,
               progress: "Callable[[int, int], None] | None" = None) -> StructuredDraft:
@@ -260,6 +305,7 @@ def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, 
         report["transcript_chars"] = sum(
             len(f"[{s / 1000:.1f}s-{e / 1000:.1f}s] {t}") for s, e, t in transcript)
         report["transcript_truncated"] = False
+        report["output_salvaged"] = False
         report["failed_chunks"] = []
 
     if not llm_ready():
@@ -271,12 +317,22 @@ def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, 
     for i, chunk in enumerate(chunks, 1):
         if progress is not None:
             progress(i, n)
-        note = "整条视频" if n == 1 else f"整条视频的第 {i}/{n} 段（时间连续，只分析本段给出的转写与画面文字）"
+        span_start, span_end = chunk[0][0], chunk[-1][1]
+        # 输入时间归零为「相对本段开始」，模型只输出相对毫秒；合并前由 _rebase_draft 回移——
+        # 相对输入 + 代码回移确定性强，避免模型自由发挥绝对时间（v0.15 三轮实测结论）
+        rel_chunk = [(s - span_start, e - span_start, t) for s, e, t in chunk]
+        rel_ocr = [(ms - span_start, t) for ms, t in ocr_parts[i - 1]]
+        note = (f"整条视频的第 {i}/{n} 段，本段时长 {((span_end - span_start) / 1000):.0f} 秒。"
+                "本段转写与画面文字的时间都是相对本段开始的时间；"
+                "anchor_ms / start_ms / end_ms 一律用相对本段开始的毫秒值")
         try:
-            draft, truncated = _structure_chunk(chunk, ocr_parts[i - 1], duration_ms, note)
+            draft, truncated, salvaged = _structure_chunk(rel_chunk, rel_ocr, duration_ms, note)
+            _rebase_draft(draft, span_start, span_end)
             drafts.append(draft)
             if truncated and report is not None:
                 report["transcript_truncated"] = True
+            if salvaged and report is not None:
+                report["output_salvaged"] = True
         except Exception as exc:
             last_error = exc
             if report is not None:

@@ -367,6 +367,8 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
             notices.append(f"转写单段超长（约 {report.get('transcript_chars', 0)} 字符），超限部分未能参与结构化")
         if (report.get("chunk_count") or 1) > 1 and not failed_chunks:
             notices.append(f"转写较长，已按时间切 {report['chunk_count']} 段完整结构化")
+        if report.get("output_salvaged"):
+            notices.append("部分段落的模型输出被截断，已保留可解析的条目，对应内容可能不完整")
 
         if failed_chunks:
             # 内容真缺了一块：阶段置 PARTIAL，视频随之 PARTIAL，比「成功但缺内容」诚实

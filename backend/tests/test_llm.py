@@ -174,3 +174,76 @@ def test_allocate_ocr_by_time():
     ocr = [(300, "第一块的字"), (1500, "第二块的字"), (9999, "最后一块的字")]
     parts = _allocate_ocr(ocr, chunks)
     assert [[t for _, t in p] for p in parts] == [["第一块的字"], ["第二块的字"], ["最后一块的字"]]
+
+
+def test_structure_salvages_truncated_output(monkeypatch):
+    """v0.15 实测修复：输出在 max_tokens 处截断时，抢救已完整条目并如实上报。"""
+    from app import llm
+
+    good = json.dumps({
+        "one_line": "一句话结论", "chapters": [], "tags": ["t1"],
+        "items": [
+            {"title": "条目一", "content": "内容一", "anchor_ms": 0, "quote": "q1"},
+            {"title": "条目二", "content": "内容二", "anchor_ms": 1, "quote": "q2"},
+        ]})
+    truncated = good[:-40] + '"content": "被截'   # 第三条写一半被上限切断
+    caps = []
+
+    def fake_chat(messages, cfg=None, **kw):
+        caps.append(kw.get("max_tokens"))
+        return truncated
+
+    monkeypatch.setattr(llm, "llm_ready", lambda: True)
+    monkeypatch.setattr(llm, "_chat", fake_chat)
+    report: dict = {}
+    draft = llm.structure([(0, 1000, "一句话")], [], 1000, report=report)
+    assert [i.title for i in draft.items] == ["条目一"], "只保留截断前完整的条目"
+    assert draft.tags == ["t1"]
+    assert report["output_salvaged"] is True
+    assert all(c == llm._MAX_TOKENS_STRUCTURE for c in caps), "结构化调用必须用调高后的输出上限"
+
+
+def test_structure_retry_message_warns_about_truncation(monkeypatch):
+    """彻底无法解析时，重试消息要提示精简输出，而不是原样重发同样的请求。"""
+    from app import llm
+
+    seen_last: list[str] = []
+
+    def fake_chat(messages, cfg=None, **kw):
+        seen_last.append(messages[-1]["content"])
+        return "这不是 JSON"
+
+    monkeypatch.setattr(llm, "llm_ready", lambda: True)
+    monkeypatch.setattr(llm, "_chat", fake_chat)
+    with pytest.raises(RuntimeError):
+        llm.structure([(0, 1000, "一句话")], [], 1000, report={})
+    assert any("截断" in m and "精简" in m for m in seen_last)
+
+
+def test_structure_rebases_chunk_anchors_to_absolute(monkeypatch):
+    """v0.15：分块输入时间归零，模型输出相对锚点，合并时由代码回移为绝对时间。"""
+    from app import llm
+
+    def fake_chat(messages, cfg=None, **kw):
+        prompt = messages[1]["content"]
+        if "收尾" in prompt:
+            return json.dumps({"one_line": "全局", "tags": ["t"]}, ensure_ascii=False)
+        idx = int(prompt.split("第 ")[1].split("/")[0]) - 1 if "第 " in prompt else 0
+        return _draft_json(
+            items=[{"title": f"条目{idx}a", "content": "c", "anchor_ms": 0, "quote": "q"},
+                   {"title": f"条目{idx}b", "content": "c", "anchor_ms": 5000, "quote": "q"}],
+            chapters=[{"title": f"章{idx}", "start_ms": 0, "end_ms": 11000, "gist": ""}])
+
+    monkeypatch.setattr(llm, "llm_ready", lambda: True)
+    monkeypatch.setattr(llm, "_chat", fake_chat)
+
+    transcript = [(i * 1000, (i + 1) * 1000, "字" * 900) for i in range(30)]
+    draft = llm.structure(transcript, [], 30000)
+
+    spans = [(c[0][0], c[-1][1]) for c in llm._chunk_transcript(transcript)]
+    for k, (span_start, span_end) in enumerate(spans):
+        pair = draft.items[k * 2:k * 2 + 2]
+        expect_second = min(span_start + 5000, span_end)   # 末块溢出会被夹取到 span_end
+        assert [i.anchor_ms for i in pair] == [span_start, expect_second]
+        assert span_start <= draft.chapters[k].start_ms < draft.chapters[k].end_ms <= span_end
+    assert all(0 <= i.anchor_ms <= 30000 for i in draft.items), "回移后必须落在整条视频范围内"
