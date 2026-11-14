@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1420 760" width="1420" height="760" font-family="Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif">
+<defs><marker id="arr" viewBox="0 0 12 12" refX="10.5" refY="6" markerWidth="8.5" markerHeight="8.5" orient="auto"><path d="M1.5,1.9 L10.5,6 L1.5,10.1" fill="none" stroke="#64748b" stroke-width="1.2"/></marker></defs>
+<rect x="0" y="0" width="1420" height="760" fill="#ffffff"/>
+<rect x="170" y="55" width="1040" height="620" rx="6" fill="#f8fafc" stroke="#334155" stroke-width="1.6"/>
+<text x="690.0" y="39" text-anchor="middle" font-size="16" font-weight="700" fill="#0f172a">VideoMind 视析 · 系统边界</text>
+<line x1="80.0" y1="250.0" x2="375.7" y2="238.9" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="80.0" y1="250.0" x2="405.5" y2="351.7" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="80.0" y1="250.0" x2="693.4" y2="167.9" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="80.0" y1="250.0" x2="687.5" y2="292.8" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="80.0" y1="250.0" x2="709.2" y2="413.9" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="80.0" y1="250.0" x2="976.3" y2="294.8" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="80.0" y1="250.0" x2="729.9" y2="542.9" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="80.0" y1="250.0" x2="989.5" y2="418.3" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="1245.0" y1="580" x2="1185.0" y2="580.0" stroke="#9aa8bd" stroke-width="1.15"/>
+<line x1="480.0" y1="202.0" x2="480.0" y2="128.0" stroke="#64748b" stroke-width="1.3" stroke-dasharray="7,4" marker-end="url(#arr)"/>
+<text x="468.0" y="159.0" text-anchor="end" font-size="10.5" fill="#475569">«include»</text>
+<line x1="480.0" y1="467.0" x2="480.0" y2="408.0" stroke="#64748b" stroke-width="1.3" stroke-dasharray="7,4" marker-end="url(#arr)"/>
+<text x="468.0" y="431.5" text-anchor="end" font-size="10.5" fill="#475569">«extend»</text>
+<ellipse cx="480" cy="235" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="480" y="230" text-anchor="middle" font-size="13" fill="#1e293b">批量导入本地视频</text>
+<text x="480" y="251" text-anchor="middle" font-size="11" fill="#64748b">多文件 · 一批次 N 条</text>
+<ellipse cx="480" cy="375" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="480" y="370" text-anchor="middle" font-size="13" fill="#1e293b">查看批次解析进度</text>
+<text x="480" y="391" text-anchor="middle" font-size="11" fill="#64748b">四阶段 × 逐条状态</text>
+<ellipse cx="480" cy="500" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="480" y="495" text-anchor="middle" font-size="13" fill="#1e293b">单条失败重试</text>
+<text x="480" y="516" text-anchor="middle" font-size="11" fill="#64748b">不重跑整批</text>
+<ellipse cx="790" cy="155" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="790" y="150" text-anchor="middle" font-size="13" fill="#1e293b">生成指定产物</text>
+<text x="790" y="171" text-anchor="middle" font-size="11" fill="#64748b">UML / 总结 / 要点 / 代码块</text>
+<ellipse cx="790" cy="300" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="2.6"/>
+<text x="790" y="295" text-anchor="middle" font-size="13" fill="#1e293b">从条目溯源到原片</text>
+<text x="790" y="316" text-anchor="middle" font-size="11" fill="#64748b">时间点 · 原话 · 片段帧</text>
+<ellipse cx="790" cy="435" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="790" y="430" text-anchor="middle" font-size="13" fill="#1e293b">打标签 · 采纳或驳回</text>
+<text x="790" y="451" text-anchor="middle" font-size="11" fill="#64748b">视频级 / 条目级 两层</text>
+<ellipse cx="790" cy="570" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="790" y="565" text-anchor="middle" font-size="13" fill="#1e293b">修正讲义并留痕</text>
+<text x="790" y="586" text-anchor="middle" font-size="11" fill="#64748b">草稿→待确认→已确认</text>
+<ellipse cx="1080" cy="300" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="1080" y="295" text-anchor="middle" font-size="13" fill="#1e293b">按标签跨视频检索</text>
+<text x="1080" y="316" text-anchor="middle" font-size="11" fill="#64748b">标签过滤，非语义检索</text>
+<ellipse cx="1080" cy="435" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="1080" y="430" text-anchor="middle" font-size="13" fill="#1e293b">导出批次文稿</text>
+<text x="1080" y="451" text-anchor="middle" font-size="11" fill="#64748b">Markdown · 含要点与溯源</text>
+<ellipse cx="1080" cy="580" rx="105.0" ry="33.0" fill="#eef2ff" stroke="#4338ca" stroke-width="1.5"/>
+<text x="1080" y="575" text-anchor="middle" font-size="13" fill="#1e293b">提供批次结构化数据</text>
+<text x="1080" y="596" text-anchor="middle" font-size="11" fill="#64748b">预留 REST 接口</text>
+<ellipse cx="480" cy="100" rx="95.0" ry="28.0" fill="#f1f5f9" stroke="#64748b" stroke-width="1.4" stroke-dasharray="5,3"/>
+<text x="480" y="95" text-anchor="middle" font-size="13" fill="#1e293b">导入预检</text>
+<text x="480" y="116" text-anchor="middle" font-size="11" fill="#64748b">格式校验 + 重复检测</text>
+<g stroke="#0f172a" stroke-width="1.7" fill="none"><circle cx="70" cy="220" r="10"/><line x1="70" y1="230" x2="70" y2="256"/><line x1="53" y1="240" x2="87" y2="240"/><line x1="70" y1="256" x2="56" y2="282"/><line x1="70" y1="256" x2="84" y2="282"/></g>
+<text x="70" y="306" text-anchor="middle" font-size="14" font-weight="700" fill="#0f172a">学习者</text>
+<rect x="1245.0" y="526.0" width="150" height="108" rx="4" fill="#fffbeb" stroke="#b45309" stroke-width="1.5" stroke-dasharray="6,4"/>
+<text x="1320" y="552" text-anchor="middle" font-size="10.5" fill="#b45309">«第三方系统»</text>
+<text x="1320" y="580" text-anchor="middle" font-size="13.5" font-weight="700" fill="#7c2d12">AI 助手插件</text>
+<text x="1320" y="602" text-anchor="middle" font-size="10.5" fill="#92400e">预留接口</text>
+<text x="1320" y="618" text-anchor="middle" font-size="10.5" fill="#92400e">（课程版未开发）</text>
+<text x="60" y="706" font-size="12.5" font-weight="700" fill="#334155">图 1  用例图（VideoMind 视析）</text>
+<text x="60" y="726" font-size="10.5" fill="#64748b">注：粗边框用例为差异化核心能力（证据链溯源）；ASR / OCR / LLM 属系统内部实现依赖，不作为参与者；浏览器与本地文件系统为运行载体，见部署图 8。UC-10 的参与者为第三方 AI 助手插件，接口预留、课程版未开发。</text>
+</svg>
