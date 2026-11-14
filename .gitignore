@@ -29,6 +29,12 @@ build/
 .vite/
 # 桌面版 electron-builder 输出（安装包/更新产物不入库，走 GitHub Release）
 desktop/release/
+# 本地手动下载的安装包与下载器临时文件（如迅雷 .xltd），一律不入库
+VideoMind-Setup-*.exe
+*.xltd
+*.xltd.cfg
+# 解包/安装出来的桌面版程序目录（pak/dll/exe，数百 MB），不入库
+videomind/
 *.log
 npm-debug.log*
 yarn-error.log*
@@ -78,3 +84,6 @@ desktop.ini
 # 本地测试产物（浏览器自动化截图 / playwright-cli 快照）
 output/
 .playwright-cli/
+
+# 飞书任务板本地快照（个人工作稿，不入课程仓库）
+VideoMind三周任务板.*
