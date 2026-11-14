@@ -1,0 +1,348 @@
+<title>十二页映射表</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 布局：单栏工作底稿。先给 A 的节点与交付规范，再按用户主线分三级逐页列表；每页只露「用户任务 / 首屏主角 / 待补」，其余点开看 */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --fg: #1c2230;
+  --fg-2: #4a5365;
+  --muted: #6b7486;
+  --rule: #e1e4ea;
+  --accent: #3d6fd6;
+  --gap: #b4531a;
+  --warn: #b42318;
+  --chip: #eef1f6;
+  --f-body: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --f-mono: ui-monospace, "SFMono-Regular", Consolas, "JetBrains Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151b; --surface: #191d25; --fg: #e5e8ee; --fg-2: #b3bac8; --muted: #8a93a5;
+    --rule: #2b313d; --accent: #82a6f0; --gap: #f0a46b; --warn: #f38b85; --chip: #232936; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151b; --surface: #191d25; --fg: #e5e8ee; --fg-2: #b3bac8; --muted: #8a93a5;
+  --rule: #2b313d; --accent: #82a6f0; --gap: #f0a46b; --warn: #f38b85; --chip: #232936; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.65; }
+.wrap {
+  max-width: 1040px; margin: 0 auto; padding-block: 40px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 40px;
+}
+h1 { font-size: 26px; margin: 0 0 6px; text-wrap: balance; }
+h2 { font-size: 17px; margin: 0; }
+p { margin: 0; }
+.sub { color: var(--fg-2); max-width: 66ch; }
+.meta { margin-top: 10px; font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.mono, .route { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.route { font-size: 12px; background: var(--chip); padding: 1px 6px; border-radius: 4px; white-space: nowrap; }
+.label { font-size: 11.5px; letter-spacing: .1em; color: var(--muted); }
+.sec { font-size: 10.5px; color: var(--accent); border: 1px solid currentColor; border-radius: 3px; padding: 0 3px; margin-left: 5px; vertical-align: 1px; white-space: nowrap; }
+.tag { font-size: 11px; padding: 0 6px; border-radius: 3px; background: var(--chip); color: var(--fg-2); white-space: nowrap; }
+.tag.demo { background: var(--accent); color: var(--surface); }
+
+/* A 的节点 */
+.dues { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.due { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; display: grid; gap: 2px; align-content: start; }
+.due .d { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.due .w { font-weight: 600; }
+.due .s { font-size: 12.5px; color: var(--fg-2); }
+.due.late { border-color: var(--warn); }
+.due.late .d { color: var(--warn); }
+.rules { margin: 14px 0 0; padding-left: 18px; color: var(--fg-2); font-size: 13px; display: grid; gap: 3px; }
+
+/* 用户主线 */
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 4px; margin-top: 12px; }
+.flow a { color: var(--fg); text-decoration: none; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+.flow a:hover { border-color: var(--accent); }
+.flow a:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.flow a b { font-family: var(--f-mono); color: var(--muted); font-weight: 500; margin-right: 6px; }
+.flow .to { color: var(--muted); }
+.flow-note { margin-top: 10px; font-size: 13px; color: var(--fg-2); max-width: 70ch; }
+
+/* 分组与逐页 */
+.group { display: grid; gap: 10px; }
+.group-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.group-head p { color: var(--muted); font-size: 13px; }
+.cols, summary { display: grid; grid-template-columns: 150px minmax(0, 1.1fr) minmax(0, 1.5fr) minmax(0, 1fr); gap: 18px; }
+.cols { padding: 0 16px 4px; }
+.list { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; }
+details + details { border-top: 1px solid var(--rule); }
+summary { list-style: none; cursor: pointer; padding: 14px 16px; align-items: start; }
+summary::-webkit-details-marker { display: none; }
+summary:hover { background: color-mix(in srgb, var(--accent) 4%, transparent); }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.pg { display: grid; gap: 3px; align-content: start; }
+.pg .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.pg .t { font-weight: 600; font-size: 15px; }
+.pg .t::after { content: "▸"; color: var(--muted); font-size: 11px; margin-left: 6px; display: inline-block; transition: transform .15s; }
+details[open] .pg .t::after { transform: rotate(90deg); }
+.pg .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.task { color: var(--fg); }
+.hero { margin: 0; padding-left: 18px; color: var(--fg); }
+.hero li + li { margin-top: 2px; }
+.todo { font-size: 13px; color: var(--fg-2); display: grid; gap: 4px; align-content: start; }
+.todo .g { color: var(--gap); }
+.todo .g::before { content: "待补 · "; font-size: 11.5px; letter-spacing: .06em; }
+.todo .ok { color: var(--muted); }
+
+.more { padding: 4px 16px 18px calc(16px + 150px + 18px); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; font-size: 13px; color: var(--fg-2); }
+.more ul { margin: 4px 0 0; padding-left: 16px; }
+.more .full { grid-column: 1 / -1; }
+.more .full b { color: var(--fg); font-weight: 600; margin-right: 8px; }
+
+/* 约定与差距汇总 */
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 32px; }
+.dec { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.dec li { display: grid; gap: 2px; }
+.dec b { font-weight: 600; }
+.dec span { color: var(--fg-2); font-size: 13px; }
+.gaps { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+.gaps td { padding: 7px 10px 7px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.gaps td:first-child { font-family: var(--f-mono); color: var(--muted); white-space: nowrap; width: 3em; }
+.gaps td:last-child { color: var(--muted); white-space: nowrap; text-align: right; padding-right: 0; }
+.gaps tr.code td:last-child { color: var(--accent); }
+footer { font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 14px; display: grid; gap: 4px; }
+
+@media (max-width: 860px) {
+  .cols { display: none; }
+  summary { grid-template-columns: 1fr; gap: 8px; }
+  .more { padding: 0 16px 18px; grid-template-columns: 1fr; gap: 12px; }
+  .two { grid-template-columns: 1fr; }
+  .dues { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 480px) { .dues { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .pg .t::after { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>十二页映射表 · 定稿</h1>
+    <p class="sub">A 的原型工作底稿：墨刀 12 页与现网页面的对照。每页列三件事：用户来这页做什么、首屏必须看到什么、和现网比还缺什么。次要内容、墨刀热区和待补的处理方式，点开那一行再看。</p>
+    <div class="meta">
+      <span>负责人：A（原型 25 分）</span>
+      <span>原型口径：docs/交付与排期.md §4.1</span>
+      <span>现网口径：origin/develop <span class="mono">@04eb7f0</span>，8 个业务页面</span>
+      <span>定稿 <span class="mono">2026-11-15</span></span>
+    </div>
+  </header>
+
+  <section>
+    <h2>A 的节点</h2>
+    <div class="dues">
+      <div class="due late"><span class="d">11/12 · W3 · 已过</span><span class="w">页 1–6 高保真</span><span class="s">交可预览链接。还没交的话本周和页 7–12 一起赶。</span></div>
+      <div class="due"><span class="d">11/19 · W4 · 硬节点</span><span class="w">页 7–12 + 页 4 可点击</span><span class="s">交 12 页完整链接和 2x 导出图。</span></div>
+      <div class="due"><span class="d">11/20–11/26 · W5</span><span class="w">前端切片 3 天</span><span class="s">窗口不许扩。表里标「W5 可顺手做」的才进代码。</span></div>
+      <div class="due"><span class="d">12/04 起 · W7</span><span class="w">PPT 成稿</span><span class="s">视觉与原型一致；4:30–6:30 现场点原型。</span></div>
+    </div>
+    <ul class="rules">
+      <li>仍 12 页，不新增第 13 页；现网多出的功能放进已有页面。</li>
+      <li>界面图用墨刀 2x 导出位图，进文档时标注「界面图」，和 SVG 结构图「示意图」区分开。</li>
+      <li>标 <span class="sec">§4.1</span> 的是 §4.1 写明的关键点，评分会对照，必须在页面上看得到，不能藏进折叠。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>用户主线</h2>
+    <div class="flow" aria-label="用户主线">
+      <a href="#p2"><b>2</b>批量上传</a><span class="to">→</span>
+      <a href="#p3"><b>3</b>看进度</a><span class="to">→</span>
+      <a href="#p4"><b>4</b>知识工作台</a><span class="to">→</span>
+      <a href="#p5"><b>5</b>查证据</a><span class="to">→</span>
+      <a href="#p7"><b>7</b>记笔记</a><span class="to">→</span>
+      <a href="#p9"><b>9</b>导出带走</a>
+    </div>
+    <p class="flow-note">主画像是考前复习的计算机专业学生，最在意「不看完就知道讲了什么」和「结论能不能信」，所以页 4、页 5 是重心。页 6 对学生是辅助，但它和页 5 是答辩演示动线的两站，标了「演示」的页要在墨刀里做热区。</p>
+  </section>
+
+  <section class="group" aria-labelledby="g1">
+    <div class="group-head"><h2 id="g1">一级 · 主线页</h2><p>每次使用都会经过，按主线顺序排</p></div>
+    <div class="cols label" aria-hidden="true"><span>原型页</span><span>用户来这里做什么</span><span>首屏主角</span><span>现网 / 待补</span></div>
+    <div class="list" id="tier1"></div>
+  </section>
+
+  <section class="group" aria-labelledby="g2">
+    <div class="group-head"><h2 id="g2">二级 · 回访页</h2><p>解析完成后反复回来用</p></div>
+    <div class="list" id="tier2"></div>
+  </section>
+
+  <section class="group" aria-labelledby="g3">
+    <div class="group-head"><h2 id="g3">三级 · 辅助页</h2><p>低频、特定画像使用，或只在出错时出现</p></div>
+    <div class="list" id="tier3"></div>
+  </section>
+
+  <section class="two">
+    <div>
+      <h2>原型画法约定</h2>
+      <ul class="dec">
+        <li><b>页 5、页 6 画成工作台的状态</b><span>证据链是工作台右侧拉出的抽屉，UML 是产物面板的一个标签页，和 §4.1「证据链抽屉」一致。用户不离开工作台，页 4 的点击动线直接串过去。</span></li>
+        <li><b>讲义状态机完整放页 7，页 9 放版本记录区块</b><span>编辑和改状态在页 7 同一处完成；页 9 按 §4.1 保留「版本记录区块」，只读，列已确认的版本。</span></li>
+        <li><b>页 10 入口放在侧栏「系统」组</b><span>和设置并列。清理旧批次是低频操作，不进工作区。</span></li>
+        <li><b>现网多出的功能一律降级</b><span>解析事件流、整批重跑、Mermaid 源码、结构化接口说明默认收起，或者不给普通用户看。</span></li>
+      </ul>
+      <p class="flow-note">这几条是 A 的画法选择，没有改 §4.1 的范围；W4 组长走查原型时一并确认。</p>
+    </div>
+    <div>
+      <h2>待补汇总</h2>
+      <table class="gaps" id="gaps" aria-label="现网与原型的差距"></table>
+    </div>
+  </section>
+
+  <footer>
+    <span>依据：frontend/src/router.ts、views/*.vue、components/*.vue，backend/app/artifacts.py、llm.py、export.py、config.py；2026-11-15 逐条回代码核对。</span>
+    <span>本文件作为 W2「原型信息架构」验收物，按 CONTRIBUTING 走 feature/A-* 分支提 PR，合并后在 CHANGELOG 自记条目。</span>
+  </footer>
+</div>
+
+<script>
+// tier: 1 主线 / 2 回访 / 3 辅助
+// 列表项以 "§" 开头 = §4.1 写明的关键点（必须可见）
+// gaps: [内容, 处理方式, code?]  code=true 表示 W5 切片可顺手做（纯前端、数据已有）
+const PAGES = [
+  { n: 2, tier: 1, name: '批量上传', route: '/upload',
+    task: '把一堆本地视频丢进来，开始解析',
+    hero: ['§拖拽区，可一次多选', '§待上传文件列表（批内同名会被跳过）', '「开始解析」主按钮'],
+    second: ['批次名（默认「未命名批次」）', '§解析参数：当前配置一行摘要，可跳设置', '§B 站链接 Tab，置灰占位，标「仅原型」'],
+    hide: ['引擎参数细节，放设置页'],
+    hot: ['开始解析 → 页 3'],
+    gaps: [['B 站 Tab 占位', '只画原型']] },
+  { n: 3, tier: 1, name: '批次进度', route: '/batches/:id',
+    task: '还要等多久，哪条出了问题',
+    hero: ['顶部总进度：已完成 x / N', '§失败条目置顶，带「重试本条」', '§四阶段 × N 状态矩阵'],
+    second: ['§部分成功提示条', '已完成条目的「去工作台」'],
+    hide: ['解析事件流，默认折叠，排障用', '整批重跑，放进「更多」'],
+    hot: ['去工作台 → 页 4', '导出文稿 → 页 9'],
+    gaps: [['总进度汇总条（现网只能逐行看）', 'W5 可顺手做', true]] },
+  { n: 4, tier: 1, name: '知识工作台', route: '/videos/:id', core: true, demo: true,
+    task: '不看完视频就知道讲了什么，并跳到想看的地方',
+    hero: ['§右栏产物面板，默认「总结」，可切要点 / UML / 代码块', '§中间播放器和刻度条', '§左栏章节大纲；点任何一条都跳到对应时间'],
+    second: ['「只看易错点」开关', '每条的置信度标签', '视频标签条'],
+    hide: ['原话转写，左栏折叠成第二个标签页', '同批切换，顶部下拉'],
+    hot: ['点大纲 → 播放器进度变化', '切产物标签 → 面板切换', '点条目 → 拉出证据抽屉（页 5）', '点 UML 元素 → 跳证据时间点（页 6）', '记笔记 → 页 7'],
+    gaps: [],
+    extra: '§4.1 要求做成可点击交互，汇报时直接投屏点。墨刀里 4、5、6 三页的热区要连成一条线。' },
+  { n: 5, tier: 1, name: '条目详情 · 证据链', route: '/videos/:id', via: '工作台抽屉', demo: true,
+    task: '这条结论能不能信',
+    hero: ['§证据链抽屉：讲师原话 + 时间点（点了回放）', '§置信度三档：明述 / 推断 / 低置信', '§冲突提示条（检出前后不一致时出现）'],
+    second: ['§来源帧截图', '识别通道：语音 / 画面'],
+    hide: ['条目类型等元数据'],
+    hot: ['点时间点 → 关闭抽屉并跳转播放'],
+    gaps: [],
+    extra: '§4.1 点名的两处最能加分的演示之一。原型里至少放一条带冲突提示的示例条目。' },
+  { n: 9, tier: 1, name: '导出', route: '/batches/:id/export',
+    task: '把这一批的成果带走',
+    hero: ['§批次级 Markdown 预览（UML / 总结 / 溯源）', '「下载 Markdown」「复制」两个按钮'],
+    second: ['§版本记录区块：只读，列已确认版本', '未解析完成条目的提示'],
+    hide: ['结构化接口说明，不给普通用户看'],
+    hot: [],
+    gaps: [['版本记录区块（导出的文稿正文里已有，页面上没有）', '只画原型']] },
+
+  { n: 1, tier: 2, name: '视频库首页', route: '/',
+    task: '找到之前那批视频，看讲了什么、处理完没有',
+    hero: ['§批次分组卡片：名称 + 状态标签', '§卡片内每条视频的一句话结论', '「批量上传」主按钮'],
+    second: ['§按标签筛选', '按状态筛选', '条数和创建时间'],
+    hide: ['删除，收进卡片的「更多」菜单'],
+    hot: ['点卡片 → 页 3', '批量上传 → 页 2'],
+    gaps: [['一句话结论上卡片（每条视频已有，批次级没有）', 'W5 可顺手做', true], ['按标签筛选', '只画原型']] },
+  { n: 8, tier: 2, name: '标签与检索', route: '/search',
+    task: '考前把某个知识点从所有视频里捞出来',
+    hero: ['§搜索框：关键词加标签', '§跨视频结果列表：命中高亮、所属视频、时间点'],
+    second: ['§AI 标签建议，用数字角标提示，可采纳 / 驳回', '§标签管理入口（点开侧边抽屉：重命名、合并、删除）', '按置信度筛选'],
+    hide: [],
+    hot: ['点结果行 → 页 4 对应条目'],
+    gaps: [['标签管理', '只画原型'], ['AI 标签建议队列（现网只在工作台）', '只画原型']] },
+  { n: 7, tier: 2, name: '笔记编辑', route: '/notes/:id',
+    task: '记下自己的理解，以后能跳回原片',
+    hero: ['编辑器', '§「插入时间锚点」按钮', '顶部一行来源条目和原话'],
+    second: ['§Markdown 预览', '§入口：工作台条目上的「一键建笔记」', '同一条目有多条笔记时的切换'],
+    hide: ['讲义正文、状态流转、版本记录，放进第二个标签页「讲义」'],
+    hot: ['点时间锚点 → 页 4 对应时间'],
+    gaps: [] },
+
+  { n: 6, tier: 3, name: 'UML 草稿', route: '/videos/:id', via: '工作台产物面板', demo: true,
+    task: '需求岗画像：拿到一份能拿去评审的图',
+    hero: ['§用例 / 类 / 时序预览', '§点图上元素，跳回证据时间点'],
+    second: ['图种切换'],
+    hide: ['Mermaid 源码，收进「复制源码」'],
+    hot: ['点元素 → 页 4 跳到证据时间点'],
+    gaps: [['用例、类、时序三种图（现网只出章节流程图）', '只画原型']],
+    extra: '对学生是辅助页，但「UML → 证据回跳」是 §4.1 点名的演示动线，热区必须做。' },
+  { n: 11, tier: 3, name: '设置', route: '/settings',
+    task: '第一次用时配好大模型，之后基本不再来',
+    hero: ['大模型 Key 配置', '「测试连接」和连接结果'],
+    second: ['§OCR 引擎切换', '§ASR 词表校正开关，标「设计态」', '§默认产物集'],
+    hide: ['应用更新、深色模式、关于'],
+    hot: [],
+    gaps: [['ASR 词表校正开关（后端有配置，界面没有）', '只画原型']],
+    extra: '评分点是「呼应策略模式」，三个 §4.1 项都要露在页面上。' },
+  { n: 10, tier: 3, name: '批次与任务后台', route: null,
+    task: '清理旧批次，看占了多少空间',
+    hero: ['§批次历史表格：名称、状态、条数、时间', '§存储占用', '§失败重试'],
+    second: ['勾选后批量删除'],
+    hide: [],
+    hot: ['点重试 → 页 3'],
+    gaps: [['独立页面（现网分散在视频库和进度页）', '只画原型'], ['存储占用', '只画原型']] },
+  { n: 12, tier: 3, name: '异常态', route: null, cross: true,
+    task: '出错时知道发生了什么、下一步怎么办',
+    hero: ['§三格并排：单条失败 / 无字幕降级 / 批次部分成功', '每格一句原因，加一个动作按钮'],
+    second: [],
+    hide: ['技术错误详情，折叠在「查看详情」里'],
+    hot: [],
+    gaps: [['无字幕降级的专门画面', '只画原型']],
+    extra: '现网没有这一页，异常分布在进度页、工作台、导出页里。原型拼成一页三格；§4.1 特别提了「批次部分成功」是多数组会漏的。' }
+];
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const item = (x) => x.startsWith('§') ? `${esc(x.slice(1))}<span class="sec">§4.1</span>` : esc(x);
+const li = (a) => a.map((x) => `<li>${item(x)}</li>`).join('');
+const block = (label, a) => `<div><span class="label">${label}</span>${a.length ? `<ul>${li(a)}</ul>` : '<p>无</p>'}</div>`;
+
+function row(p) {
+  const where = p.route
+    ? `<div><span class="route">${esc(p.route)}</span>${p.via ? ` · ${esc(p.via)}` : ''}</div>`
+    : `<div>${p.cross ? '分布在多个页面' : '现网无独立页面'}</div>`;
+  const todo = p.gaps.length
+    ? p.gaps.map(([g]) => `<div class="g">${esc(g)}</div>`).join('')
+    : '<div class="ok">现网已覆盖</div>';
+  const tags = [p.core && '<span class="tag">核心页</span>', p.demo && '<span class="tag demo">演示</span>'].filter(Boolean).join('');
+  return `<details id="p${p.n}">
+    <summary>
+      <div class="pg"><span class="n">页 ${p.n}</span><span class="t">${esc(p.name)}</span>${tags ? `<span class="tags">${tags}</span>` : ''}</div>
+      <div class="task">${esc(p.task)}</div>
+      <ul class="hero">${li(p.hero)}</ul>
+      <div class="todo">${where}${todo}</div>
+    </summary>
+    <div class="more">
+      ${block('次要 · 可见但不抢眼', p.second)}
+      ${block('收起或不放', p.hide)}
+      ${block('墨刀热区', p.hot)}
+      ${p.gaps.length ? `<p class="full"><b>待补处理</b>${p.gaps.map(([g, h]) => `${esc(g)}：${esc(h)}`).join('；')}</p>` : ''}
+      ${p.extra ? `<p class="full"><b>说明</b>${esc(p.extra)}</p>` : ''}
+    </div>
+  </details>`;
+}
+
+[1, 2, 3].forEach((t) => {
+  document.getElementById(`tier${t}`).innerHTML = PAGES.filter((p) => p.tier === t).map(row).join('');
+});
+
+document.getElementById('gaps').innerHTML = PAGES.flatMap((p) =>
+  p.gaps.map(([g, h, code]) => `<tr${code ? ' class="code"' : ''}><td>页 ${p.n}</td><td>${esc(g)}</td><td>${esc(h)}</td></tr>`)).join('');
+
+// 从主线跳到某页时自动展开
+function openHash() {
+  const el = location.hash && document.querySelector(location.hash);
+  if (el && el.tagName === 'DETAILS') el.open = true;
+}
+window.addEventListener('hashchange', openHash);
+document.querySelectorAll('.flow a').forEach((a) => a.addEventListener('click', () => {
+  const el = document.querySelector(a.getAttribute('href'));
+  if (el) el.open = true;
+}));
+openHash();
+</script>
