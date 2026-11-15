@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1520 1250" width="1520" height="1250" font-family="Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0.6,0.9 L9.4,5 L0.6,9.1 Z" fill="#334155"/></marker><marker id="av" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0.6,0.9 L9.4,5 L0.6,9.1 Z" fill="#8b5cf6"/></marker></defs>
+<rect x="0" y="0" width="1520" height="1250" fill="#ffffff"/>
+<text x="760.0" y="36" text-anchor="middle" font-size="15" font-weight="700" fill="#0f172a">图 7　状态机图：解析任务状态机（视频级 + 阶段级）与讲义修订状态机</text>
+<rect x="30" y="60" width="1460" height="512" rx="4" fill="#fbfcfe" stroke="#e2e8f0" stroke-width="1"/>
+<text x="48" y="82" font-size="12" font-weight="700" fill="#0f172a">① 视频级 · VideoStatus —— 单条视频（Video 行）的解析状态，一次解析产生一个终态</text>
+<rect x="30" y="594" width="1460" height="252" rx="4" fill="#fbfcfe" stroke="#e2e8f0" stroke-width="1"/>
+<text x="48" y="616" font-size="12" font-weight="700" fill="#0f172a">② 阶段级 · StageStatus —— 每个视频的 4 个阶段（转写 / 画面 / 结构化 / 产物）各自独立流转</text>
+<rect x="30" y="862" width="1460" height="250" rx="4" fill="#fbfcfe" stroke="#e2e8f0" stroke-width="1"/>
+<text x="48" y="884" font-size="12" font-weight="700" fill="#0f172a">③ 讲义级 · RevisionState —— 条目修订留痕，转移表见 REVISION_TRANSITIONS（非法跳转 422）</text>
+<path d="M117,300 L148,300" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M306,300 L400,300" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M570,300 L650,300 L650,180 L820,180" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M650,300 L820,300" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M650,300 L650,420 L820,420" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M1000,180 L1060,180 L1060,289 L1110,297" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M1000,300 L1109,300" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M1000,420 L1060,420 L1060,311 L1110,303" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M910,450 L910,560" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M1000,318 L1090,318 L1090,560 L910,560" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M910,560 L485,560 L485,330" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M200,270 L200,110 L1050,110 L1050,255 L900,255 L900,270" fill="none" stroke="#8b5cf6" stroke-width="1.1" stroke-dasharray="5.5,3.5" marker-end="url(#av)"/>
+<path d="M280,717 L350,717" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M555,717 L555,665 L700,665" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M555,717 L700,717" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M555,717 L555,795 L700,795" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M210,744 L210,815 L375,815" fill="none" stroke="#8b5cf6" stroke-width="1.1" stroke-dasharray="5.5,3.5" marker-end="url(#av)"/>
+<path d="M117,970 L150,970" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M330,970 L420,970" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M620,970 L710,970" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M890,970 L980,970" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M1070,1000 L1070,1052 L520,1052 L520,1000" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M520,940 L520,922 L265,922 L265,940" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<path d="M800,940 L800,900 L200,900 L200,940" fill="none" stroke="#334155" stroke-width="1.1" marker-end="url(#a)"/>
+<circle cx="108" cy="300" r="9" fill="#334155"/>
+<rect x="148" y="270" width="158" height="60" rx="6" fill="#eef2f7" stroke="#94a3b8" stroke-width="1.3"/>
+<text x="227.0" y="298.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">PENDING</text>
+<rect x="400" y="270" width="170" height="60" rx="6" fill="#e8eefc" stroke="#7c96c8" stroke-width="1.3"/>
+<text x="485.0" y="298.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">RUNNING</text>
+<rect x="820" y="150" width="180" height="60" rx="6" fill="#e9f6ee" stroke="#5f9e78" stroke-width="1.3"/>
+<text x="910.0" y="178.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">SUCCEEDED</text>
+<text x="910.0" y="193.0" text-anchor="middle" font-size="8.5" fill="#475569">四阶段无异常</text>
+<rect x="820" y="270" width="180" height="60" rx="6" fill="#fdeceb" stroke="#c07a7a" stroke-width="1.3"/>
+<text x="910.0" y="298.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">FAILED</text>
+<text x="910.0" y="313.0" text-anchor="middle" font-size="8.5" fill="#475569">可重试</text>
+<rect x="820" y="390" width="180" height="60" rx="6" fill="#fdf4e4" stroke="#c9a227" stroke-width="1.3"/>
+<text x="910.0" y="418.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">PARTIAL</text>
+<text x="910.0" y="433.0" text-anchor="middle" font-size="8.5" fill="#475569">产物可用但不完整</text>
+<circle cx="1120" cy="300" r="11" fill="none" stroke="#334155" stroke-width="1.5"/>
+<circle cx="1120" cy="300" r="6" fill="#334155"/>
+<rect x="140" y="690" width="140" height="54" rx="6" fill="#eef2f7" stroke="#94a3b8" stroke-width="1.3"/>
+<text x="210.0" y="715.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">PENDING</text>
+<rect x="350" y="690" width="140" height="54" rx="6" fill="#e8eefc" stroke="#7c96c8" stroke-width="1.3"/>
+<text x="420.0" y="715.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">RUNNING</text>
+<rect x="700" y="640" width="140" height="50" rx="6" fill="#e9f6ee" stroke="#5f9e78" stroke-width="1.3"/>
+<text x="770.0" y="663.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">DONE</text>
+<rect x="700" y="692" width="140" height="50" rx="6" fill="#fdf4e4" stroke="#c9a227" stroke-width="1.3"/>
+<text x="770.0" y="715.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">PARTIAL</text>
+<rect x="700" y="770" width="140" height="50" rx="6" fill="#fdeceb" stroke="#c07a7a" stroke-width="1.3"/>
+<text x="770.0" y="793.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">FAILED</text>
+<rect x="375" y="786" width="180" height="58" rx="6" fill="#f2f1ef" stroke="#a8a29e" stroke-width="1.3"/>
+<text x="465.0" y="813.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">SKIPPED</text>
+<text x="465.0" y="828.0" text-anchor="middle" font-size="8.5" fill="#475569">画面通道未启用 / 无关键帧</text>
+<circle cx="108" cy="970" r="9" fill="#334155"/>
+<rect x="150" y="940" width="180" height="60" rx="6" fill="#eef2f7" stroke="#94a3b8" stroke-width="1.3"/>
+<text x="240.0" y="968.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">DRAFT</text>
+<text x="240.0" y="983.0" text-anchor="middle" font-size="8.5" fill="#475569">条目落库时自动建版本</text>
+<rect x="420" y="940" width="200" height="60" rx="6" fill="#e8eefc" stroke="#7c96c8" stroke-width="1.3"/>
+<text x="520.0" y="968.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">PENDING_CONFIRM</text>
+<text x="520.0" y="983.0" text-anchor="middle" font-size="8.5" fill="#475569">待人工确认</text>
+<rect x="710" y="940" width="180" height="60" rx="6" fill="#e9f6ee" stroke="#5f9e78" stroke-width="1.3"/>
+<text x="800.0" y="968.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">CONFIRMED</text>
+<text x="800.0" y="983.0" text-anchor="middle" font-size="8.5" fill="#475569">计入导出</text>
+<rect x="980" y="940" width="180" height="60" rx="6" fill="#f4effe" stroke="#8b5cf6" stroke-width="1.3"/>
+<text x="1070.0" y="968.0" text-anchor="middle" font-size="11.5" font-weight="700" fill="#0f172a">REVISED</text>
+<text x="1070.0" y="983.0" text-anchor="middle" font-size="8.5" fill="#475569">已修订，可再提交</text>
+<text x="353" y="292" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">顺序取到该条</text>
+<text x="733" y="172" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">①~④ 全部 DONE</text>
+<text x="735" y="292" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">①转写失败 / ③④异常</text>
+<text x="733" y="412" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">任一阶段 FAILED 或 PARTIAL</text>
+<text x="700" y="552" text-anchor="middle" font-size="8.5" font-weight="700" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">retry /videos/{id}/retry：四阶段重置为 PENDING 后重跑</text>
+<text x="520" y="102" text-anchor="middle" font-size="8.5" fill="#8b5cf6" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">服务重启：遗留 PENDING / RUNNING 一律置 FAILED（recover_orphan_runs）</text>
+<text x="315" y="709" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">阶段开始</text>
+<text x="625" y="657" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">全部成功</text>
+<text x="626" y="709" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">个别块失败</text>
+<text x="625" y="787" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">异常中断</text>
+<text x="224" y="801" text-anchor="start" font-size="8.5" fill="#8b5cf6" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">降级：直接跳过，不置 RUNNING</text>
+<text x="375" y="962" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">提交待确认</text>
+<text x="665" y="962" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">确认</text>
+<text x="935" y="962" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">修订</text>
+<text x="795" y="1044" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">再次提交</text>
+<text x="392" y="914" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">驳回</text>
+<text x="500" y="892" text-anchor="middle" font-size="8.5" fill="#334155" stroke="#ffffff" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">回退重写</text>
+<text x="900" y="668.0" font-size="8.6" fill="#475569">每个视频固定 4 行阶段状态：</text>
+<text x="900" y="682.5" font-size="8.6" fill="#475569">transcribe / visual / structure / artifact</text>
+<text x="900" y="697.0" font-size="8.6" fill="#475569"></text>
+<text x="900" y="711.5" font-size="8.6" fill="#475569">· SKIPPED 不计入不完整判定</text>
+<text x="900" y="726.0" font-size="8.6" fill="#475569">  （bad = FAILED, PARTIAL）；画面通道</text>
+<text x="900" y="740.5" font-size="8.6" fill="#475569">  关闭或无关键帧时，视频仍可 SUCCEEDED</text>
+<text x="900" y="755.0" font-size="8.6" fill="#475569">· 阶段 FAILED 不必然使视频 FAILED：</text>
+<text x="900" y="769.5" font-size="8.6" fill="#475569">  仅 transcribe / structure / artifact 终止整条</text>
+<text x="900" y="784.0" font-size="8.6" fill="#475569">· 重试时四阶段统一重置为 PENDING</text>
+<text x="34" y="1139.0" font-size="8.6" fill="#475569">注①：三层状态机画在同一画布，是因为它们串在同一条业务链上（视频解析 → 条目落库 → 讲义修订），但三者互相独立，不共享状态变量。</text>
+<text x="34" y="1154.5" font-size="8.6" fill="#475569">注②：依据代码——视频 VideoStatus 5 个具名状态、阶段 StageStatus 6 个（含 SKIPPED）、讲义 RevisionState 4 个（转移表 REVISION_TRANSITIONS 在 enums.py 中显式声明）。</text>
+<text x="34" y="1170.0" font-size="8.6" fill="#475569">注③：任务卡记「7 状态含重试」为粗口径；本图按 enums.py 逐字实现，共 15 个具名状态，一个不合并，以便与代码逐条对照、答辩可现场指认。</text>
+<text x="34" y="1185.5" font-size="8.6" fill="#475569">注④：重试不是状态内自环。/videos/{id}/retry 先把四个阶段统一重置为 PENDING 再重跑，等同重新开始一次解析，故箭头重入 RUNNING，而不是把 PARTIAL 直接改成 SUCCEEDED。</text>
+<text x="34" y="1201.0" font-size="8.6" fill="#475569">注⑤：进程重启兜底 recover_orphan_runs：遗留的 PENDING / RUNNING 视频一律置 FAILED，并写入「服务重启导致解析中断，可重试」，保证可重试、可删除，不会永久卡在 RUNNING。</text>
+<text x="34" y="1216.5" font-size="8.6" fill="#475569">注⑥：批次 VideoBatch 状态不另画。它由 _recompute_batch_status 按成员视频终态聚合（全 SUCCEEDED → SUCCEEDED；含任一 SUCCEEDED / PARTIAL → PARTIAL；否则 FAILED），是派生值，不接受外部直接置位。</text>
+<text x="34" y="1232.0" font-size="8.6" fill="#475569">注⑦：讲义流转两条硬约束——不在 REVISION_TRANSITIONS 中的跳转一律 422（如 DRAFT → CONFIRMED）；每次流转追加一条 Revision 快照，历史不覆盖，只有 CONFIRMED / REVISED 计入导出。</text>
+</svg>
