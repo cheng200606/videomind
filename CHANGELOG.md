@@ -198,6 +198,28 @@
 
 ---
 
+## [v0.8.1] — 解析管线段：UML 建模与链路走读（B 补录，2026-11-15 追记）
+
+> 本节按「逐版本、逐人署名、不代拟」规则由 **B** 补录：管线段代码由组长合入，B 承担模型表达与代码走读核对，故只记 B 本人交付的部分，版本号沿用 v0.8 序列。
+
+### UML 建模交付（矢量源 + 导出图，均落 `docs/figures/`）
+
+- **B**：图 1 用例图 `fig1-usecase.drawio/.svg`——10 条用例 UC-01～UC-10 与 `docs/产品定义.md` 4.1 的 B1～B10 一一对应；参与者只画学习者（主）与 AI 助手插件（第三方，边界外虚线框，标预留接口）；UC-01 «include» 导入预检（格式校验与批内重复检测合并为一个用例，代码中本是一体），UC-03 «extend» UC-02（仅单条失败时才触发）；ASR / OCR / LLM 不入图，图注说明其为可替换的实现依赖
+- **B**：图 2 数据流图 `fig2-dataflow-context.svg`（0 层）+ `fig2-dataflow-level1.svg`（1 层）——0 层把系统视为单一处理「0」，外部实体 E1～E5 编号跨图一致；1 层六个处理（上传预检 / 音频转写 / 画面识别 / LLM 结构化 / 产物生成落库 / 检索导出）与四处存储（媒体库、业务库、解析缓存、进度事件总线），父子图按六条对外数据流平衡
+- **B**：图 3 顺序图 A `fig3-sequence-task-submit.svg`——五泳道（前端 / 接口层 / 管线 / 引擎 / 存储）；上传预检画在 `ParseMutex.claim` 之前，强调落盘前拒绝、不留孤儿批次；`alt` 分支覆盖第二批次 409；阶段③逐块回调 `progress(i, n)` → `emit`「结构化 i/N 段」；`failed_chunks` 非空时阶段与视频同为 `PARTIAL`
+- **B**：图 4 顺序图 B `fig4-sequence-note.svg`——三泳道继承图 3 命名；章节数据随条目一次取回（`summary` 产物 `payload.chapters`），不另设接口；大纲跳转只赋值 `video.currentTime`，无网络往返；笔记 `anchor_ms` 默认继承条目锚点，时间码可反向跳回原片
+- **B**：`.gitignore` 拦截本地安装包与解包目录（`VideoMind-Setup-*.exe`、`videomind/`、`*.xltd`，合计约 150MB），并限定根目录规则，不影响 `docs/` 正式交付文档
+
+### 解析链路走读结论（阶段边界，依据 `backend/app/pipeline.py`）
+
+- **B**：阶段① 音频通道——原片 → `Segment` 逐句入库；缓存键含引擎名与档位（`asr:{name}:{variant}`），命中则不重跑
+- **B**：阶段② 画面通道——关键帧先复制进 `media_root/frames/{video_id}/` 再落缓存；OCR 关闭或无关键帧时置 `SKIPPED`，降级说明不写入 `video.error` 伪装成失败
+- **B**：阶段③ 结构化——长转写按段边界分块逐段调用，失败段记入 `failed_chunks` 并把阶段与视频置 `PARTIAL`；画面文本不落库，直接进上下文
+- **B**：阶段④ 产物生成——四个 `OutputSchemaStrategy` 分别产出总结 / UML 草稿 / 知识要点 / 代码块，落 `Evidence` + `KnowledgeItem` + `Artifact` + `Revision(草稿)` + 标签绑定；冲突记录挂到离 `source_a` 最近的条目
+- **B**：边界结论——单批互斥（`ParseMutex`）、顺序处理、不做队列持久化；单条失败不中断整批，重试只重跑该条；进程重启由 `recover_orphan_runs` 把未完成标失败并允许重试
+
+---
+
 ## [v0.9] — 界面重设计：信息架构重组与视觉统一（2026-11-06）
 
 ### 信息架构（组长直推，按规留痕）
