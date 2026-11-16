@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 898 655" width="898" height="655" font-family="Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif">
+<defs><marker id="solid" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0.6,0.9 L9.4,5 L0.6,9.1 Z" fill="#334155"/></marker><marker id="violet" viewBox="0 0 10 10" refX="9.2" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0.6,0.9 L9.4,5 L0.6,9.1 Z" fill="#7c3aed"/></marker><marker id="open" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8.5" markerHeight="8.5" orient="auto"><path d="M0.8,1.2 L8.8,5 L0.8,8.8" fill="none" stroke="#64748b" stroke-width="1.1"/></marker></defs>
+<rect x="0" y="0" width="898" height="655" fill="#ffffff"/>
+<rect x="24" y="24" width="270" height="583" fill="#f7f9fc" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="24" y="24" width="270" height="54" rx="3" fill="#eef2f7" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="159.0" y="46" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">前端</text>
+<text x="159.0" y="64" text-anchor="middle" font-size="9" fill="#475569">WorkbenchView · EvidenceTimeline · NotesView</text>
+<line x1="159.0" y1="78" x2="159.0" y2="607" stroke="#a9b6c8" stroke-width="1" stroke-dasharray="5,4"/>
+<rect x="314" y="24" width="270" height="583" fill="#ffffff" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="314" y="24" width="270" height="54" rx="3" fill="#eef2f7" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="449.0" y="46" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">接口层</text>
+<text x="449.0" y="64" text-anchor="middle" font-size="9" fill="#475569">routers/knowledge.py</text>
+<line x1="449.0" y1="78" x2="449.0" y2="607" stroke="#a9b6c8" stroke-width="1" stroke-dasharray="5,4"/>
+<rect x="604" y="24" width="270" height="583" fill="#f7f9fc" stroke="#e2e8f0" stroke-width="1"/>
+<rect x="604" y="24" width="270" height="54" rx="3" fill="#eef2f7" stroke="#94a3b8" stroke-width="1.2"/>
+<text x="739.0" y="46" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f172a">存储</text>
+<text x="739.0" y="64" text-anchor="middle" font-size="9" fill="#475569">SQLite（条目 / 证据 / 笔记 / 版本）</text>
+<line x1="739.0" y1="78" x2="739.0" y2="607" stroke="#a9b6c8" stroke-width="1" stroke-dasharray="5,4"/>
+<rect x="21" y="383" width="856" height="150" fill="none" stroke="#64748b" stroke-width="1.1"/>
+<path d="M21,383 h42 v14 h-42 z" fill="#e8eef6" stroke="#64748b" stroke-width="1.1"/>
+<text x="25" y="393.5" font-size="9.5" font-weight="700" fill="#334155">opt</text>
+<text x="69.6" y="393.5" font-size="9.5" fill="#334155">[笔记写入：锚点默认继承条目]</text>
+<line x1="160.0" y1="172" x2="448.0" y2="172" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="304.0" y="166" text-anchor="middle" font-size="10" fill="#1e293b">GET /videos/{id}/items · /transcript</text>
+<line x1="448.0" y1="200" x2="160.0" y2="200" stroke="#64748b" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#open)"/>
+<text x="304.0" y="194" text-anchor="middle" font-size="10" fill="#1e293b">items（含 summary.payload.chapters）</text>
+<path d="M162.0,228 L185.0,228 L185.0,242 L166.0,242" fill="none" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="189.0" y="232" font-size="10" fill="#1e293b">点章节 / 刻度 → seek(start_ms)</text>
+<path d="M162.0,256 L185.0,256 L185.0,270 L166.0,270" fill="none" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="189.0" y="260" font-size="10" fill="#1e293b">video.currentTime = ms / 1000</text>
+<line x1="160.0" y1="284" x2="448.0" y2="284" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="304.0" y="278" text-anchor="middle" font-size="10" fill="#1e293b">GET /items/{item_id}</text>
+<line x1="450.0" y1="312" x2="738.0" y2="312" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="594.0" y="306" text-anchor="middle" font-size="10" fill="#1e293b">SELECT 条目 + 证据 + 版本 + 笔记</text>
+<line x1="448.0" y1="340" x2="160.0" y2="340" stroke="#64748b" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#open)"/>
+<text x="304.0" y="334" text-anchor="middle" font-size="10" fill="#1e293b">条目详情（notes / revisions / conflicts）</text>
+<path d="M162.0,368 L185.0,368 L185.0,382 L166.0,382" fill="none" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="189.0" y="372" font-size="10" fill="#1e293b">新建笔记 → 路由 /notes/{item_id}</text>
+<line x1="160.0" y1="409" x2="448.0" y2="409" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="304.0" y="403" text-anchor="middle" font-size="10" fill="#1e293b">POST /items/{id}/notes</text>
+<path d="M452.0,437 L475.0,437 L475.0,451 L456.0,451" fill="none" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="479.0" y="441" font-size="10" fill="#1e293b">anchor_ms = 入参 or 条目锚点</text>
+<line x1="450.0" y1="465" x2="738.0" y2="465" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="594.0" y="459" text-anchor="middle" font-size="10" fill="#1e293b">INSERT Note → commit</text>
+<line x1="448.0" y1="493" x2="160.0" y2="493" stroke="#64748b" stroke-width="1.2" stroke-dasharray="6,3" marker-end="url(#open)"/>
+<text x="304.0" y="487" text-anchor="middle" font-size="10" fill="#1e293b">201 {id, anchor_ms}</text>
+<line x1="160.0" y1="521" x2="448.0" y2="521" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="304.0" y="515" text-anchor="middle" font-size="10" fill="#1e293b">GET /items/{id}（刷新笔记列表）</text>
+<path d="M162.0,549 L185.0,549 L185.0,563 L166.0,563" fill="none" stroke="#334155" stroke-width="1.2" marker-end="url(#solid)"/>
+<text x="189.0" y="553" font-size="10" fill="#1e293b">点笔记时间码 → seek(anchor_ms) 回原片</text>
+<text x="24" y="615" font-size="11.5" font-weight="700" fill="#334155">图 4  顺序图 B：大纲跳转与笔记写入</text>
+<text x="24" y="630" font-size="9" fill="#64748b">注：① 章节数据随条目一次取回（summary 产物的 payload.chapters），大纲点击与产物面板点击共用同一 seek 入口；② 跳转只赋值 video.currentTime，无网络往返；</text>
+<text x="24" y="644" font-size="9" fill="#64748b">③ 笔记默认继承条目 anchor_ms，经条目时间码可反向跳回原片；讲义正文修改另走 POST /items/{id}/revision，追加版本快照并校验状态机。</text>
+</svg>
