@@ -208,6 +208,7 @@
 - **B**：图 2 数据流图 `fig2-dataflow-context.svg`（0 层）+ `fig2-dataflow-level1.svg`（1 层）——0 层把系统视为单一处理「0」，外部实体 E1～E5 编号跨图一致；1 层六个处理（上传预检 / 音频转写 / 画面识别 / LLM 结构化 / 产物生成落库 / 检索导出）与四处存储（媒体库、业务库、解析缓存、进度事件总线），父子图按六条对外数据流平衡
 - **B**：图 3 顺序图 A `fig3-sequence-task-submit.svg`——五泳道（前端 / 接口层 / 管线 / 引擎 / 存储）；上传预检画在 `ParseMutex.claim` 之前，强调落盘前拒绝、不留孤儿批次；`alt` 分支覆盖第二批次 409；阶段③逐块回调 `progress(i, n)` → `emit`「结构化 i/N 段」；`failed_chunks` 非空时阶段与视频同为 `PARTIAL`
 - **B**：图 4 顺序图 B `fig4-sequence-note.svg`——三泳道继承图 3 命名；章节数据随条目一次取回（`summary` 产物 `payload.chapters`），不另设接口；大纲跳转只赋值 `video.currentTime`，无网络往返；笔记 `anchor_ms` 默认继承条目锚点，时间码可反向跳回原片
+- **B**：图 7 状态机 `fig7-state-machine.drawio/.svg`——一张画布三层，**15 个具名状态 = 视频 5 + 阶段 6 + 讲义 4**，全部按 `enums.py` 逐字实现、不合并：① 视频级 `VideoStatus` 5 态（PENDING / RUNNING / SUCCEEDED / PARTIAL / FAILED）加结束圆；② 阶段级 `StageStatus` 6 态（PENDING / RUNNING / DONE / PARTIAL / FAILED / **SKIPPED**），画面通道关闭或无关键帧时该阶段 `PENDING → SKIPPED` 直接降级、不经 RUNNING，且 `SKIPPED` 不计入不完整判定（`bad = FAILED, PARTIAL`），故该条视频仍可判 `SUCCEEDED`；③ 讲义级 `RevisionState` 4 态（DRAFT / PENDING_CONFIRM / CONFIRMED / REVISED），含驳回与回退重写，不在 `REVISION_TRANSITIONS` 中的跳转一律 422。重试不画状态内自环（`/videos/{id}/retry` 先把四阶段统一重置为 PENDING 再重入 RUNNING）；进程重启兜底 `recover_orphan_runs` 以虚线区分；批次 `VideoBatch` 状态由 `_recompute_batch_status` 聚合派生，不另画状态机，理由写入图注
 - **B**：`.gitignore` 拦截本地安装包与解包目录（`VideoMind-Setup-*.exe`、`videomind/`、`*.xltd`，合计约 150MB），并限定根目录规则，不影响 `docs/` 正式交付文档
 
 ### 解析链路走读结论（阶段边界，依据 `backend/app/pipeline.py`）
