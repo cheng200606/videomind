@@ -114,28 +114,30 @@ interface "AsrVocabularyCrossChecker\n语音-视觉交叉校验" as AsrVocabular
   +crossCheck(asr, ocr) : Correction[]
 }
 
-class ParseService {
-  +parseVideo(id) : Video
-  +parseBatch(id)
-  +retryVideo(id) : Video
-  +recoverOrphanRuns()
-}
-class LlmGateway {
-  +structure(asr, ocr) : StructuredDraft
-  +testConnection() : bool
+class "pipeline.py" as pipeline <<module>> {
+  +parse_video(video, settings) : Video
+  +parse_batch(session, batch)
+  +retry_video(video_id) : Video
+  +recover_orphan_runs(session)
 }
 class ProgressBus {
-  +publish(event)
-  +subscribe(batchId) : Stream
-  +close(batchId)
+  +subscribe(batch_id)
+  +unsubscribe(q)
+  +reset(batch_id)
+  +forget(batch_id)
+  +emit(batch_id, video_id, stage, status, message)
 }
 class ParseMutex {
-  +acquire() : bool
-  +release()
+  +claim(batch_id) : bool
+  +release(batch_id)
 }
-class ExportService {
-  +buildBatchMarkdown(id) : str
-  +coverageNotices(v) : str[]
+class "llm.py" as llm <<module>> {
+  +structure(transcript, ocr_text, duration_ms, report=None, progress=None) : StructuredDraft
+  +test_connection() : tuple
+}
+class "export.py" as export <<module>> {
+  +build_batch_markdown(batch_id) : str
+  +coverage_notices(video) : str[]
 }
 class StructuredDraft {
   +chapters : Chapter[]
@@ -163,16 +165,16 @@ UmlDraftStrategy ..|> OutputSchemaStrategy
 KeyPointsStrategy ..|> OutputSchemaStrategy
 CodeBlocksStrategy ..|> OutputSchemaStrategy
 
-ParseService ..> AsrEngine : 转写
-ParseService ..> OcrEngine : 画面
-ParseService ..> OutputSchemaStrategy : 产物
-ParseService ..> LlmGateway : 结构化
-ParseService ..> ProgressBus
-ParseService ..> ParseMutex
-ParseService ..> KnowledgeItem : 落库
-LlmGateway ..> StructuredDraft
-ExportService ..> KnowledgeItem : 导出
-ExportService ..> Evidence : 附证据
+pipeline ..> AsrEngine : 转写
+pipeline ..> OcrEngine : 画面
+pipeline ..> OutputSchemaStrategy : 产物
+pipeline ..> llm : 结构化
+pipeline ..> ProgressBus
+pipeline ..> ParseMutex
+pipeline ..> KnowledgeItem : 落库
+llm ..> StructuredDraft
+export ..> KnowledgeItem : 导出
+export ..> Evidence : 附证据
 AsrVocabularyCrossChecker ..> AsrEngine : 读转写
 AsrVocabularyCrossChecker ..> OcrEngine : 读画面
 
@@ -183,7 +185,7 @@ end note
 note bottom of AsrVocabularyCrossChecker
   课程版仅设计，未实现
 end note
-note bottom of ParseService
+note bottom of pipeline
   DTO：AsrResult / TranscriptSegment /
   KeyFrame / FrameText / ParseContext /
   ItemDraft / Correction（设计级）
