@@ -408,3 +408,13 @@
 - **程夏（组长）**：评审并合入 `feature/A-prototype-ia`（bc6838d）——墨刀 12 页与现网页面映射底稿 `docs/prototype-ia-map.html`；评审结论与跟进项见合并提交 1dc0148（页 1–6 W3 节点已过期、11/19 硬节点按「作品本体 + 设计说明 + AI 使用声明」标准重新验收）。CHANGELOG 条目由 A 本人补录
 - **程夏（组长）**：评审并合入 `feature/b-uml-diagrams`（1b974ba..1b974ba）——图 1 用例图（图源 drawio + SVG 矢量导出，与 §七 表格逐条对齐，include/extend 语义正确、核心差异化用例视觉强调）；评审结论见合并提交 cdd0d7b。CHANGELOG 条目由 B 本人补录
 - **程夏（组长）**：产品定义 §七 用例数口径修正——标题「图 1，9 条」与表格 10 行不一致（第 10 行为预留插件用例），改为「图 1，10 条，含 1 条预留」；属口径勘误，非范围改动
+
+---
+
+## [v0.16.1] — C 线图 5/6/8 与数据字典（2026-11-16）
+
+> 本节由 **C（Al）** 本人署名；图与字典落 `docs/figures/` 与 `docs/数据字典.md`。ER 表数已按 11 表确认。
+
+- **C（Al）**：图 5 类图 `fig5-class.puml` / `fig5-class.py` / `fig5-class.svg`——11 个实体全画（`VideoBatch`、`Video`、`Segment`、`Evidence`、`KnowledgeItem`、`Artifact`、`ConflictRecord`、`Tag`、`TagBinding`、`Note`、`Revision`）；`OcrEngine` 三实现、`OutputSchemaStrategy` 四实现、`AsrVocabularyCrossChecker` 标「仅设计」；`AsrEngine` 作为转写接缝单列，四个实现用注释收敛
+- **C（Al）**：图 6 ER 图 `fig6-er.puml` / `fig6-er.svg` 与 `docs/数据字典.md`——按 11 表口径，鸦脚记法；图中只放主键 / 外键 / 关键字段，完整字段、枚举、索引与多态绑定说明入字典
+- **C（Al）**：图 8 部署图 `fig8-deployment.puml` / `fig8-deployment.svg`——Electron 主进程 + FastAPI sidecar + SQLite / media / cache / logs；内置 faster-whisper tiny 与 RapidOCR；外部 DeepSeek；第三方插件走预留 REST；不画 Docker / MySQL / Redis 备选路径
