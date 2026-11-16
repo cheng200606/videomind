@@ -115,9 +115,9 @@ interface "AsrVocabularyCrossChecker\n语音-视觉交叉校验" as AsrVocabular
 }
 
 class "pipeline.py" as pipeline <<module>> {
-  +parse_video(video, settings) : Video
+  +parse_video(session, video, settings=None) : Video
   +parse_batch(session, batch)
-  +retry_video(video_id) : Video
+  +retry_video(session, video_id) : Video
   +recover_orphan_runs(session)
 }
 class ProgressBus {
@@ -133,11 +133,11 @@ class ParseMutex {
 }
 class "llm.py" as llm <<module>> {
   +structure(transcript, ocr_text, duration_ms, report=None, progress=None) : StructuredDraft
-  +test_connection() : tuple
+  +test_connection(cfg=None) : tuple
 }
 class "export.py" as export <<module>> {
-  +build_batch_markdown(batch_id) : str
-  +coverage_notices(video) : str[]
+  +build_batch_markdown(session, batch_id) : str
+  +coverage_notices(session, video, items) : str[]
 }
 class StructuredDraft {
   +chapters : Chapter[]

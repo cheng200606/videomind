@@ -47,11 +47,11 @@ rect(0,0,W,H,"#FFFFFF","#FFFFFF")
 
 # services band
 panel(20,30,1760,280,"解析与交付服务")
-box(40,75,300,"pipeline.py",["+parse_video(video, settings) : Video","+parse_batch(session, batch)","+retry_video(video_id) : Video","+recover_orphan_runs(session)"],"class","«module»")
-box(370,75,280,"ProgressBus",["+subscribe(batch_id)","+unsubscribe(q)","+reset(batch_id)","+forget(batch_id)","+emit(batch_id, video_id, stage, status)"])
+box(40,75,300,"pipeline.py",["+parse_video(session, video, settings=None) : Video","+parse_batch(session, batch)","+retry_video(session, video_id) : Video","+recover_orphan_runs(session)"],"class","«module»")
+box(370,75,280,"ProgressBus",["+subscribe(batch_id)","+unsubscribe(q)","+reset(batch_id)","+forget(batch_id)","+emit(batch_id, video_id, stage, status, message)"])
 box(680,75,200,"ParseMutex",["+claim(batch_id) : bool","+release(batch_id)"])
-box(910,75,270,"llm.py",["+structure(transcript, ocr_text, duration_ms)","+report / progress 可选","+test_connection() : tuple"],"class","«module»")
-box(1210,75,270,"export.py",["+build_batch_markdown(batch_id) : str","+coverage_notices(video) : str[]"],"class","«module»")
+box(910,75,270,"llm.py",["+structure(transcript, ocr_text, duration_ms)","+report / progress 可选","+test_connection(cfg=None) : tuple"],"class","«module»")
+box(1210,75,270,"export.py",["+build_batch_markdown(session, batch_id) : str","+coverage_notices(session, video, items) : str[]"],"class","«module»")
 box(910,210,270,"StructuredDraft",["+chapters : Chapter[]","+items : DraftItem[]"])
 
 # domain panel: 4 columns

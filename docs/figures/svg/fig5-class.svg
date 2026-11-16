@@ -12,9 +12,9 @@
 <line x1="40" y1="119" x2="340" y2="119" stroke="#4338CA" stroke-width="1"/>
 <text x="190.0" y="90" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«module»</text>
 <text x="190.0" y="109" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">pipeline.py</text>
-<text x="50" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+parse_video(video, settings) : Video</text>
+<text x="50" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+parse_video(session, video, settings=None) : Video</text>
 <text x="50" y="158" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+parse_batch(session, batch)</text>
-<text x="50" y="175" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+retry_video(video_id) : Video</text>
+<text x="50" y="175" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+retry_video(session, video_id) : Video</text>
 <text x="50" y="192" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+recover_orphan_runs(session)</text>
 <rect x="370" y="75" width="280" height="137" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
 <path d="M376,75 h268 a6,6 0 0 1 6,6 v28 h-280 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
@@ -24,7 +24,7 @@
 <text x="380" y="148" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+unsubscribe(q)</text>
 <text x="380" y="165" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+reset(batch_id)</text>
 <text x="380" y="182" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+forget(batch_id)</text>
-<text x="380" y="199" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+emit(batch_id, video_id, stage, status)</text>
+<text x="380" y="199" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+emit(batch_id, video_id, stage, status, message)</text>
 <rect x="680" y="75" width="200" height="86" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
 <path d="M686,75 h188 a6,6 0 0 1 6,6 v28 h-200 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
 <line x1="680" y1="109" x2="880" y2="109" stroke="#4338CA" stroke-width="1"/>
@@ -38,14 +38,14 @@
 <text x="1045.0" y="109" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">llm.py</text>
 <text x="920" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+structure(transcript, ocr_text, duration_ms)</text>
 <text x="920" y="158" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+report / progress 可选</text>
-<text x="920" y="175" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+test_connection() : tuple</text>
+<text x="920" y="175" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+test_connection(cfg=None) : tuple</text>
 <rect x="1210" y="75" width="270" height="96" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
 <path d="M1216,75 h258 a6,6 0 0 1 6,6 v38 h-270 v-38 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
 <line x1="1210" y1="119" x2="1480" y2="119" stroke="#4338CA" stroke-width="1"/>
 <text x="1345.0" y="90" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«module»</text>
 <text x="1345.0" y="109" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">export.py</text>
-<text x="1220" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+build_batch_markdown(batch_id) : str</text>
-<text x="1220" y="158" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+coverage_notices(video) : str[]</text>
+<text x="1220" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+build_batch_markdown(session, batch_id) : str</text>
+<text x="1220" y="158" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+coverage_notices(session, video, items) : str[]</text>
 <rect x="910" y="210" width="270" height="86" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
 <path d="M916,210 h258 a6,6 0 0 1 6,6 v28 h-270 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
 <line x1="910" y1="244" x2="1180" y2="244" stroke="#4338CA" stroke-width="1"/>
