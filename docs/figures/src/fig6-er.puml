@@ -1,0 +1,129 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Source Han Sans CN"
+skinparam defaultFontSize 14
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam linetype ortho
+skinparam nodesep 30
+skinparam ranksep 34
+skinparam ArrowColor #64748B
+skinparam ArrowFontColor #475569
+skinparam ArrowFontSize 10
+skinparam EntityBackgroundColor #FFFFFF
+skinparam EntityBorderColor #4338CA
+skinparam EntityHeaderBackgroundColor #EEF2FF
+skinparam EntityFontColor #0F172A
+skinparam EntityAttributeFontColor #334155
+skinparam EntityAttributeFontSize 12
+skinparam NoteBackgroundColor #FFFBEB
+skinparam NoteBorderColor #F59E0B
+skinparam NoteFontColor #92400E
+hide circle
+
+
+entity "video_batch\n视频批次" as video_batch {
+  * id : INTEGER <<PK>>
+  --
+  * name : VARCHAR
+  * status : ENUM
+  * video_count : INTEGER
+}
+
+entity "video\n视频" as video {
+  * id : INTEGER <<PK>>
+  --
+  * batch_id : INTEGER <<FK>>
+  * duration_ms : INTEGER
+  * status : ENUM
+}
+
+entity "segment\n转写片段" as segment {
+  * id : INTEGER <<PK>>
+  --
+  * video_id : INTEGER <<FK>>
+  * start_ms : INTEGER
+  * end_ms : INTEGER
+}
+
+entity "evidence\n证据" as evidence {
+  * id : INTEGER <<PK>>
+  --
+  * video_id : INTEGER <<FK>>
+  * start_ms : INTEGER
+  * quote : TEXT
+  * channel : ENUM
+}
+
+entity "knowledge_item\n知识条目" as knowledge_item {
+  * id : INTEGER <<PK>>
+  --
+  * video_id : INTEGER <<FK>>
+  * type : ENUM
+  * confidence : ENUM
+  evidence_id : INTEGER <<FK>>
+}
+
+entity "artifact\n产物" as artifact {
+  * id : INTEGER <<PK>>
+  --
+  * item_id : INTEGER <<FK>>
+  * schema_type : ENUM
+}
+
+entity "conflict_record\n冲突记录" as conflict_record {
+  * id : INTEGER <<PK>>
+  --
+  * item_id : INTEGER <<FK>>
+  * description : TEXT
+}
+
+entity "tag\n标签" as tag {
+  * id : INTEGER <<PK>>
+  --
+  * name : VARCHAR
+}
+
+entity "tag_binding\n标签绑定" as tag_binding {
+  * id : INTEGER <<PK>>
+  --
+  * tag_id : INTEGER <<FK>>
+  * target_type : ENUM
+  * target_id : INTEGER
+}
+
+entity "note\n笔记" as note {
+  * id : INTEGER <<PK>>
+  --
+  item_id : INTEGER <<FK>>
+  * anchor_ms : INTEGER
+}
+
+entity "revision\n修订留痕" as revision {
+  * id : INTEGER <<PK>>
+  --
+  * item_id : INTEGER <<FK>>
+  * state : ENUM
+  * edited_at : DATETIME
+}
+
+video_batch ||--o{ video
+video ||--o{ segment
+video ||--o{ evidence
+video ||--o{ knowledge_item
+evidence |o--o{ knowledge_item
+knowledge_item ||--o{ artifact
+knowledge_item ||--o{ conflict_record
+knowledge_item |o--o{ note
+knowledge_item ||--o{ revision
+tag ||--o{ tag_binding
+tag_binding ..> video : 多态
+tag_binding ..> knowledge_item : 多态
+
+note bottom of video
+  记法：|| 1，|o 0..1，o{ 0..N。
+  字段全集与枚举取值见《数据字典》；
+  TagBinding 的 target_id 不设外键。
+end note
+
+@enduml
