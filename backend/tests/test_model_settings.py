@@ -117,6 +117,41 @@ def test_test_connection_requires_key(client: TestClient):
     assert client.post("/api/settings/model/test").status_code == 422
 
 
+def test_test_connection_error_strips_local_paths(client: TestClient, monkeypatch):
+    """v0.17 P0-4：测试连接的失败原因上 UI 前必须过 sanitize_error。
+
+    这里曾是唯一绕过 sanitize_error 的 UI 写入点。连接失败时异常字符串常带模型缓存
+    目录、证书路径、代理配置里的本机路径，直接回前端等于把本机环境漏进界面。
+    """
+    _save_custom(client)
+
+    def boom(cfg):
+        raise RuntimeError(
+            r"[Errno 2] No such file or directory: 'C:\Users\Lenovo\AppData\Roaming\VideoMind\data\ca.pem'"
+        )
+
+    monkeypatch.setattr("app.routers.settings.test_connection", boom)
+    data = client.post("/api/settings/model/test").json()
+    assert data["ok"] is False
+    assert "(本机路径)" in data["error"], "Windows 绝对路径必须被替换掉"
+    assert "Lenovo" not in data["error"]
+    assert "AppData" not in data["error"]
+
+
+def test_test_connection_error_strips_posix_paths_and_keeps_reason(client: TestClient, monkeypatch):
+    """/home、/Users、/tmp 等 POSIX 前缀同样要剥；但可读原因必须留着，别剥成空串。"""
+
+    def boom(cfg):
+        raise RuntimeError("连接 /home/runner/.cache/huggingface/hub 失败：502 Bad Gateway")
+
+    _save_custom(client)
+    monkeypatch.setattr("app.routers.settings.test_connection", boom)
+    error = client.post("/api/settings/model/test").json()["error"]
+    assert "/home/runner" not in error
+    assert "(本机路径)" in error
+    assert "502 Bad Gateway" in error, "剥路径不能把失败原因一起吞掉"
+
+
 def test_llm_uses_saved_custom_config(client: TestClient, monkeypatch):
     _save_custom(client)
     captured: list[dict] = []
