@@ -9,10 +9,16 @@ import { exportUrl, getBatch } from '../api/client'
 import { STATUS_LABEL, STATUS_TYPE } from '../api/labels'
 import type { BatchState } from '../api/types'
 import PageHeader from '../components/PageHeader.vue'
+import { useThemeMode } from '../composables/useTheme'
 
 const route = useRoute()
 const router = useRouter()
 const id = computed(() => Number(route.params.id))
+
+// md-editor-v3 有独立的主题体系：不传 theme 时它固定按 light 渲染（根节点 data-theme="light"），
+// 站点切暗色后它仍是白底，而 theme.css 里按暗色压深过的 code 字色会落到白底上——对比度 1.84。
+// 唯一正确修法是让它知道当前主题，而不是在 theme.css 里继续用 !important 压颜色（压了字色也压不了底）。
+const { mode } = useThemeMode()
 
 const batch = ref<BatchState | null>(null)
 const md = ref('')
@@ -125,7 +131,7 @@ async function copyMd() {
       <el-alert v-else-if="error" type="error" :closable="false" show-icon :title="`文稿生成失败：${error}`">
         <el-button size="small" @click="router.push(`/batches/${id}`)">返回批次</el-button>
       </el-alert>
-      <MdPreview v-else-if="isTerminal" :model-value="md" id="batch-preview" class="paper" />
+      <MdPreview v-else-if="isTerminal" :model-value="md" id="batch-preview" class="paper" :theme="mode" />
     </div>
   </div>
 </template>

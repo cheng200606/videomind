@@ -179,7 +179,11 @@ html.dark .el-tag--warning .el-link--primary { --el-link-text-color: #f0a202 !im
 .el-button--danger.is-plain { --el-button-text-color: #b03a3a !important; }
 .side .el-menu-item.is-active { color: #a8c0f0 !important; }
 .side .el-menu { --el-menu-active-color: #a8c0f0 !important; }
-.md-editor-preview code { color: #1f5fa8 !important; }
+/* md-editor-v3 的预览区颜色由它自己的 data-theme 体系决定（视图通过 :theme="mode" 绑定），
+   所以这里按 data-theme 分流，不再用 html.dark 一刀切：
+   · 亮态：组件默认的代码字色（#3594f7）压在行内代码底色上只有 2.86:1，压深到 #1f5fa8；
+   · 暗态：组件 dark 主题自身已达标（扫描 0 violation），不再覆盖，避免只压字色不压底色。 */
+.md-editor[data-theme='light'] .md-editor-preview code { color: #1f5fa8; }
 
 /* 暗色模式（v0.13）：html.dark 类由 useTheme.ts 切换，EP 组件变量走 dark/css-vars.css。
    :root:root 特异性高于 html.dark，亮值必须在这里显式压回；签名元素（时间码芯片、
@@ -232,7 +236,17 @@ html.dark .el-alert--warning.is-light .el-alert__description { color: #f0a202 !i
 html.dark .el-input__count-inner { color: #8b95a7 !important; }
 html.dark .el-link.el-link--danger { --el-link-text-color: #f87171 !important; }
 html.dark .el-button--danger.is-plain { --el-button-text-color: #f87171 !important; }
-html.dark .md-editor-preview code { color: #9eb7eb !important; }
+/* md-editor-v3 用自身的 data-theme="dark" 体系接管暗色：md-editor-v3 的暗色变量
+   随 :theme="mode" 一起切，这里再压一次颜色只会与它打架（压了字色压不了底），
+   所以这条 !important 已撤销，暗色由组件主题负责。 */
+html.dark .el-radio-button {
+  /* EP 把选中态底色取自 --el-color-primary，而暗色层为了深底上的链接可读把它提亮成
+     #6f95e3，白字压上去只有 2.96:1。选中态单独换 light-3 档（暗色 #3d6fd6），白字
+     约 4.7:1 过 AA。不改 --el-color-primary 本身，否则全站主色与链接会一起变暗。 */
+  --el-radio-button-checked-bg-color: var(--el-color-primary-light-3);
+  --el-radio-button-checked-border-color: var(--el-color-primary-light-3);
+  --el-radio-button-checked-text-color: #ffffff;
+}
 html.dark .el-input__wrapper.is-focus,
 html.dark .el-textarea__inner:focus {
   box-shadow: 0 0 0 1px var(--el-color-primary, #6f95e3) inset, 0 0 0 3px rgba(111, 149, 227, 0.28) !important;
