@@ -1,15 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import { TERMINAL_BATCH_STATUSES, getBatch, listBatches, openProgress } from '@/api/client'
-import { STAGE_STATUSES } from '@/api/types'
+import { getBatch, listBatches, openProgress } from '@/api/client'
+import { STAGE_STATUSES, isRunningStatus, isTerminalStatus } from '@/api/types'
 import type { BatchState, BatchSummary, Stage, StageEvent, VideoStatus } from '@/api/types'
-
-const TERMINAL_VIDEO_STATUSES: VideoStatus[] = ['succeeded', 'partial', 'failed']
-
-function isTerminalStatus(status: string): boolean {
-  return (TERMINAL_BATCH_STATUSES as readonly string[]).includes(status)
-}
 
 function isBatchTerminalEvent(e: StageEvent): boolean {
   // 单条视频终态也是 stage=batch；必须用 video_id 为空区分整批结束
@@ -68,7 +62,7 @@ export const useBatchStore = defineStore('batch', () => {
 
     if (e.video_id == null) {
       // 只认后端 VideoStatus 枚举内的值：SSE 的 status 是裸字符串，别把脏值写进批次头
-      if (isTerminalStatus(e.status) || e.status === 'pending' || e.status === 'running') {
+      if (isTerminalStatus(e.status) || isRunningStatus(e.status)) {
         batch.status = e.status as VideoStatus
       }
       return
@@ -81,7 +75,7 @@ export const useBatchStore = defineStore('batch', () => {
         video.status = 'running'
         video.error = ''
         for (const stage of Object.keys(video.stages) as Stage[]) video.stages[stage] = 'pending'
-      } else if (TERMINAL_VIDEO_STATUSES.includes(e.status as VideoStatus)) {
+      } else if (isTerminalStatus(e.status)) {
         video.status = e.status as VideoStatus
         if (e.status === 'failed' && e.message) video.error = e.message
       }

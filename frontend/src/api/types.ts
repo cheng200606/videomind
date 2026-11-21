@@ -5,7 +5,33 @@ export type Stage = 'transcribe' | 'visual' | 'structure' | 'artifact'
 /** 四阶段状态与后端 app/enums.py 同源；partial=部分成功（分块产物不完整）。 */
 export const STAGE_STATUSES = ['pending', 'running', 'done', 'partial', 'failed', 'skipped'] as const
 export type StageStatus = (typeof STAGE_STATUSES)[number]
-export type VideoStatus = 'pending' | 'running' | 'succeeded' | 'partial' | 'failed'
+/** 与 backend/app/enums.py 的 VideoStatus / BatchStatus 同源（两者枚举值相同，前端共用一套） */
+export const VIDEO_STATUSES = ['pending', 'running', 'succeeded', 'partial', 'failed'] as const
+export type VideoStatus = (typeof VIDEO_STATUSES)[number]
+
+/**
+ * 终态：批次与视频共用。「全行唯一一份」——视图/Store 里的 `['succeeded','partial','failed']`
+ * 一律改从这里判，别再手抄：后端枚举一动，手抄的那几处会静默错（v0.17 P1-2）。
+ */
+export const TERMINAL_STATUSES = ['succeeded', 'partial', 'failed'] as const
+
+/** 运行态：页面据此禁用删除/重跑，也是筛选器的优先展示顺序 */
+export const RUNNING_STATUSES = ['pending', 'running'] as const
+
+/** 筛选器展示顺序：运行态优先，其余按枚举顺序——从上面两份派生，不另抄一遍值 */
+export const STATUS_DISPLAY_ORDER: readonly VideoStatus[] = [
+  ...RUNNING_STATUSES,
+  ...VIDEO_STATUSES.filter((s) => !(RUNNING_STATUSES as readonly string[]).includes(s))
+]
+
+/** SSE 的 status 是裸字符串，判终态必须先按枚举收窄 */
+export function isTerminalStatus(status: string): boolean {
+  return (TERMINAL_STATUSES as readonly string[]).includes(status)
+}
+
+export function isRunningStatus(status: string): boolean {
+  return (RUNNING_STATUSES as readonly string[]).includes(status)
+}
 export type RevisionState = 'draft' | 'pending_confirm' | 'confirmed' | 'revised'
 
 export interface Evidence {

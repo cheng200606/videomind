@@ -13,8 +13,7 @@ vi.mock('@/api/client', () => ({
   listBatches: vi.fn(),
   openProgress: mocks.openProgress,
   reparseBatch: vi.fn(),
-  retryVideo: vi.fn(),
-  TERMINAL_BATCH_STATUSES: ['succeeded', 'partial', 'failed']
+  retryVideo: vi.fn()
 }))
 
 import BatchProgressView from '@/views/BatchProgressView.vue'

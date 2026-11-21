@@ -7,6 +7,7 @@ import { reparseBatch, retryVideo } from '../api/client'
 import {
   EVENT_STAGE_LABEL, STAGE_LABEL, STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, fmtTime
 } from '../api/labels'
+import { isRunningStatus, isTerminalStatus } from '../api/types'
 import type { Stage, StageStatus, VideoState } from '../api/types'
 import PageHeader from '../components/PageHeader.vue'
 import { useBatchStore } from '../stores/batch'
@@ -29,8 +30,8 @@ watch(id, (v) => {
 // SSE 连接跟着进度页走：离开页面就断开，别挂在根组件上泄漏
 onUnmounted(() => store.stopProgress())
 
-const isRunning = computed(() => ['pending', 'running'].includes(store.current?.status ?? ''))
-const isTerminal = computed(() => ['succeeded', 'partial', 'failed'].includes(store.current?.status ?? ''))
+const isRunning = computed(() => isRunningStatus(store.current?.status ?? ''))
+const isTerminal = computed(() => isTerminalStatus(store.current?.status ?? ''))
 
 /**
  * 读屏播报文本：事件流是纯视觉的 el-timeline，推进过程对屏幕阅读器完全静默。

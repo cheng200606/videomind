@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { exportUrl, getBatch } from '../api/client'
 import { STATUS_LABEL, STATUS_TYPE } from '../api/labels'
+import { isTerminalStatus } from '../api/types'
 import type { BatchState } from '../api/types'
 import PageHeader from '../components/PageHeader.vue'
 import { useThemeMode } from '../composables/useTheme'
@@ -25,9 +26,7 @@ const md = ref('')
 const loading = ref(true)
 const error = ref('')
 
-const isTerminal = computed(() =>
-  ['succeeded', 'partial', 'failed'].includes(batch.value?.status ?? '')
-)
+const isTerminal = computed(() => isTerminalStatus(batch.value?.status ?? ''))
 
 async function load() {
   loading.value = true

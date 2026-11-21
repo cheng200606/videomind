@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { STAGE_STATUSES } from '@/api/types'
+import {
+  RUNNING_STATUSES, STAGE_STATUSES, STATUS_DISPLAY_ORDER, TERMINAL_STATUSES, VIDEO_STATUSES,
+  isRunningStatus, isTerminalStatus
+} from '@/api/types'
 import type { Channel } from '@/api/types'
 import {
   ARTIFACT_LABEL, CHANNEL_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS,
@@ -9,7 +12,7 @@ import {
 
 describe('枚举中文映射', () => {
   it('批次/视频状态全量覆盖且有配色区分（failed 不再是灰色）', () => {
-    for (const s of ['pending', 'running', 'succeeded', 'partial', 'failed']) {
+    for (const s of VIDEO_STATUSES) {
       expect(STATUS_LABEL[s], s).toBeTruthy()
       expect(STATUS_TYPE[s], s).toBeTruthy()
     }
@@ -97,5 +100,39 @@ describe('展示格式化', () => {
   it('fmtTime 把带时区的 UTC ISO 转本地时间；非法输入原样返回', () => {
     expect(fmtTime('2026-11-05T17:40:45+00:00')).not.toContain('T')
     expect(fmtTime('不是时间')).toBe('不是时间')
+  })
+})
+
+describe('状态判据单出口（v0.17 P1-2）', () => {
+  /**
+   * 这条债的本质是「同一份枚举被抄了 5 遍」：后端 enums.py 改名时，
+   * 手抄的那几处不会报错，只会静默走错分支。所以这里钉的不是值，
+   * 是**形状**——终态/运行态各自只有一份，且必须覆盖后端枚举。
+   */
+  it('终态与运行态互斥，合起来正好是全部状态', () => {
+    const overlap = TERMINAL_STATUSES.filter((s) => (RUNNING_STATUSES as readonly string[]).includes(s))
+    expect(overlap).toEqual([])
+    expect([...TERMINAL_STATUSES, ...RUNNING_STATUSES].sort()).toEqual([...VIDEO_STATUSES].sort())
+  })
+
+  it('isTerminalStatus / isRunningStatus 只认后端枚举内的值', () => {
+    for (const s of TERMINAL_STATUSES) {
+      expect(isTerminalStatus(s), s).toBe(true)
+      expect(isRunningStatus(s), s).toBe(false)
+    }
+    for (const s of RUNNING_STATUSES) {
+      expect(isRunningStatus(s), s).toBe(true)
+      expect(isTerminalStatus(s), s).toBe(false)
+    }
+    // SSE 的 status 是裸字符串：脏值必须两边都不认，不能落进任何分支
+    for (const dirty of ['', 'SUCCEEDED', 'partial_done', 'unknown']) {
+      expect(isTerminalStatus(dirty), dirty).toBe(false)
+      expect(isRunningStatus(dirty), dirty).toBe(false)
+    }
+  })
+
+  it('筛选器展示顺序由两份源派生，运行态在前', () => {
+    expect(STATUS_DISPLAY_ORDER.slice(0, 2)).toEqual([...RUNNING_STATUSES])
+    expect([...STATUS_DISPLAY_ORDER].sort()).toEqual([...VIDEO_STATUSES].sort())
   })
 })
