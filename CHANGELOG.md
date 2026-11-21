@@ -408,3 +408,21 @@
 - **程夏（组长）**：评审并合入 `feature/A-prototype-ia`（bc6838d）——墨刀 12 页与现网页面映射底稿 `docs/prototype-ia-map.html`；评审结论与跟进项见合并提交 1dc0148（页 1–6 W3 节点已过期、11/19 硬节点按「作品本体 + 设计说明 + AI 使用声明」标准重新验收）。CHANGELOG 条目由 A 本人补录
 - **程夏（组长）**：评审并合入 `feature/b-uml-diagrams`（1b974ba..1b974ba）——图 1 用例图（图源 drawio + SVG 矢量导出，与 §七 表格逐条对齐，include/extend 语义正确、核心差异化用例视觉强调）；评审结论见合并提交 cdd0d7b。CHANGELOG 条目由 B 本人补录
 - **程夏（组长）**：产品定义 §七 用例数口径修正——标题「图 1，9 条」与表格 10 行不一致（第 10 行为预留插件用例），改为「图 1，10 条，含 1 条预留」；属口径勘误，非范围改动
+
+---
+
+## [v0.17 图线] — 辅图 1 技术路线图与辅图 3 多模态+多产物示意图（2026-11-21，未发布 Release）
+
+> 本节由 **架构设计师** 本人署名；对应 `docs/交付与排期.md` §4.2 辅图清单的辅 1 与辅 3，不新增图号。
+
+### 辅图交付（源文件与 SVG 双入库，脚本可重跑）
+
+- **架构设计师**：新增 `docs/figures/src/fig-aux1-tech-roadmap.py`（260 行）与 `docs/figures/svg/fig-aux1-tech-roadmap.svg`——辅图 1 技术路线图（建议置于 ch1 概述或 ch2 可行性）：上排五个环节「选题与范围锁定 → 双通道解析 → 结构化 → 证据链 → 导出与交付」的演进路线，每条能力按 **● 已实现并入库 / ○ 设计中或本期不实施** 标注；下排 12 个版本里程碑（v0.5 → v0.17，v0.17 高亮为交付迭代本版）；底部五行「读图与口径」逐条给出范围红线、引擎开关、失败隔离、证据链与交付约定
+- **架构设计师**：新增 `docs/figures/src/fig-aux3-multimodal-artifacts.py`（258 行）与 `docs/figures/svg/fig-aux3-multimodal-artifacts.svg`——辅图 3 多模态 + 多产物示意图（建议置于 ch4 系统设计）：左「输入通道」两个可插拔接缝（`AsrEngine` / `OcrEngine` 及各自实现与开关、抽帧与去重前置、失败隔离与 ParseMutex 自律）；中「结构化」`llm.structure()` 分块与合并、`ParseContext` 上下文、无 Key 降级诚实标注；右「输出产物」`OutputSchemaStrategy` 四个实现（Summary / UmlDraft / KeyPoints / CodeBlocks）与契约签名、`REGISTRY` / `resolve` 注册方式、产物落库三元组与视图落点映射
+
+### 作图口径（与代码同源）
+
+- **架构设计师**：本机无 PlantUML 运行时（无 `plantuml` 命令与 jar），两张辅图沿用 `docs/figures/src/fig5-class.py` 的**纯 Python 生成 SVG** 路线，源文件与导出物构成一对可复现文件；**不手改 SVG**，重生成按 `pathlib.Path(...).write_text(..., encoding="utf-8")` 写 LF，与 `.gitattributes` 的 `*.svg text eol=lf` 一致
+- **架构设计师**：辅图 3 中「代码块只由画面通道产出」为代码实测约束而非设计假设——`backend/app/artifacts.py` 的 `CodeBlocksStrategy.build` 在 `ctx.ocr` 为空时返回空列表，`channel` 固定为 `Channel.OCR`；图内如实标注「缺失类型如实为空，不以规则文本冒充」
+- **架构设计师**：两图均标「识别结果仅供参考」；`AsrVocabularyCrossChecker` 与增量更新应用端、C 级引擎运行时分离分别按「本期不实现 / 本期不实施 / 顺延」口径标注，与图 5 图注及 §4.2 表注一致
+
