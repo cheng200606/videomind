@@ -1,0 +1,36 @@
+{
+  "v": 3,
+  "createdOnFiles": {"v": 1, "at": "2026-11-21T10:00:00Z"},
+  "title": "视析原型",
+  "launch": {"view": "canvas"},
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {"x": 0, "y": 0, "w": 1440, "h": 900, "title": "00 目录与视觉规范", "expand": "fill", "is_interactive": true},
+    "DirC.dc.html": {"x": 1520, "y": 0, "w": 1440, "h": 900, "title": "参照 · 刻度尺方向稿"},
+    "P02Upload.dc.html": {"x": 0, "y": 1300, "w": 1440, "h": 1000, "title": "02 批量上传", "expand": "fill", "is_interactive": true},
+    "P03Progress.dc.html": {"x": 1520, "y": 1300, "w": 1440, "h": 1000, "title": "03 批次进度", "expand": "fill", "is_interactive": true},
+    "Workbench.dc.html": {"x": 3040, "y": 1300, "w": 1440, "h": 1000, "title": "04 知识工作台（可点击）", "expand": "fill", "is_interactive": true},
+    "P05Evidence.dc.html": {"x": 4560, "y": 1300, "w": 1440, "h": 1000, "title": "05 条目详情 · 证据链", "expand": "fill", "is_interactive": true},
+    "P09Export.dc.html": {"x": 6080, "y": 1300, "w": 1440, "h": 1000, "title": "09 导出", "expand": "fill", "is_interactive": true},
+    "P01Library.dc.html": {"x": 0, "y": 2680, "w": 1440, "h": 1000, "title": "01 视频库首页", "expand": "fill", "is_interactive": true},
+    "P08Search.dc.html": {"x": 1520, "y": 2680, "w": 1440, "h": 1000, "title": "08 标签与检索", "expand": "fill", "is_interactive": true},
+    "P07Notes.dc.html": {"x": 3040, "y": 2680, "w": 1440, "h": 1000, "title": "07 笔记编辑", "expand": "fill", "is_interactive": true},
+    "P06Uml.dc.html": {"x": 0, "y": 4060, "w": 1440, "h": 1000, "title": "06 UML 草稿", "expand": "fill", "is_interactive": true},
+    "P11Settings.dc.html": {"x": 1520, "y": 4060, "w": 1440, "h": 1000, "title": "11 设置", "expand": "fill", "is_interactive": true},
+    "P10Admin.dc.html": {"x": 3040, "y": 4060, "w": 1440, "h": 1000, "title": "10 批次与任务后台", "expand": "fill", "is_interactive": true},
+    "P12Errors.dc.html": {"x": 4560, "y": 4060, "w": 1440, "h": 1000, "title": "12 异常态", "expand": "fill", "is_interactive": true}
+  },
+  "order": [
+    "Main.dc.html", "DirC.dc.html",
+    "P02Upload.dc.html", "P03Progress.dc.html", "Workbench.dc.html", "P05Evidence.dc.html", "P09Export.dc.html",
+    "P01Library.dc.html", "P08Search.dc.html", "P07Notes.dc.html",
+    "P06Uml.dc.html", "P11Settings.dc.html", "P10Admin.dc.html", "P12Errors.dc.html"
+  ],
+  "notes": {
+    "t0": {"x": 0, "y": -260, "text": "视析 · 刻度尺 · 12 页高保真原型", "kind": "title1", "maxW": 2960},
+    "t1": {"x": 0, "y": 1040, "text": "一级 · 主线：上传 → 进度 → 工作台 → 证据 → 导出", "kind": "title1", "maxW": 7520},
+    "t2": {"x": 0, "y": 2420, "text": "二级 · 回访：视频库 / 检索 / 笔记", "kind": "title1", "maxW": 4480},
+    "t3": {"x": 0, "y": 3800, "text": "三级 · 辅助：UML / 设置 / 后台 / 异常态", "kind": "title1", "maxW": 6000}
+  },
+  "designSystems": []
+}

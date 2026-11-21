@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>06 UML 草稿</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;font-weight:900;font-size:14px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.kt{all:unset;cursor:pointer;font-size:40px;font-weight:900;line-height:1.1;color:#C8C8C8;border-bottom:5px solid transparent;padding-bottom:2px}
+.kt:hover{color:#0A0A0A}
+.kt.on{color:#0A0A0A;border-bottom-color:#E4002B}
+.kt:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.el{all:unset;cursor:pointer;box-sizing:border-box;background:#FFFFFF;box-shadow:inset 0 0 0 2px #0A0A0A;text-align:center;font-size:14px;font-weight:500}
+.el:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.el.on{background:#E4002B!important;color:#FFFFFF!important;box-shadow:none}
+.el:focus-visible{outline:3px solid #E4002B;outline-offset:3px}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}.kt{font-size:28px}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav on" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:18px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:22px">
+    <nav style="font-size:13px;color:#6B6B6B" aria-label="面包屑"><a href="P01Library.dc.html" style="color:#6B6B6B">视频库</a> / <a href="Workbench.dc.html" style="color:#6B6B6B">03 ref 与 reactive 的区别</a> / UML 草稿</nav>
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;border-bottom:2px solid #0A0A0A;padding-bottom:10px">
+      <div style="display:flex;gap:32px;flex-wrap:wrap" role="group" aria-label="图种">
+        <sc-for list="{{kinds}}" as="k" hint-placeholder-count="4"><button class="{{k.cls}}" onClick="{{k.pick}}" aria-pressed="{{k.on}}">{{k.label}}</button></sc-for>
+      </div>
+      <span style="font-size:13.5px;color:#3A3A3A;max-width:44ch">从视频内容整理出的草图。点图上任一元素，右侧显示讲到它的那句原话和时间点。</span>
+    </div>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:24px;align-items:start">
+      <div style="grid-column:1 / span 8;min-height:500px;overflow-x:auto;padding:8px 0" aria-label="{{kindLabel}}">
+        <sc-if value="{{isUse}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:56px;min-width:640px;min-height:460px">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:none" aria-label="参与者 开发者">
+              <span style="width:30px;height:30px;border:2px solid #0A0A0A;border-radius:50%;box-sizing:border-box"></span>
+              <span style="width:2px;height:40px;background:#0A0A0A"></span>
+              <b>开发者</b>
+            </div>
+            <div style="flex:1;box-shadow:inset 0 0 0 2px #0A0A0A;padding:30px 28px;display:flex;flex-direction:column;gap:20px;align-items:center">
+              <span style="font-size:12px;color:#6B6B6B;align-self:flex-start;font-weight:500">Vue 组件状态管理</span>
+              <sc-for list="{{useCases}}" as="u" hint-placeholder-count="4"><button class="{{u.cls}}" onClick="{{u.pick}}" style="border-radius:50%;padding:16px 34px;min-width:280px">{{u.label}}</button></sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{isClass}}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(190px,1fr));gap:40px;min-width:640px;align-items:start;padding-top:20px">
+            <sc-for list="{{classes}}" as="c" hint-placeholder-count="3">
+              <button class="{{c.cls}}" onClick="{{c.pick}}" style="text-align:left;display:flex;flex-direction:column">
+                <span style="padding:10px 12px;font-weight:900;border-bottom:2px solid currentColor;text-align:center;font-size:15px">{{c.name}}</span>
+                <span class="m" style="padding:10px 12px;font-size:12.5px;border-bottom:2px solid currentColor;white-space:pre-line">{{c.attrs}}</span>
+                <span class="m" style="padding:10px 12px;font-size:12.5px;white-space:pre-line">{{c.ops}}</span>
+              </button>
+            </sc-for>
+          </div>
+          <p style="margin:24px 0 0;font-size:13px;color:#3A3A3A">toRefs(state) 返回一组 Ref，每个 Ref 指回 Reactive 对象的同名属性。</p>
+        </sc-if>
+        <sc-if value="{{isSeq}}" hint-placeholder-val="{{ false }}">
+          <div style="min-width:640px;display:flex;flex-direction:column;padding-top:20px">
+            <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px">
+              <b style="box-shadow:inset 0 0 0 2px #0A0A0A;text-align:center;padding:10px">组件 setup()</b>
+              <b style="box-shadow:inset 0 0 0 2px #0A0A0A;text-align:center;padding:10px">reactive 代理</b>
+              <b style="box-shadow:inset 0 0 0 2px #0A0A0A;text-align:center;padding:10px">模板渲染</b>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:18px;padding:26px 0;background-image:linear-gradient(#0A0A0A,#0A0A0A),linear-gradient(#0A0A0A,#0A0A0A),linear-gradient(#0A0A0A,#0A0A0A);background-size:1px 100%;background-repeat:no-repeat;background-position:16.6% 0,50% 0,83.3% 0">
+              <sc-for list="{{msgs}}" as="m" hint-placeholder-count="4"><button class="{{m.cls}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button></sc-for>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{isFlow}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;align-items:center;padding-top:16px">
+            <sc-for list="{{flow}}" as="f" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;align-items:center">
+                <button class="{{f.cls}}" onClick="{{f.pick}}" style="padding:12px 24px;min-width:300px">{{f.label}}</button>
+                <sc-if value="{{f.arrow}}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="width:2px;height:24px;background:#0A0A0A"></span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+
+      <aside style="grid-column:9 / span 4;display:flex;flex-direction:column;gap:16px;border-top:3px solid #E4002B;padding-top:14px" aria-label="选中元素的证据">
+        <span style="font-size:12px;color:#6B6B6B;font-weight:500">选中元素 · 证据</span>
+        <h2 style="margin:0;font-size:26px;line-height:1.25;font-weight:900">{{sel.label}}</h2>
+        <p style="margin:0;font-size:17px;line-height:1.55;font-weight:500;border-left:3px solid #0A0A0A;padding-left:14px">「{{sel.quote}}」</p>
+        <span style="display:flex;align-items:baseline;gap:12px"><span class="n" style="font-weight:900;font-size:44px;line-height:1">{{sel.tc}}</span><span style="font-size:13px;color:#6B6B6B">{{sel.channel}}</span></span>
+        <a class="b" href="Workbench.dc.html" style="align-self:flex-start">在工作台回放 {{sel.tc}}</a>
+        <div style="border-top:1px solid #E0E0E0;padding-top:12px;display:flex;flex-direction:column;gap:10px;font-size:12.5px;color:#6B6B6B">
+          <span>草稿由 AI 生成，识别结果仅供参考。非建模类视频会退化为要点清单。</span>
+          <button class="b o" style="align-self:flex-start;height:34px;font-size:13px;padding:0 14px">复制 Mermaid 源码</button>
+        </div>
+      </aside>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { kind: 'use', sel: 'u2' }; }
+  renderVals() {
+    const s = this.state;
+    const E = {
+      u1: ['声明基本类型状态', '先看 ref，它把一个基本类型包成一个对象', '03:20', '来源：语音'],
+      u2: ['解构响应式对象', '刚才说错了，解构 reactive 会丢失响应性', '18:40', '来源：语音 · 易错'],
+      u3: ['声明对象状态', 'reactive 接收一个对象，返回它的响应式代理', '09:45', '来源：语音'],
+      u4: ['监听状态变化', 'watch 监听 reactive 对象时默认是深度的', '23:05', '来源：语音'],
+      c1: ['Ref<T>', '在 script 里要通过 .value 访问，模板里会自动解包', '04:02', '来源：语音'],
+      c2: ['Reactive<T>', 'reactive 接收一个对象，返回它的响应式代理', '09:45', '来源：语音'],
+      c3: ['toRefs()', 'const { count, name } = toRefs(state)', '19:22', '来源：画面'],
+      m1: ['reactive({ count: 0 })', 'reactive 接收一个对象，返回它的响应式代理', '09:45', '来源：语音'],
+      m2: ['解构 const { count }  ✗', '刚才说错了，解构 reactive 会丢失响应性', '18:40', '来源：语音 · 易错'],
+      m3: ['toRefs(state)', '正确做法是先用 toRefs 转一下再解构', '19:22', '来源：语音'],
+      m4: ['count.value++ → 重新渲染', 'count.value++', '19:22', '来源：画面'],
+      f1: ['ref：包装基本类型', '先看 ref，它把一个基本类型包成一个对象', '03:20', '来源：语音'],
+      f2: ['reactive：对象代理', 'reactive 接收一个对象，返回它的响应式代理', '09:45', '来源：语音'],
+      f3: ['解构陷阱与 toRefs', '好，我们来看一个大家最常踩的坑', '15:10', '来源：语音'],
+      f4: ['computed 与 watch', 'computed 里不要去改别的状态', '21:30', '来源：语音'],
+      f5: ['小结', '最后总结一下今天的三个结论', '26:05', '来源：语音']
+    };
+    const mk = (id, extra) => ({ id, label: E[id][0], cls: 'el' + (s.sel === id ? ' on' : ''), pick: () => this.setState({ sel: id }), ...(extra || {}) });
+    const K = [['use', '用例'], ['class', '类'], ['seq', '时序'], ['flow', '流程']];
+    const first = { use: 'u2', class: 'c3', seq: 'm2', flow: 'f3' };
+    const sel = E[s.sel];
+    const line = 'margin-left:16.6%;width:33.4%;box-shadow:none;border-bottom:2px solid currentColor;background:transparent;text-align:left;padding:2px 8px';
+    return {
+      kinds: K.map(([k, l]) => ({ label: l, on: s.kind === k ? 'true' : 'false', cls: 'kt' + (s.kind === k ? ' on' : ''), pick: () => this.setState({ kind: k, sel: first[k] }) })),
+      kindLabel: K.find((k) => k[0] === s.kind)[1] + '图',
+      isUse: s.kind === 'use', isClass: s.kind === 'class', isSeq: s.kind === 'seq', isFlow: s.kind === 'flow',
+      useCases: ['u1', 'u3', 'u2', 'u4'].map((id) => mk(id)),
+      classes: [
+        mk('c1', { name: 'Ref<T>', attrs: '+ value: T', ops: '模板中自动解包' }),
+        mk('c2', { name: 'Reactive<T>', attrs: '+ [key]: 响应式属性', ops: '只接受对象\n解构 → 丢失响应性' }),
+        mk('c3', { name: 'toRefs()', attrs: '« 函数 »', ops: '+ toRefs(obj): { [k]: Ref }' })
+      ],
+      msgs: [mk('m1', { style: line }), mk('m2', { style: line + ';border-bottom-style:dashed' }), mk('m3', { style: line }), mk('m4', { style: line.replace('33.4%', '66.7%') })],
+      flow: ['f1', 'f2', 'f3', 'f4', 'f5'].map((id, i) => mk(id, { arrow: i < 4 })),
+      sel: { label: sel[0], quote: sel[1], tc: sel[2], channel: sel[3] }
+    };
+  }
+}
+</script>
+</body>
+</html>

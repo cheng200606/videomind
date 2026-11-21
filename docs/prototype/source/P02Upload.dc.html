@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>02 批量上传</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 24px;font-weight:900;font-size:15px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.tab{all:unset;cursor:pointer;padding:10px 0 8px;font-size:15px;color:#6B6B6B;border-bottom:3px solid transparent;font-weight:500}
+.tab.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.x{all:unset;cursor:pointer;font-size:12.5px;color:#6B6B6B;border-bottom:1px solid #B0B0B0}
+.x:hover{color:#E4002B;border-bottom-color:#E4002B}
+.x:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}.fr{grid-template-columns:28px minmax(0,1fr) auto!important}.fr .bar{display:none}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav" href="P01Library.dc.html">视频库</a><a class="nav on" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:28px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:26px">
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:end">
+      <span class="n" style="grid-column:1 / span 3;font-weight:900;font-size:200px;line-height:.74">{{okPad}}</span>
+      <div style="grid-column:4 / span 9;display:flex;flex-direction:column;gap:8px;padding-bottom:4px">
+        <h1 style="margin:0;font-size:46px;line-height:1.05;font-weight:900">条视频可以解析</h1>
+        <span style="font-size:15px">合计 <b class="n" style="font-weight:800;font-size:20px">{{totalDur}}</b> · 一次导入的视频归为一个批次，在本机按顺序解析，不上传到任何服务器</span>
+      </div>
+    </section>
+
+    <div style="display:flex;gap:28px;border-bottom:2px solid #0A0A0A" role="tablist" aria-label="来源">
+      <button class="tab on" role="tab" aria-selected="true">本地文件</button>
+      <button class="tab" role="tab" aria-selected="false" disabled="{{ true }}" style="cursor:not-allowed">B 站链接 <span style="font-size:11px;border:1px solid #6B6B6B;padding:0 4px;margin-left:4px">仅原型</span></button>
+    </div>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:24px;align-items:start">
+      <div style="grid-column:1 / span 8;display:flex;flex-direction:column;min-width:0">
+        <label for="files" style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:26px 28px;box-shadow:inset 0 0 0 2px #0A0A0A;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px 24px);background-size:100% 8px;background-repeat:no-repeat;background-position:0 100%;cursor:pointer;flex-wrap:wrap">
+          <span style="display:flex;flex-direction:column;gap:4px">
+            <b style="font-size:20px;font-weight:900">把视频拖到这里，或点击选择多个文件</b>
+            <span style="font-size:13px;color:#6B6B6B">mp4 / mov / mkv / avi / webm · 单个 ≤ 2 GB · 一批最多 20 个</span>
+          </span>
+          <span class="n" style="font-weight:900;font-size:44px;line-height:1">+</span>
+          <input id="files" type="file" multiple="{{ true }}" style="position:absolute;width:1px;height:1px;opacity:0">
+        </label>
+
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:22px;padding-bottom:6px;border-bottom:2px solid #0A0A0A">
+          <b>素材清单</b><span style="font-size:12.5px;color:#6B6B6B">条长 = 时长</span>
+        </div>
+        <sc-for list="{{files}}" as="f" hint-placeholder-count="7">
+          <div class="fr" style="display:grid;grid-template-columns:28px minmax(0,1fr) 180px 64px 150px;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid #E0E0E0">
+            <span class="n" style="font-weight:800;color:{{f.numColor}}">{{f.no}}</span>
+            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;{{f.nameStyle}}" title="{{f.name}}">{{f.name}}</span>
+            <span class="bar" aria-hidden="true" style="height:8px;background:#F0F0F0;position:relative"><i style="position:absolute;left:0;top:0;bottom:0;{{f.bar}}"></i></span>
+            <span class="m" style="font-size:12.5px;text-align:right">{{f.dur}}</span>
+            <span style="display:flex;justify-content:flex-end;gap:10px;align-items:baseline">
+              <span style="font-size:12.5px;font-weight:{{f.stW}};color:{{f.stC}}">{{f.state}}</span>
+              <button class="x" onClick="{{f.remove}}" aria-label="移除 {{f.name}}">移除</button>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+
+      <aside style="grid-column:9 / span 4;display:flex;flex-direction:column;gap:22px;border-top:2px solid #0A0A0A;padding-top:16px" aria-label="批次设置">
+        <label style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:#6B6B6B;font-weight:500">批次名称
+          <input value="Vue3 组合式 API 速通" style="font-family:inherit;font-size:17px;font-weight:900;color:#0A0A0A;height:46px;border:0;border-bottom:2px solid #0A0A0A;padding:0;background:transparent;border-radius:0">
+        </label>
+        <div style="display:flex;flex-direction:column;font-size:13.5px">
+          <span style="font-size:12px;color:#6B6B6B;font-weight:500;padding-bottom:6px">解析参数</span>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E0E0"><span>大模型</span><b>DeepSeek</b></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E0E0"><span>语音 / 画面</span><b>本地 ASR · 本地 OCR</b></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E0E0"><span>产物</span><b>总结 · 要点 · UML · 代码块</b></div>
+          <a href="P11Settings.dc.html" style="margin-top:8px;font-weight:900;border-bottom:2px solid #0A0A0A;align-self:flex-start">修改参数</a>
+        </div>
+        <a class="b" href="P03Progress.dc.html">开始解析 {{okCount}} 条 →</a>
+        <span style="font-size:12.5px;color:#6B6B6B">重复和不支持的文件不会进入批次。解析期间可以离开本页，进度会保留。</span>
+      </aside>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { removed: [] }; }
+  renderVals() {
+    const all = [
+      { id: 1, name: '01 为什么要用组合式 API.mp4', dur: 742, st: 'ok' },
+      { id: 2, name: '02 setup 与生命周期.mp4', dur: 1265, st: 'ok' },
+      { id: 3, name: '03 ref 与 reactive 的区别.mp4', dur: 1694, st: 'ok' },
+      { id: 4, name: '04 computed 与 watch.mp4', dur: 1508, st: 'ok' },
+      { id: 5, name: '03 ref 与 reactive 的区别.mp4', dur: 1694, st: 'dup' },
+      { id: 6, name: '05 课堂录屏（未剪辑）.flv', dur: 0, st: 'bad' },
+      { id: 7, name: '05 组合式函数封装.mp4', dur: 1980, st: 'ok' }
+    ];
+    const fmt = (x) => x ? String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0') : '—';
+    const ST = { ok: ['可解析', '#0A0A0A', 500], dup: ['同名重复 · 跳过', '#E4002B', 900], bad: ['格式不支持', '#E4002B', 900] };
+    const list = all.filter((f) => !this.state.removed.includes(f.id));
+    const ok = list.filter((f) => f.st === 'ok');
+    const tot = ok.reduce((a, f) => a + f.dur, 0);
+    const max = 1980;
+    return {
+      files: list.map((f, i) => ({
+        no: String(i + 1).padStart(2, '0'), name: f.name, dur: fmt(f.dur),
+        state: ST[f.st][0], stC: ST[f.st][1], stW: ST[f.st][2],
+        numColor: f.st === 'ok' ? '#0A0A0A' : '#6B6B6B',
+        nameStyle: f.st === 'ok' ? '' : 'color:#6B6B6B;text-decoration:line-through',
+        bar: 'width:' + (f.dur / max * 100).toFixed(1) + '%;background:' + (f.st === 'ok' ? '#0A0A0A' : '#B0B0B0'),
+        remove: () => this.setState({ removed: [...this.state.removed, f.id] })
+      })),
+      okCount: ok.length, okPad: String(ok.length).padStart(2, '0'),
+      totalDur: Math.floor(tot / 3600) + ' 小时 ' + Math.floor((tot % 3600) / 60) + ' 分'
+    };
+  }
+}
+</script>
+</body>
+</html>

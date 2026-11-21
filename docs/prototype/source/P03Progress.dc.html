@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>03 批次进度</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;font-weight:900;font-size:14px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b.s{height:34px;padding:0 14px;font-size:13px}
+.b.r{background:#E4002B}
+.b.r:hover{background:#0A0A0A}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+summary{cursor:pointer}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}.vr{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav on" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:18px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <nav style="font-size:13px;color:#6B6B6B" aria-label="面包屑"><a href="P01Library.dc.html" style="color:#6B6B6B">视频库</a> / 批次进度</nav>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:end">
+      <span class="n" style="grid-column:1 / span 4;font-weight:900;font-size:200px;line-height:.74">{{done}}<span style="color:#8C8C8C">/5</span></span>
+      <div style="grid-column:5 / span 5;display:flex;flex-direction:column;gap:8px;padding-bottom:4px">
+        <h1 style="margin:0;font-size:40px;line-height:1.08;font-weight:900">Vue3 组合式 API 速通</h1>
+        <span style="font-size:15px">已完成 {{done}} 条 · 解析中 {{running}} 条 · <b style="color:#E4002B">失败 {{failed}} 条</b></span>
+      </div>
+      <div style="grid-column:10 / span 3;display:flex;flex-direction:column;gap:8px;align-items:stretch;padding-bottom:4px">
+        <a class="b" href="Workbench.dc.html">打开工作台</a>
+        <a class="b o" href="P09Export.dc.html">导出已完成的 {{done}} 条</a>
+      </div>
+    </section>
+
+    <section aria-label="批次刻度尺" style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;gap:2px;height:22px">
+        <sc-for list="{{strip}}" as="s" hint-placeholder-count="5"><span style="{{s.style}}" title="{{s.name}}"></span></sc-for>
+      </div>
+      <div style="height:8px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px 4.173%)"></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px" class="n"><b style="font-weight:800">0</b><span style="color:#6B6B6B">每格 5 分钟 · 黑 完成 · 斜线 解析中 · 红 失败</span><b style="font-weight:800">1:59:49</b></div>
+    </section>
+
+    <sc-if value="{{hasFailed}}" hint-placeholder-val="{{ true }}">
+      <p role="status" style="margin:0;border-top:3px solid #E4002B;padding-top:10px;font-size:15px"><b style="color:#E4002B">批次部分成功。</b>失败的条目可以单独重试，已完成的不会重跑。</p>
+    </sc-if>
+
+    <section aria-label="逐条状态" style="display:flex;flex-direction:column">
+      <div class="vr" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 210px;gap:20px;padding-bottom:8px;border-bottom:2px solid #0A0A0A;font-size:12.5px;font-weight:500;color:#6B6B6B">
+        <span>视频</span>
+        <span style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px"><span>1 语音转写</span><span>2 画面识别</span><span>3 结构化</span><span>4 产物落库</span></span>
+        <span style="text-align:right">操作</span>
+      </div>
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+        <div class="vr" style="display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,2fr) 210px;gap:20px;padding:14px 0;border-bottom:1px solid #E0E0E0;align-items:center">
+          <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+            <span style="font-weight:{{r.nameW}};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{r.name}}</span>
+            <span style="font-size:12.5px;color:{{r.noteC}}">{{r.note}}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px">
+            <sc-for list="{{r.stages}}" as="g" hint-placeholder-count="4">
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <i style="height:12px;box-sizing:border-box;{{g.bg}}"></i>
+                <span style="font-size:11.5px;font-weight:{{g.w}};color:{{g.fg}}">{{g.label}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:8px">
+            <sc-if value="{{r.canRetry}}" hint-placeholder-val="{{ false }}"><button class="b s r" onClick="{{r.retry}}">重试本条</button></sc-if>
+            <sc-if value="{{r.canOpen}}" hint-placeholder-val="{{ true }}"><a class="b o s" href="Workbench.dc.html">去工作台</a></sc-if>
+            <sc-if value="{{r.isRunning}}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#6B6B6B">解析中…</span></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <details style="border-top:2px solid #0A0A0A;padding-top:12px">
+      <summary style="font-size:14px"><b>解析事件流</b> <span style="color:#6B6B6B">· 排查问题时展开，整批重跑也在这里</span></summary>
+      <div style="padding-top:10px;display:flex;flex-direction:column;gap:4px;font-size:13px">
+        <div style="display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px"><span class="m" style="color:#6B6B6B">14:32:08</span><span>04 computed 与 watch · 3 结构化 进行中</span></div>
+        <div style="display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px"><span class="m" style="color:#6B6B6B">14:31:40</span><span style="color:#E4002B">05 组合式函数封装 · 1 语音转写 失败：音轨解码失败</span></div>
+        <div style="display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px"><span class="m" style="color:#6B6B6B">14:29:55</span><span>03 ref 与 reactive 的区别 · 4 产物落库 完成</span></div>
+        <div style="display:grid;grid-template-columns:80px minmax(0,1fr);gap:12px"><span class="m" style="color:#6B6B6B">14:21:12</span><span>02 setup 与生命周期 · 2 画面识别 降级跳过：未检出文字画面</span></div>
+        <div style="margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="b o s">整批重跑</button><span style="font-size:12px;color:#6B6B6B">会覆盖已完成条目的结果</span></div>
+      </div>
+    </details>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { retried: false }; }
+  renderVals() {
+    const HATCH = 'background:repeating-linear-gradient(135deg,#0A0A0A 0 2px,#FFFFFF 2px 6px);box-shadow:inset 0 0 0 1px #0A0A0A';
+    const S = {
+      done: ['background:#0A0A0A', '完成', '#0A0A0A', 500],
+      run: [HATCH, '进行中', '#0A0A0A', 900],
+      wait: ['background:#F0F0F0', '等待', '#6B6B6B', 400],
+      fail: ['background:#E4002B', '失败', '#E4002B', 900],
+      skip: ['background:#FFFFFF;border:2px dashed #0A0A0A', '降级跳过', '#0A0A0A', 500]
+    };
+    const r = this.state.retried;
+    const raw = [
+      { name: '05 组合式函数封装.mp4', dur: 1980, st: r ? ['run', 'wait', 'wait', 'wait'] : ['fail', 'wait', 'wait', 'wait'],
+        note: r ? '已重新排队' : '音轨解码失败：文件可能损坏，换一份源文件或直接重试', kind: r ? 'run' : 'fail' },
+      { name: '04 computed 与 watch.mp4', dur: 1508, st: ['done', 'done', 'run', 'wait'], note: '正在把转写整理成章节和要点', kind: 'run' },
+      { name: '01 为什么要用组合式 API.mp4', dur: 742, st: ['done', 'done', 'done', 'done'], note: '6 章 · 9 条要点', kind: 'done' },
+      { name: '02 setup 与生命周期.mp4', dur: 1265, st: ['done', 'skip', 'done', 'done'], note: '没有代码画面，只用语音生成', kind: 'done' },
+      { name: '03 ref 与 reactive 的区别.mp4', dur: 1694, st: ['done', 'done', 'done', 'done'], note: '6 条要点 · 2 处易错', kind: 'done' }
+    ];
+    const order = [2, 3, 4, 1, 0];
+    const done = raw.filter((x) => x.kind === 'done').length;
+    const failed = raw.filter((x) => x.kind === 'fail').length;
+    const running = raw.filter((x) => x.kind === 'run').length;
+    return {
+      done, failed, running, hasFailed: failed > 0,
+      strip: order.map((i) => raw[i]).map((x) => ({ name: x.name,
+        style: 'flex:' + x.dur + ' 1 0;box-sizing:border-box;' + (x.kind === 'done' ? 'background:#0A0A0A' : x.kind === 'run' ? HATCH : 'background:#E4002B') })),
+      rows: raw.map((x) => ({
+        name: x.name, note: x.note, nameW: x.kind === 'fail' ? 900 : 500,
+        noteC: x.kind === 'fail' ? '#E4002B' : '#6B6B6B',
+        stages: x.st.map((k) => ({ bg: S[k][0], label: S[k][1], fg: S[k][2], w: S[k][3] })),
+        canRetry: x.kind === 'fail', canOpen: x.kind === 'done', isRunning: x.kind === 'run',
+        retry: () => this.setState({ retried: true })
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>
