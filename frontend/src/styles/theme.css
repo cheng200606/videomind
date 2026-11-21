@@ -81,6 +81,19 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* 视觉隐藏但读屏可读：给自绘控件和第三方组件补可访问名称/说明（不参与布局，不撑宽页面） */
+.vm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* 签名元素：时间码芯片——每个可跳回原片的时间锚点都用「播放器深色岛」的样子出现 */
 .vm-ts {
   display: inline-flex;
