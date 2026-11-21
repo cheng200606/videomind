@@ -411,7 +411,11 @@
 
 ---
 
-## [v0.17 原型线] — W4 高保真原型 22 页与墨刀交付（2026-11-21）
+## [v0.17] — 交付文档体系、可信边界收口与可复现质量门（2026-11-21，未发布 Release）
+
+> 本节汇总 v0.17 全部工作线的交付，基线 `develop 3365bb1`，本轮不发 Release。各线条目分别署名（A / C / 架构设计师 / 程夏（组长）），逐条单人事事、无合注。前端线与质量线未逐笔写条目，由组长依据两线提交历史与验收记录补录并注明。
+
+### 原型线（A）
 
 > 本节由 **A** 本人署名；交付物落 `docs/prototype/`，对应 `docs/交付与排期.md` §4.1 的 12 页清单，不新增第 13 页。
 
@@ -423,3 +427,62 @@
 - **A**：墨刀原型 https://modao.cc/proto/WwJjWSTVtou53lgllCjdSJ/sharing ——项目「视析 · 高保真原型」22 页（12 页主页面 + 封面 + 9 张交互状态页），演示设备「网页 1440」；分享权限设为「拿到链接的人都能查看」，2026-11-21 以无登录态浏览器复验 22 页均可打开，导出操作需登录
 - **A**：页 4 动线 3 条、证据链抽屉、页 6 图种切换与全局顶栏跳转均为墨刀原生「单击 → 跳转页面」交互，改热区时改 `source/flow.mjs` 坐标表重新导入
 - **A**：声明复现性缺口——`source/export-2x.mjs` 重新导出依赖设计画布的运行时文件 `support.js`，该文件属画布工具、不入库；已在 `docs/prototype/README.md` 写明，故 `exports/` 为交付物、`source/` 为可编辑源稿而非可独立重建的工程
+
+### 设计图线（C，2026-11-16）
+
+- **C（Al）**：图 5 类图 `fig5-class.puml` / `fig5-class.py` / `fig5-class.svg`——11 个实体全画（`VideoBatch`、`Video`、`Segment`、`Evidence`、`KnowledgeItem`、`Artifact`、`ConflictRecord`、`Tag`、`TagBinding`、`Note`、`Revision`）；`OcrEngine` 三实现、`OutputSchemaStrategy` 四实现、`AsrVocabularyCrossChecker` 标「仅设计」；`AsrEngine` 作为转写接缝单列，四个实现用注释收敛
+- **C（Al）**：图 6 ER 图 `fig6-er.puml` / `fig6-er.svg` 与 `docs/数据字典.md`——按 11 表口径，鸦脚记法；图中只放主键 / 外键 / 关键字段，完整字段、枚举、索引与多态绑定说明入字典
+- **C（Al）**：图 8 部署图 `fig8-deployment.puml` / `fig8-deployment.svg`——Electron 主进程 + FastAPI sidecar + SQLite / media / cache / logs；内置 faster-whisper（默认 tiny）与 RapidOCR；外部 DeepSeek；第三方插件走预留 REST；不画 Docker / MySQL / Redis 备选路径
+- **C（Al）**：按 2026-11-16 确认口径，同步 `docs/产品定义.md` §六、`docs/交付与排期.md`、`docs/分工与任务卡.md` 与 `docs/数据字典.md` 的 ER 表数：9–10 表 → 11 表（`tag` 与 `tag_binding` 分列）；仅口径勘误，不改范围
+- **C（Al）**：按组长 review 整改——图 5 将不存在的 `ParseService` / `LlmGateway` / `ExportService` 改为 `pipeline.py` / `llm.py` / `export.py` 的 «module» 表示；`ParseMutex` 改 `claim/release`、`ProgressBus` 改 `emit/forget/reset`、`llm.structure` 签名对齐；移除框间基数标签并写入图注，消除 Video/Segment/Evidence 类名遮挡；图 8 ASR 标注改为 `faster-whisper（默认 tiny）` 并对齐配色
+- **C（Al）**：图 5 图注补「`AsrVocabularyCrossChecker` 本期不实现」——该类在产品定义中标「F5 课程版只做设计」，代码里只有配置开关无实现，图注须写明避免合稿时被当成既有实体
+
+### 辅图线（架构设计师）
+
+- **架构设计师**：新增 `docs/figures/src/fig-aux1-tech-roadmap.py`（260 行）与 `docs/figures/svg/fig-aux1-tech-roadmap.svg`——辅图 1 技术路线图：上排五个环节「选题与范围锁定 → 双通道解析 → 结构化 → 证据链 → 导出与交付」，每条能力按 ● 已实现并入库 / ○ 设计中或本期不实施标注；下排 12 个版本里程碑（v0.5 → v0.17）；底部五行「读图与口径」
+- **架构设计师**：新增 `docs/figures/src/fig-aux3-multimodal-artifacts.py`（258 行）与 `docs/figures/svg/fig-aux3-multimodal-artifacts.svg`——辅图 3 多模态 + 多产物示意图：左「输入通道」两个可插拔接缝，中「结构化」分块与合并及无 Key 降级标注，右「输出产物」`OutputSchemaStrategy` 四实现与契约签名
+- **架构设计师**：本机无 PlantUML 运行时，两张辅图沿用纯 Python 生成 SVG 路线，源文件与导出物成对可复现、不手改 SVG，按 LF 写入与 `.gitattributes` 一致
+- **架构设计师**：辅图 3 如实标注「代码块只由画面通道产出」为代码实测约束（`CodeBlocksStrategy` 在 `ctx.ocr` 为空时返回空列表、`channel` 固定 `Channel.OCR`），两图均标「识别结果仅供参考」
+
+### 文档体系（程夏（组长））
+
+- **程夏（组长）**：新建 `docs/delivery/排版规范.md`——A4 页面设置、三级标题字体字号与段距、正文宋体小四 1.5 倍行距、三线表规格、图表编号与图注、代码块样式、封面目录页码、六章固定节名表、合稿施工顺序（用例数须注明采集时刻与 commit 短号）、禁止事项
+- **程夏（组长）**：新增 `tools/make_docx_skeleton.py` 作为交付文档骨架的可重建来源，产出 `docs/delivery/VideoMind_交付文档_v0.17.docx`——4 个 section、六章 Heading 1 与固定子节 Heading 2、素材锚点与待补标记
+- **程夏（组长）**：新建 `docs/delivery/v0.17_ch5_系统实现与测试.md` 作为章节体例样板——四阶段主链路、三个可插拔策略、`ParseMutex`、长转写分块、证据链，11 表数据字典、8 个枚举与 `REVISION_TRANSITIONS`、质量门、迭代轨迹与已知缺口；§5.3.7 记录三条实现层面的诚实边界
+- **程夏（组长）**：新建 `docs/delivery/v0.17_ch2_可行性分析.md`——技术可行性逐条挂可核证据、经济可行性两套调用次数口径（表 2-8 双列）、操作可行性三条运行路径、进度可行性对照七周倒排
+- **程夏（组长）**：新建 `docs/delivery/v0.17_ch6_小组讨论记录.md`——记录规则、轮值署名表、单次讨论模板、归档区与决议跟踪表；截至 2026-11-21 无已确认正式纪要，归档区标「待补」，不预填、不补写既往会议
+- **程夏（组长）**：新增 `docs/delivery/交付前检查单.md`——五组共 24 项：核对脚本、用例数采集、体例排版、内容与诚信红线、图表配套
+- **程夏（组长）**：新增四个文档核对脚本 `tools/check_doc_refs.py`、`tools/check_figure_refs.py`、`tools/check_doc_banned.py`（禁用词，白名单须写理由，支持 `--full` 全仓模式）、`tools/check_doc_numbers.py`（与当日实跑同源）；退出码 0/1，明细落 `output/v017/`
+
+### 口径勘误（程夏（组长））
+
+- **程夏（组长）**：`CONTRIBUTING.md` §八 章节文档路径由 `docs/chapters/<章节号>-<名称>.md` 改为 `docs/delivery/v0.17_ch<章节号>_<名称>.md`——`docs/chapters/` 从未建立过，v0.17 起统一落 `docs/delivery/`
+- **程夏（组长）**：`docs/交付与排期.md` §4.2 辅图 4「须体现 F2/F3 各增一次 LLM 调用」与实现不符——F2（`StructuredDraft.conflicts`）与 F3（`DraftItem.pitfall`）是同一 schema 的两个字段，`_structure_chunk` 每块只发一次请求，调用次数增量 0，成本增量转为输出 token 与重试概率；改为「设计估算口径 / 实现实测口径」双列。另厘清原文把 F3 写作「多产物」之误（多产物对应 `OutputSchemaStrategy`，纯本地计算）
+- **程夏（组长）**：表 5-23 / 表 2-3 / 表 2-4 / 检查单第 18 项可达性口径统一为「axe 亮 / 暗 × 8 页**默认态** 0 violation」，并记一条诚实边界：v0.16 基线只覆盖默认态，导出页终态与上传页已选文件态未纳入，v0.17 起由 `tools/` 脚本按双状态覆盖
+
+### 后端技术债收口（程夏（组长），v0.17 P0-1 ~ P0-6）
+
+- **程夏（组长）**：修复零条目冒充成功（P0-2，`8026a98`）——`backend/app/artifacts.py` 新增 `normalize_schemas()` 显式返回未知产物类型、`resolve()` 静默丢弃改为告警不吞；`backend/app/pipeline.py` 把 `resolve()` 挪进 `try`、产物集为空时双 `FAILED`、合法但零 draft 时双 `PARTIAL`；`backend/app/main.py` 启动读回与 `PUT` 共用同一套归一，新增 `backend/app/config.py::DEFAULT_OUTPUT_SCHEMAS`。新增 5 例，零 draft 用例断言 SSE 事件而非 `video.error`（不改既有 `_set_stage` 语义）
+- **程夏（组长）**：修复缓存损坏冒充解析失败（P0-3，`871995c`）——`backend/app/cache.py` 文件分支裸 `json.loads` 改为读坏当未命中并 `discard()`，新增 `validate` 校验回调，`put()` 改「先写 tmp 再 `replace`」原子替换；`backend/app/pipeline.py` 新增 `_asr_cache_ok` / `_frames_cache_ok` 接通两处 `cache.get`。新增 7 例
+- **程夏（组长）**：修复测试连接失败原因漏本机路径（P0-4，`6b29c55`）——`backend/app/routers/settings.py::_safe_error()` 末尾接 `pipeline.sanitize_error(text, limit=300)`，顺序为先抹密钥再剥路径。新增 2 例覆盖 Windows 与 POSIX 路径
+- **程夏（组长）**：修复关键帧目录只增不减 + 抽帧间隔死配置（P0-5，`61f76dc`）——`backend/app/pipeline.py::_clear_video_data` 新增 `_prune_frame_dir()` 按本轮帧集清理；新增 `backend/app/engines/frames.py::effective_interval_s()` 作唯一取值口径，同一变量实例既做 `sample_frames` 实参又进缓存键；非法/零/负值回退 30s；顺带修 `backend/tests/conftest.py` 隔离缺陷。新增 5 例
+- **程夏（组长）**：`backend/app/models.py:1` docstring 口径勘误 + 3 例守卫（P0-1，`29a1e06`）——由「9–10 表」改为「11 张表」并保留成因说明；新增 `backend/tests/test_models.py` 3 例，其中 `test_models_docstring_states_eleven_tables` 要求「11 张表」与「9–10 表」同时存在，保留历史口径说明
+- **程夏（组长）**：修复后端版本号与代码线脱节（P0-6，`ae00284`）——新增 `backend/app/config.py::APP_VERSION = "0.17.0"` 作单一来源，`FastAPI` 与 `/api/health` 同取一处；新增 1 例同时钉 health 与 `/openapi.json` 的 `info.version`
+
+### 前端线（程夏（组长），依据提交历史与验收记录补录；本线未逐笔写条目）
+
+- **程夏（组长）**：前端 v0.17 单链 12 笔无 merge，依次 P0-1 `dd902a9`（`labels.ts` 补 `video_start` 类型，进度页事件着色不再走灰）→ P0-2 `c636129`（`EvidenceDrawer` 自建 `CHANNEL` 收归 `labels.ts::CHANNEL_LABEL`）→ P0-4 `04c816c`/`2661e13`（批次级事件单走「更新批次头」路径，`types.ts` 补 `StructuredVideo`/`StructuredBatch` 与 `coverage_notice` 可选字段）→ P0-3 `5a7383c`（进度页 `aria-live` + 时间轴命名，单测先红后绿）→ P1-1 `fe84978`（`flowchart-elk` 首行归一化，节点定义不动）
+- **程夏（组长）**：暗色对比度修复（P1 清单外第九条，`2f7b6a3`）——`ExportView`/`NotesView` 三处 `MdPreview`/`MdEditor` 绑 `:theme="mode"`，撤销 `!important` 改按 `data-theme` 分流，radio 选中态改用 `--el-color-primary-light-3` 底，不改全站主色；导出页与首页两处暗色违规归零
+- **程夏（组长）**：`4e18ba5` 终态列表收敛、P1-4 `6d708e6` 上传页分组标题与 `.no` 徽标 token 化（对比度 4.44→4.8、2.96→4.73）、P1-3 `c50a611` 新增 `tools/check_limits.py`（前后端 `SEARCH_LIMIT`/`TRANSCRIPT_LIMIT` 同源核对，不一致 exit 1）、P1-5 `7e73a42` mermaid 主题双源断言、P2 `2e088a6` 渐进渲染评估注释。vitest 44→60（11 文件）、build exit 0
+- **程夏（组长）**：更正草案错判——上传拖拽区本就有可访问名称（Element Plus `upload-content` 自带 `role=button` 与名称），P0-3 未加冗余标签；另发现 axe 盲区：含 `linear-gradient` 背景元素的 `color-contrast` 落入 incomplete 桶不判定，「0 violation ≠ 对比度过关」，实测比值需按渐变位置插值
+
+### 质量线（程夏（组长），依据提交历史与验收记录补录；本线未逐笔写条目）
+
+- **程夏（组长）**：`a9c4450` 新增质量门脚本与回归用例——`tools/check_a11y.py`、SSE 收流单测（`frontend/src/__tests__/progress.spec.ts`，终态必须 close / 非终态不 close）、视觉通道冒烟（`backend/tests/test_visual_channel.py`，不改 conftest 全局 `OCR_ENGINE`，断言 `channel=="both"` 且 `frame_path` 非空）；`tools/check_enum_sync.py` 契约同源核对
+- **程夏（组长）**：`e28ee7a` 裁定落地——G5 统一到文档线权威脚本 `tools/check_doc_banned.py`（撤自产 `check_forbidden_words.py`，修误报非放松门）；G4 把 incomplete 桶的 `color-contrast` 单列、按渐变位置插值算实测比值（暗色上传页 11 节点 8.7–15.26:1 全 pass）、算不了标待人工，均不计入 violations=0
+- **程夏（组长）**：G4 双方法对照证明检测手段修复未放宽判定——未修复构建旧/新方法均报 1 处 1.84:1；已修复构建旧方法报 0 但 `mdThemes=[light]` 是假绿、新方法报 0 且 `mdThemes=[dark]` 才是真暗色。`g4.json` 24 组全覆盖、uncovered=0、ok=true；G6 差异 0、G7 README 去写死例数
+
+### 合并与验证（v0.17 → develop）
+
+- **程夏（组长）**：七条工作线（前端 / 后端 / 质量 / A 原型 / 辅图 / C 图 / 文档）按序 `--no-ff` 合入 `develop`，各线合并前对 develop `merge-tree` 干跑 code=0；图 blob 跨线完全相同不冲突，内容冲突仅 `CHANGELOG.md` 与 `docs/交付与排期.md`，均按口径解决；作者署名保留原样（C=Alhazredal、A=Crubeens）
+- **程夏（组长）**：合并后全量验证——后端 `pytest`、前端 `npm.cmd run test` 与 `npm.cmd run build`、文档四脚本（refs / figure / banned / numbers）须全绿，例数以合稿当日实跑为准（基线 `3365bb1` 为 108 / 44，仅作对照）
