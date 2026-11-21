@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from app.llm import test_connection
 from app.model_config import PROVIDERS, ModelConfig, active_model_config, save_model_config
+from app.pipeline import sanitize_error
 
 router = APIRouter(prefix="/api", tags=["settings"])
 
@@ -46,11 +47,18 @@ def _clean_url(raw: str) -> str:
 
 
 def _safe_error(exc: Exception, key: str) -> str:
+    """测试连接的失败原因要上设置页 UI：先抹掉密钥，再走统一的 sanitize_error。
+
+    这里曾经是唯一绕过 sanitize_error 的 UI 写入点（v0.17 P0-4）。连接失败时
+    httpx 的异常字符串常带完整 URL、本机代理配置甚至 Windows 绝对路径，直接回前端
+    等同把本机环境漏给界面。抹密钥与剥路径是两件事，两层都要过：
+    先抹密钥（否则路径规则会把含密钥的片段一起吞掉、反而看不出被抹过），再剥路径。
+    """
     text = str(exc)
     if key:
         text = text.replace(key, "***")
     text = re.sub(r"(?i)bearer\s+\S+", "Bearer ***", text)
-    return text[:300]
+    return sanitize_error(text, limit=300)
 
 
 @router.get("/settings/model")

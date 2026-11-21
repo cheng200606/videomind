@@ -1,4 +1,11 @@
-"""ER 实体 —— 与 docs/产品定义.md §六 的 9–10 表逐一对应（图 6）。"""
+"""ER 实体 —— 与 docs/产品定义.md §六 的 **11 张表**逐一对应（图 6）。
+
+表数口径（v0.17 P0-1 勘误）：文档长期写「9–10 表」，是因为 docs/产品定义.md §六 的表格
+把 `Tag` 与 `TagBinding` 合写成一行；代码里一直是两张独立的表。本文件 table=True 的类
+共 11 个，按依赖顺序：video_batch、video、segment、evidence、knowledge_item、artifact、
+conflict_record、tag、tag_binding、note、revision。`git log -- backend/app/models.py`
+只有建库骨架一条提交，11 张表从第一天就在，不存在「后加的表」——差异纯属文档计数口径。
+"""
 
 from datetime import datetime, timezone
 from typing import Optional

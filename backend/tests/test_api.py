@@ -31,6 +31,20 @@ def test_health(client: TestClient):
     assert r.status_code == 200 and r.json()["ok"] is True
 
 
+def test_health_reports_current_backend_version(client: TestClient):
+    """桌面版靠这个字段判断「装的是哪一版后端」（v0.17 P0-6）。
+
+    改前 version 写死 "0.1.0" 而代码线已到 v0.16，打包出问题只能靠猜。这里把
+    /api/health 与 OpenAPI 的版本一起钉住，两处口径必须同源（app.config.APP_VERSION）。
+    """
+    from app.config import APP_VERSION
+
+    payload = client.get("/api/health").json()
+    assert payload["version"] == APP_VERSION
+    assert payload["version"] != "0.1.0"
+    assert client.get("/openapi.json").json()["info"]["version"] == APP_VERSION
+
+
 def test_spa_catch_all_rejects_encoded_path_traversal(tmp_path: Path, monkeypatch):
     """前端历史路由 catch-all 不能越过 dist 根读到 .env（P0 路径穿越回归）。
 

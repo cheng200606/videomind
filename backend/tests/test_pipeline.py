@@ -1,12 +1,14 @@
 """垂直切片自检：不装任何引擎也能跑通「转写 → 结构化 → 产物 → 落库 → 导出」。"""
 
 from pathlib import Path
+import json
 from types import SimpleNamespace
 
 import pytest
 from sqlmodel import Session, select
 
 from app.artifacts import ItemDraft
+from app.config import get_settings
 from app.db import engine, init_db
 from app.enums import ArtifactType, BatchStatus, Confidence, RevisionState, Stage, StageStatus, VideoStatus
 from app.export import build_batch_markdown, ts
@@ -356,3 +358,214 @@ def test_whisper_cache_key_tracks_model_size(monkeypatch):
     mock = _asr_cache_name(SimpleNamespace(name="mock"))
     assert tiny != base, "换档位后不得复用旧缓存"
     assert mock == "asr:mock", "无档位概念的引擎保持原键格式"
+
+
+# ── v0.17 P0-2：零条目不许冒充成功（假成功收口）────────────────────────────
+
+
+def test_normalize_schemas_reports_unknown_instead_of_dropping():
+    """未知产物类型必须被挑出来交给调用方处理，不能在这里静默吞掉。"""
+    from app.artifacts import REGISTRY, normalize_schemas
+
+    valid, unknown = normalize_schemas([" summary ", "summary", "", "bogus", "key_points"])
+    assert valid == ["summary", "key_points"], "去空白、保序去重"
+    assert unknown == ["bogus"], "未知项必须显式返回，静默丢弃正是 P0-2 的成因"
+    assert set(REGISTRY) == {"summary", "uml_draft", "key_points", "code_blocks"}
+
+
+def test_empty_output_schemas_fails_instead_of_reporting_success(video: Video):
+    """产物集为空时解析注定零条目：必须 FAILED 并给出可执行的修法，不能 SUCCEEDED。"""
+    from app.pipeline import parse_video
+
+    broken = get_settings().model_copy(update={"output_schemas": " , "})
+    assert broken.output_schema_list == []
+
+    with Session(engine) as session:
+        parsed = parse_video(session, session.get(Video, video.id), broken)
+        items = session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == parsed.id)).all()
+
+    assert items == [], "空产物集不该产出条目（这里是反证前提）"
+    assert parsed.status == VideoStatus.FAILED, "零条目却 SUCCEEDED 是假成功"
+    assert parsed.artifact_status == StageStatus.FAILED
+    assert "产物集为空" in parsed.error
+    assert "设置页" in parsed.error, "错误文本要能给用户一条可执行的路"
+
+
+def test_schema_set_producing_zero_drafts_is_partial_not_success(video: Video):
+    """产物集合法但一条没产出（如只勾代码块而画面通道关闭）：标 PARTIAL，零条目必须可见。"""
+    from app.pipeline import bus, parse_video
+
+    only_code = get_settings().model_copy(update={"output_schemas": "code_blocks"})
+    q, _ = bus.subscribe(video.batch_id)
+    try:
+        with Session(engine) as session:
+            parsed = parse_video(session, session.get(Video, video.id), only_code)
+            items = session.exec(
+                select(KnowledgeItem).where(KnowledgeItem.video_id == parsed.id)).all()
+        _, history = bus.subscribe(video.batch_id)
+    finally:
+        bus.unsubscribe(q)
+
+    assert items == []
+    assert parsed.status == VideoStatus.PARTIAL
+    assert parsed.artifact_status == StageStatus.PARTIAL
+    # PARTIAL 的消息按现有 _set_stage 口径走事件流（只有 FAILED 才累加进 video.error）
+    artifact_events = [e for e in history if e["stage"] == Stage.ARTIFACT.value]
+    assert artifact_events[-1]["status"] == StageStatus.PARTIAL.value
+    assert "未产出任何条目" in artifact_events[-1]["message"]
+
+
+def test_saved_settings_with_unknown_schema_self_heals(tmp_path: Path, monkeypatch):
+    """settings.json 被改坏（未知类型/重复/空）时启动读回要归一、回退并写回，不能留成空集。"""
+    from app import main as app_main
+
+    settings_path = Path(get_settings().media_root).parent / "settings.json"
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings_path.write_text(json.dumps({
+        "schema_version": 2,
+        "asr_engine": get_settings().asr_engine,
+        "ocr_engine": get_settings().ocr_engine,
+        "output_schemas": "summary,  summary ,已下线的产物",
+    }, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(app_main._settings, "output_schemas", "")
+    app_main._load_saved_settings()
+
+    assert app_main._settings.output_schemas == "summary", "未知项被剔除、重复项被去重"
+    saved = json.loads(settings_path.read_text(encoding="utf-8"))
+    assert saved["output_schemas"] == "summary", "归一结果要写回，否则下次启动再算一遍"
+    settings_path.unlink(missing_ok=True)
+
+
+def test_saved_settings_with_only_unknown_schemas_falls_back_to_default(tmp_path: Path, monkeypatch):
+    """全是不认识的名字时回退默认四类——回退到空集等于把假成功又放回来。"""
+    from app import main as app_main
+    from app.config import DEFAULT_OUTPUT_SCHEMAS
+
+    settings_path = Path(get_settings().media_root).parent / "settings.json"
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings_path.write_text(json.dumps({
+        "schema_version": 2,
+        "asr_engine": get_settings().asr_engine,
+        "ocr_engine": get_settings().ocr_engine,
+        "output_schemas": "已下线A,已下线B",
+    }, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(app_main._settings, "output_schemas", "")
+    app_main._load_saved_settings()
+
+    assert app_main._settings.output_schemas == DEFAULT_OUTPUT_SCHEMAS
+    settings_path.unlink(missing_ok=True)
+
+
+# ── v0.17 P0-5：关键帧目录清理 + 帧间隔口径 ─────────────────────────────────
+
+
+def _fake_frames(tmp_path: Path, ms_list: list[int]) -> list:
+    """造一组「引擎刚抽出来的」关键帧（临时目录里的真实文件，_localize_frames 要 copy）。"""
+    from app.engines.base import KeyFrame
+
+    out = []
+    for ms in ms_list:
+        src = tmp_path / f"src_{ms}.jpg"
+        src.write_bytes(b"\xff\xd8\xff\xe0stub")
+        out.append(KeyFrame(ms=ms, path=str(src)))
+    return out
+
+
+def _frame_dir(video_id: int) -> Path:
+    return Path(get_settings().media_root) / "frames" / str(video_id)
+
+
+def test_rerun_prunes_stale_frame_files(video: Video, tmp_path: Path):
+    """重跑换了一套关键帧：上一轮的帧文件必须被清掉，不能一直留在 /media 下当孤儿。"""
+    from app.pipeline import _localize_frames
+
+    first = _localize_frames(video.id, _fake_frames(tmp_path, [0, 30000, 60000]))
+    assert len(list(_frame_dir(video.id).iterdir())) == 3
+
+    second = _localize_frames(video.id, _fake_frames(tmp_path, [0, 90000]))
+    kept = sorted(f.name for f in _frame_dir(video.id).iterdir())
+
+    assert {f.ms for f in second} == {0, 90000}
+    assert len(kept) == 2, f"上一轮 30000/60000 的帧应被清理，实际残留：{kept}"
+    assert all(any(str(f.ms) in name for name in kept) for f in second)
+    # 返回的路径必须仍指向真实存在的文件，清早了会让证据链断掉
+    assert all(Path(f.path).exists() for f in second)
+    assert first, "第一轮确实落过盘（反证前提）"
+
+
+def test_frame_interval_env_drives_both_sampling_and_cache_key(video: Video, monkeypatch):
+    """VMIND_FRAME_INTERVAL_S 必须同时影响「抽帧实参」和「缓存键」（v0.17 P0-5）。
+
+    改前 pipeline 直接传常量，环境变量是死配置；而只把它塞进键、实参仍用常量的话，
+    换间隔会拿别人的帧当自己的缓存命中，且不报任何错。
+    """
+    from app import cache
+    from app import pipeline as pipeline_mod
+    from app.engines.base import KeyFrame
+
+    calls: list[float | None] = []
+
+    def fake_sample(path, interval_s=None, **kwargs):
+        calls.append(interval_s)
+        src = Path(path).parent / "fake_frame.jpg"
+        src.write_bytes(b"\xff\xd8\xff\xe0stub")
+        return [KeyFrame(ms=0, path=str(src))]
+
+    monkeypatch.setattr(pipeline_mod, "sample_frames", fake_sample)
+    monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", "5")
+
+    with Session(engine) as session:
+        frames = pipeline_mod._keyframes(session.get(Video, video.id))
+
+    assert calls == [5.0], "实参必须来自同一份取值，而不是常量 30"
+    assert frames and frames[0].ms == 0
+
+    hit = cache.get(cache.key_of(video.path, "frames:5"))
+    assert hit is not None, "缓存键要用 5 秒档位；用常量算键会让换档后命中别的缓存"
+    assert cache.get(cache.key_of(video.path, "frames:30")) is None
+
+    # 相同内容换档位：必须重抽，不能拿 5 秒档的结果当 30 秒档
+    calls.clear()
+    monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", "30")
+    with Session(engine) as session:
+        pipeline_mod._keyframes(session.get(Video, video.id))
+    assert calls == [30.0], "换档位必须重抽"
+
+
+def test_invalid_frame_interval_falls_back_to_constant(monkeypatch):
+    """非法/零/负数间隔回退默认值——配错了不能把抽帧变成无限循环或空跑。"""
+    from app.engines.frames import FRAME_INTERVAL_S, effective_interval_s
+
+    for raw in ("", "abc", "0", "-3"):
+        monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", raw)
+        assert effective_interval_s() == FRAME_INTERVAL_S
+
+    monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", "7.5")
+    assert effective_interval_s() == 7.5
+
+
+def test_empty_frame_set_clears_previous_residue(video: Video, tmp_path: Path):
+    """本轮一帧没抽到（换引擎/换参数失败）：上一轮残留也得清，否则界面上像仍有画面证据。"""
+    from app.pipeline import _localize_frames
+
+    _localize_frames(video.id, _fake_frames(tmp_path, [0, 30000]))
+    assert _frame_dir(video.id).is_dir()
+
+    assert _localize_frames(video.id, []) == []
+    assert list(_frame_dir(video.id).iterdir()) == [], "无帧时不能留下上一轮的孤儿帧"
+
+
+def test_prune_tolerates_missing_and_foreign_files(video: Video, tmp_path: Path):
+    """目录不存在、或里面有非关键帧文件时清理不能抛——清理是纯优化。"""
+    from app.pipeline import _localize_frames, _prune_frame_dir
+
+    _prune_frame_dir(video.id, keep_ms=set())      # 目录不存在：不抛
+    _localize_frames(video.id, _fake_frames(tmp_path, [0]))
+    stray = _frame_dir(video.id) / "notes.txt"
+    stray.write_text("不是我放的", encoding="utf-8")
+
+    _prune_frame_dir(video.id, keep_ms={0})
+    assert not stray.exists(), "非帧文件也一并清，目录约定只存关键帧"
+    assert [f for f in _frame_dir(video.id).iterdir() if f.suffix == ".jpg"]
