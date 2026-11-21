@@ -5,7 +5,33 @@ export type Stage = 'transcribe' | 'visual' | 'structure' | 'artifact'
 /** 四阶段状态与后端 app/enums.py 同源；partial=部分成功（分块产物不完整）。 */
 export const STAGE_STATUSES = ['pending', 'running', 'done', 'partial', 'failed', 'skipped'] as const
 export type StageStatus = (typeof STAGE_STATUSES)[number]
-export type VideoStatus = 'pending' | 'running' | 'succeeded' | 'partial' | 'failed'
+/** 与 backend/app/enums.py 的 VideoStatus / BatchStatus 同源（两者枚举值相同，前端共用一套） */
+export const VIDEO_STATUSES = ['pending', 'running', 'succeeded', 'partial', 'failed'] as const
+export type VideoStatus = (typeof VIDEO_STATUSES)[number]
+
+/**
+ * 终态：批次与视频共用。「全行唯一一份」——视图/Store 里的 `['succeeded','partial','failed']`
+ * 一律改从这里判，别再手抄：后端枚举一动，手抄的那几处会静默错（v0.17 P1-2）。
+ */
+export const TERMINAL_STATUSES = ['succeeded', 'partial', 'failed'] as const
+
+/** 运行态：页面据此禁用删除/重跑，也是筛选器的优先展示顺序 */
+export const RUNNING_STATUSES = ['pending', 'running'] as const
+
+/** 筛选器展示顺序：运行态优先，其余按枚举顺序——从上面两份派生，不另抄一遍值 */
+export const STATUS_DISPLAY_ORDER: readonly VideoStatus[] = [
+  ...RUNNING_STATUSES,
+  ...VIDEO_STATUSES.filter((s) => !(RUNNING_STATUSES as readonly string[]).includes(s))
+]
+
+/** SSE 的 status 是裸字符串，判终态必须先按枚举收窄 */
+export function isTerminalStatus(status: string): boolean {
+  return (TERMINAL_STATUSES as readonly string[]).includes(status)
+}
+
+export function isRunningStatus(status: string): boolean {
+  return (RUNNING_STATUSES as readonly string[]).includes(status)
+}
 export type RevisionState = 'draft' | 'pending_confirm' | 'confirmed' | 'revised'
 
 export interface Evidence {
@@ -72,6 +98,33 @@ export interface BatchSummary {
 export interface SearchResponse {
   total: number
   items: Item[]
+}
+
+/**
+ * 批次结构化快照（GET /api/batches/{id}/structured，v0.14 起每条视频带覆盖提示）。
+ * 判定与导出文稿同源：`backend/app/routers/delivery.py` 的 structured()。
+ * 前端目前不消费该端点，但契约要跟上，避免外部插件或后续页面接进来时拿到裸数据。
+ */
+export interface StructuredVideo {
+  video_id: number
+  file_name: string
+  media_url: string
+  status: VideoStatus
+  duration_ms: number
+  item_count: number
+  /**
+   * 解析覆盖提示：视频终态非「成功」或摘要产物带 notice 时为非空串，多条用「；」连接。
+   * 无提示时后端回空串——**不是缺字段**，别用 `?? ''` 之外的假值判断。
+   */
+  coverage_notice: string
+  items: Item[]
+}
+
+export interface StructuredBatch {
+  batch_id: number
+  name: string
+  disclaimer: string
+  videos: StructuredVideo[]
 }
 
 export interface TagInfo {

@@ -12,10 +12,15 @@ import type { ItemDetail, RevisionState } from '../api/types'
 import ConfidenceTag from '../components/ConfidenceTag.vue'
 import PageHeader from '../components/PageHeader.vue'
 import { useLeaveGuard } from '../composables/useLeaveGuard'
+import { useThemeMode } from '../composables/useTheme'
 
 const route = useRoute()
 const router = useRouter()
 const itemId = computed(() => Number(route.params.id))
+
+// md-editor-v3 自带主题体系，不显式传 theme 时固定按 light 渲染，站点切暗色后编辑器仍是亮底。
+// 与导出页 MdPreview 同一个修法：让它知道当前主题，不要在 theme.css 里用 !important 压颜色。
+const { mode } = useThemeMode()
 
 const detail = ref<ItemDetail | null>(null)
 
@@ -234,7 +239,7 @@ function insertAnchor() {
                 />
               </el-select>
             </div>
-            <MdEditor v-model="noteDraft" :toolbars-exclude="['github', 'save', 'prettier']" />
+            <MdEditor v-model="noteDraft" :theme="mode" :toolbars-exclude="['github', 'save', 'prettier']" />
             <el-button type="primary" :loading="busy" @click="saveNote">保存笔记</el-button>
             <p class="muted">笔记绑定条目时间点，支持从笔记跳回原片（用例「笔记与时间锚点」）。</p>
           </el-tab-pane>
@@ -247,7 +252,7 @@ function insertAnchor() {
               class="multi"
               title="保存正文会追加一条版本记录；状态流转会同时提交当前正文。"
             />
-            <MdEditor v-model="lectureDraft" :toolbars-exclude="['github', 'save', 'prettier']" />
+            <MdEditor v-model="lectureDraft" :theme="mode" :toolbars-exclude="['github', 'save', 'prettier']" />
             <el-button type="primary" :loading="busy" @click="saveLecture">保存正文并追加版本</el-button>
             <p class="muted">讲义正文是导出文稿与版本快照的来源；笔记是绑定时间点的附加批注。</p>
           </el-tab-pane>
@@ -266,6 +271,12 @@ function insertAnchor() {
             >{{ f.label }}</el-button>
           </div>
         </div>
+        <!--
+          版本时间线不走 useProgressiveList（v0.17 P2 评估结论，非遗漏）：
+          revisions 是这篇笔记的手动保存历史，正常量级是个位数到几十条，远低于
+          渐进渲染约定的「几百条」门槛；且这里需要一次性看全历史，截断反而妨碍对比版本。
+          若将来后端放开自动保存导致历史暴涨，再接 useProgressiveList 不迟。
+        -->
         <el-timeline class="tl">
           <el-timeline-item v-for="r in detail.revisions" :key="r.id" :timestamp="fmtDateTime(r.edited_at)" placement="top">
             <div>{{ REVISION_LABEL[r.state] ?? r.state }} · {{ EDITOR_LABEL[r.editor] ?? r.editor }}</div>

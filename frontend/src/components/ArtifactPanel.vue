@@ -96,6 +96,12 @@ function visible(kind: ArtifactType) {
           </span>
           <el-checkbox v-model="onlyPitfall" size="small">只看易错点（F3）</el-checkbox>
         </div>
+        <!--
+          知识点列表不走 useProgressiveList（v0.17 P2 评估结论，非遗漏）：
+          条目来自结构化输出，llm.structure 的 max_tokens=8000 已把单次产出量压在
+          可控量级（一个标签页通常几十条、上限几百），远低于渐进渲染约定的「几百条」门槛；
+          且知识点需要一屏内可检索、可点选跳转，截断到首屏 400 反而要额外加载步骤。
+        -->
         <div v-if="visible(t.key).length" class="list">
           <div
             v-for="item in visible(t.key)" :key="item.id"

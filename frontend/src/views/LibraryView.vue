@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 
 import { deleteBatch } from '../api/client'
 import { STATUS_LABEL, STATUS_TYPE, fmtDateTime } from '../api/labels'
+import { STATUS_DISPLAY_ORDER, isTerminalStatus } from '../api/types'
 import type { BatchSummary } from '../api/types'
 import PageHeader from '../components/PageHeader.vue'
 import { useBatchStore } from '../stores/batch'
@@ -32,7 +33,7 @@ const statusOptions = computed(() => {
   const counts = new Map<string, number>()
   for (const b of store.batches) counts.set(b.status, (counts.get(b.status) ?? 0) + 1)
   const opts = [{ value: 'all', label: `全部 ${store.batches.length}` }]
-  for (const s of ['running', 'pending', 'succeeded', 'partial', 'failed']) {
+  for (const s of STATUS_DISPLAY_ORDER) {
     if (counts.has(s)) opts.push({ value: s, label: `${STATUS_LABEL[s] ?? s} ${counts.get(s)}` })
   }
   return opts
@@ -111,7 +112,7 @@ function canDelete(b: BatchSummary): boolean {
             <el-button size="small" @click="router.push(`/batches/${b.id}`)">解析进度</el-button>
             <el-button
               size="small"
-              :disabled="!['succeeded', 'partial', 'failed'].includes(b.status)"
+              :disabled="!isTerminalStatus(b.status)"
               @click="router.push(`/batches/${b.id}/export`)"
             >导出文稿</el-button>
             <el-button size="small" type="danger" plain :disabled="!canDelete(b)" @click="removeBatch(b)">

@@ -7,6 +7,7 @@ import { reparseBatch, retryVideo } from '../api/client'
 import {
   EVENT_STAGE_LABEL, STAGE_LABEL, STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, fmtTime
 } from '../api/labels'
+import { isRunningStatus, isTerminalStatus } from '../api/types'
 import type { Stage, StageStatus, VideoState } from '../api/types'
 import PageHeader from '../components/PageHeader.vue'
 import { useBatchStore } from '../stores/batch'
@@ -29,8 +30,21 @@ watch(id, (v) => {
 // SSE 连接跟着进度页走：离开页面就断开，别挂在根组件上泄漏
 onUnmounted(() => store.stopProgress())
 
-const isRunning = computed(() => ['pending', 'running'].includes(store.current?.status ?? ''))
-const isTerminal = computed(() => ['succeeded', 'partial', 'failed'].includes(store.current?.status ?? ''))
+const isRunning = computed(() => isRunningStatus(store.current?.status ?? ''))
+const isTerminal = computed(() => isTerminalStatus(store.current?.status ?? ''))
+
+/**
+ * 读屏播报文本：事件流是纯视觉的 el-timeline，推进过程对屏幕阅读器完全静默。
+ * 这里只取最新一条拼成一句话，交给下面那个隐藏的 live region 播报——
+ * 若把 aria-live 直接挂在时间轴上，每次 push 都会把整条时间轴重播一遍，吵得没法用。
+ */
+const liveAnnouncement = computed(() => {
+  const e = store.events[store.events.length - 1]
+  if (!e) return ''
+  const stage = EVENT_STAGE_LABEL[e.stage] ?? e.stage
+  const status = STAGE_STATUS_LABEL[e.status] ?? STATUS_LABEL[e.status] ?? e.status
+  return e.message ? `${stage}：${status}，${e.message}` : `${stage}：${status}`
+})
 
 /** 表格插槽里的 row 是 DefaultRow，经这里收窄成 VideoState，避免 any 下标撞 Record */
 function statusOf(row: unknown, stage: Stage): StageStatus {
@@ -180,7 +194,9 @@ async function retry(row: VideoState) {
 
     <el-card class="stream" shadow="never">
       <template #header><b>解析事件流</b><span class="muted">（SSE 实时推送）</span></template>
-      <el-timeline class="tl">
+      <!-- 进度播报：屏幕阅读器靠这条 live region 感知推进，视觉上不可见 -->
+      <p class="vm-sr-only" role="status" aria-live="polite" aria-atomic="true">{{ liveAnnouncement }}</p>
+      <el-timeline class="tl" aria-label="解析事件流，最新事件在最上方">
         <el-timeline-item
           v-for="(e, i) in store.events.slice(-12)" :key="e.seq ?? i"
           :type="STAGE_STATUS_TYPE[e.status] ?? 'info'"

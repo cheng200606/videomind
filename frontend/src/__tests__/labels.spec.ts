@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest'
 
-import { STAGE_STATUSES } from '@/api/types'
 import {
-  ARTIFACT_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, STAGE_LABEL,
-  STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
+  RUNNING_STATUSES, STAGE_STATUSES, STATUS_DISPLAY_ORDER, TERMINAL_STATUSES, VIDEO_STATUSES,
+  isRunningStatus, isTerminalStatus
+} from '@/api/types'
+import type { Channel } from '@/api/types'
+import {
+  ARTIFACT_LABEL, CHANNEL_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS,
+  STAGE_LABEL, STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
 } from '@/api/labels'
 
 describe('枚举中文映射', () => {
   it('批次/视频状态全量覆盖且有配色区分（failed 不再是灰色）', () => {
-    for (const s of ['pending', 'running', 'succeeded', 'partial', 'failed']) {
+    for (const s of VIDEO_STATUSES) {
       expect(STATUS_LABEL[s], s).toBeTruthy()
       expect(STATUS_TYPE[s], s).toBeTruthy()
     }
@@ -38,6 +42,27 @@ describe('枚举中文映射', () => {
     expect(STAGE_STATUS_LABEL.partial).toBe('部分成功')
     expect(STAGE_STATUS_TYPE.succeeded).toBe('success')
     expect(STAGE_STATUS_TYPE.partial).toBe('warning')
+  })
+
+  it('STAGE_STATUS_LABEL 与 STAGE_STATUS_TYPE 逐键对齐：有中文名就必须有配色', () => {
+    // v0.17 P0-1：原先 LABEL 有 video_start、TYPE 没有，事件流里「开始解析」被染成 info 灰。
+    // 这条断言替代靠人眼的逐项核对——两侧键集合必须完全相同，缺一个就红。
+    const labelKeys = Object.keys(STAGE_STATUS_LABEL).sort()
+    const typeKeys = Object.keys(STAGE_STATUS_TYPE).sort()
+    expect(typeKeys).toEqual(labelKeys)
+    expect(STAGE_STATUS_TYPE.video_start).toBe('primary')
+    // 反向也守住：没有中文标签的键不该偷偷有色值，否则说明有人只补了一边
+    for (const k of typeKeys) expect(STAGE_STATUS_LABEL[k], k).toBeTruthy()
+  })
+
+  it('证据通道映射在 labels.ts 唯一出口里，覆盖 Channel 全部取值', () => {
+    // v0.17 P0-2：这三个中文名原先长在 EvidenceDrawer.vue 的本地常量里，
+    // 违反「枚举一律走 labels.ts」。现收归此处，并逐个守住 types.ts 的 Channel。
+    const channels: Channel[] = ['asr', 'ocr', 'both']
+    for (const c of channels) expect(CHANNEL_LABEL[c], c).toBeTruthy()
+    expect(CHANNEL_LABEL.asr).toContain('语音')
+    expect(CHANNEL_LABEL.ocr).toContain('画面')
+    expect(CHANNEL_LABEL.both).toContain('+')
   })
 
   it('产物类型与讲义状态映射齐备', () => {
@@ -75,5 +100,39 @@ describe('展示格式化', () => {
   it('fmtTime 把带时区的 UTC ISO 转本地时间；非法输入原样返回', () => {
     expect(fmtTime('2026-11-05T17:40:45+00:00')).not.toContain('T')
     expect(fmtTime('不是时间')).toBe('不是时间')
+  })
+})
+
+describe('状态判据单出口（v0.17 P1-2）', () => {
+  /**
+   * 这条债的本质是「同一份枚举被抄了 5 遍」：后端 enums.py 改名时，
+   * 手抄的那几处不会报错，只会静默走错分支。所以这里钉的不是值，
+   * 是**形状**——终态/运行态各自只有一份，且必须覆盖后端枚举。
+   */
+  it('终态与运行态互斥，合起来正好是全部状态', () => {
+    const overlap = TERMINAL_STATUSES.filter((s) => (RUNNING_STATUSES as readonly string[]).includes(s))
+    expect(overlap).toEqual([])
+    expect([...TERMINAL_STATUSES, ...RUNNING_STATUSES].sort()).toEqual([...VIDEO_STATUSES].sort())
+  })
+
+  it('isTerminalStatus / isRunningStatus 只认后端枚举内的值', () => {
+    for (const s of TERMINAL_STATUSES) {
+      expect(isTerminalStatus(s), s).toBe(true)
+      expect(isRunningStatus(s), s).toBe(false)
+    }
+    for (const s of RUNNING_STATUSES) {
+      expect(isRunningStatus(s), s).toBe(true)
+      expect(isTerminalStatus(s), s).toBe(false)
+    }
+    // SSE 的 status 是裸字符串：脏值必须两边都不认，不能落进任何分支
+    for (const dirty of ['', 'SUCCEEDED', 'partial_done', 'unknown']) {
+      expect(isTerminalStatus(dirty), dirty).toBe(false)
+      expect(isRunningStatus(dirty), dirty).toBe(false)
+    }
+  })
+
+  it('筛选器展示顺序由两份源派生，运行态在前', () => {
+    expect(STATUS_DISPLAY_ORDER.slice(0, 2)).toEqual([...RUNNING_STATUSES])
+    expect([...STATUS_DISPLAY_ORDER].sort()).toEqual([...VIDEO_STATUSES].sort())
   })
 })

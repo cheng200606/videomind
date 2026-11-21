@@ -102,20 +102,20 @@ html, body, #app { height: 100%; margin: 0; }
 .side {
   width: 200px; flex: none;
   background: var(--vm-sidebar-bg, linear-gradient(180deg, #1e2534 0%, #161c2a 100%));
-  color: #dbe1ea;
+  color: var(--vm-sidebar-text, #dbe1ea);
 }
 .brand { padding: 18px 16px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); margin-bottom: 6px; }
 .logo { width: 28px; height: 28px; flex: none; }
 .brand .bt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .brand strong { font-size: 15px; line-height: 1.2; }
-.brand span { font-size: 12px; color: #9aa6b8; }
-.hint { padding: 12px 16px; font-size: 12px; color: #9aa6b8; }
+.brand span { font-size: 12px; color: var(--vm-sidebar-muted, #9aa6b8); }
+.hint { padding: 12px 16px; font-size: 12px; color: var(--vm-sidebar-muted, #9aa6b8); }
 .main { background: linear-gradient(180deg, var(--vm-main-wash, #eef2f9) 0%, var(--vm-bg, #f4f6fa) 280px, var(--vm-bg, #f4f6fa) 100%); min-width: 0; }
 .el-menu { border-right: none; background: transparent; }
 /* 菜单项胶囊化：内缩留出圆角空间，激活态用主色弱底 */
 .side .el-menu { padding: 0 10px; }
 .side .el-menu-item {
-  color: #b7c0d0;
+  color: var(--vm-sidebar-item, #b7c0d0);
   border-radius: var(--vm-radius, 8px);
   margin: 2px 0;
   height: 40px;
@@ -123,11 +123,11 @@ html, body, #app { height: 100%; margin: 0; }
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 /* 非激活菜单项提高对比度：深底上默认色读不清（实测截图确认） */
-.side .el-menu-item:hover { background: rgba(255, 255, 255, 0.06); color: #e6ebf3; }
+.side .el-menu-item:hover { background: rgba(255, 255, 255, 0.06); color: var(--vm-sidebar-item-hover, #e6ebf3); }
 .side .el-menu-item.is-active { background: rgba(61, 111, 214, 0.22); }
 .side .el-menu-item .el-icon { color: inherit; }
 /* 分组标题与菜单项文字左缘对齐（菜单内缩 10px + 项内边距 12px） */
-.side .el-menu-item-group__title { color: #7c8aa0; font-size: 11px; letter-spacing: 0.06em; padding: 14px 12px 4px; }
+.side .el-menu-item-group__title { color: var(--vm-sidebar-group, #8290a6); font-size: 11px; letter-spacing: 0.06em; padding: 14px 12px 4px; }
 
 /* 页面切换过渡：进入上浮淡入、离开快速淡出（reduced-motion 时全局关闭） */
 .page-enter-active { transition: opacity 0.18s ease-out, transform 0.18s ease-out; }

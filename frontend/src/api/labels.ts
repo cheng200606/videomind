@@ -57,7 +57,17 @@ export const STAGE_STATUS_TYPE: Record<string, TagType> = {
   skipped: 'warning',
   succeeded: 'success',
   partial: 'warning',
+  // video_start 不只是标签：事件流按它上色。漏这一行会把「开始解析」染成 info 灰，
+  // 与 STAGE_STATUS_LABEL 里的文字语义打架（v0.17 修正）。两张表必须逐键对齐。
+  video_start: 'primary',
   video_failed: 'danger'
+}
+
+/** 证据来源通道：asr 听到的、ocr 看到的、both 两路都在 */
+export const CHANNEL_LABEL: Record<string, string> = {
+  asr: '语音通道（听到的）',
+  ocr: '画面通道（看到的）',
+  both: '语音 + 画面'
 }
 
 export const ARTIFACT_LABEL: Record<string, string> = {

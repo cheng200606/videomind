@@ -28,6 +28,20 @@
   --vm-sidebar: #1f2430;
   /* 侧栏「夜空」渐变：向墨蓝（--vm-code-bg）偏色，与播放器/代码块同一色族 */
   --vm-sidebar-bg: linear-gradient(180deg, #1e2534 0%, #161c2a 100%);
+  /* 侧栏是「恒深色岛」（与播放器深色岛同一定位）：底色两套主题共用，
+     所以这几档文字色也只在亮层声明一次，不写暗值对位。
+     下面每个值都按元素在渐变上的实际位置算过对比度（见注释里的比值）。 */
+  --vm-sidebar-text: #dbe1ea;        /* 品牌名：11.66:1 */
+  --vm-sidebar-muted: #9aa6b8;       /* 品牌副标 / 免责提示：6.2:1 */
+  --vm-sidebar-item: #b7c0d0;        /* 菜单项常态：8.4:1 */
+  --vm-sidebar-item-hover: #e6ebf3;  /* 菜单项悬停：再提亮一档 */
+  --vm-sidebar-group: #8290a6;       /* 分组标题（11px 小字）：4.8:1，原 #7c8aa0 只有 4.44 未过 AA */
+  /* 「主色底上的文字」：抽出来是为了让「主色底 + 白字」这个组合可被检索 */
+  --vm-on-primary: #ffffff;
+  /* 主色底徽标（UploadView 的步骤序号 1/2/3）的底色。
+     刻意不取 --el-color-primary：暗色下主色是浅蓝 #6f95e3，白字压上去只有 2.96:1；
+     这里固定用亮层主色 #3d6fd6，白字 4.73:1，两套主题通用，所以不写成对暗值。 */
+  --vm-primary-badge-bg: #3d6fd6;
 
   /* 语义文字色（白底可读档，与 el-tag 压深色一致） */
   --vm-warning-text: #b45309;
@@ -79,6 +93,19 @@ body {
 /* 数字（时间戳/时长/计数）用等宽数字，避免时间轴刻度与事件流抖动 */
 .vm-num {
   font-variant-numeric: tabular-nums;
+}
+
+/* 视觉隐藏但读屏可读：给自绘控件和第三方组件补可访问名称/说明（不参与布局，不撑宽页面） */
+.vm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* 签名元素：时间码芯片——每个可跳回原片的时间锚点都用「播放器深色岛」的样子出现 */
@@ -166,7 +193,11 @@ html.dark .el-tag--warning .el-link--primary { --el-link-text-color: #f0a202 !im
 .el-button--danger.is-plain { --el-button-text-color: #b03a3a !important; }
 .side .el-menu-item.is-active { color: #a8c0f0 !important; }
 .side .el-menu { --el-menu-active-color: #a8c0f0 !important; }
-.md-editor-preview code { color: #1f5fa8 !important; }
+/* md-editor-v3 的预览区颜色由它自己的 data-theme 体系决定（视图通过 :theme="mode" 绑定），
+   所以这里按 data-theme 分流，不再用 html.dark 一刀切：
+   · 亮态：组件默认的代码字色（#3594f7）压在行内代码底色上只有 2.86:1，压深到 #1f5fa8；
+   · 暗态：组件 dark 主题自身已达标（扫描 0 violation），不再覆盖，避免只压字色不压底色。 */
+.md-editor[data-theme='light'] .md-editor-preview code { color: #1f5fa8; }
 
 /* 暗色模式（v0.13）：html.dark 类由 useTheme.ts 切换，EP 组件变量走 dark/css-vars.css。
    :root:root 特异性高于 html.dark，亮值必须在这里显式压回；签名元素（时间码芯片、
@@ -219,7 +250,17 @@ html.dark .el-alert--warning.is-light .el-alert__description { color: #f0a202 !i
 html.dark .el-input__count-inner { color: #8b95a7 !important; }
 html.dark .el-link.el-link--danger { --el-link-text-color: #f87171 !important; }
 html.dark .el-button--danger.is-plain { --el-button-text-color: #f87171 !important; }
-html.dark .md-editor-preview code { color: #9eb7eb !important; }
+/* md-editor-v3 用自身的 data-theme="dark" 体系接管暗色：md-editor-v3 的暗色变量
+   随 :theme="mode" 一起切，这里再压一次颜色只会与它打架（压了字色压不了底），
+   所以这条 !important 已撤销，暗色由组件主题负责。 */
+html.dark .el-radio-button {
+  /* EP 把选中态底色取自 --el-color-primary，而暗色层为了深底上的链接可读把它提亮成
+     #6f95e3，白字压上去只有 2.96:1。选中态单独换 light-3 档（暗色 #3d6fd6），白字
+     约 4.7:1 过 AA。不改 --el-color-primary 本身，否则全站主色与链接会一起变暗。 */
+  --el-radio-button-checked-bg-color: var(--el-color-primary-light-3);
+  --el-radio-button-checked-border-color: var(--el-color-primary-light-3);
+  --el-radio-button-checked-text-color: #ffffff;
+}
 html.dark .el-input__wrapper.is-focus,
 html.dark .el-textarea__inner:focus {
   box-shadow: 0 0 0 1px var(--el-color-primary, #6f95e3) inset, 0 0 0 3px rgba(111, 149, 227, 0.28) !important;

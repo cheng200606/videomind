@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { isTerminalStatus } from './types'
 import type {
   BatchState, BatchSummary, EngineSettings, Item, ItemDetail, ModelSettings, ModelSettingsInput,
   ModelTestResult, RevisionState, SearchResponse, StageEvent, TagInfo, VideoMeta
@@ -188,13 +189,13 @@ export function exportUrl(batchId: number): string {
   return `/api/batches/${batchId}/export.md`
 }
 
-/** 与 stores/batch.ts 共用：终态批次不再订阅 */
-export const TERMINAL_BATCH_STATUSES = ['succeeded', 'partial', 'failed'] as const
-
-/** 只有 video_id 为空的 batch 事件才是整批结束；单条视频终态不能关闭整条事件流。 */
+/**
+ * 只有 video_id 为空的 batch 事件才是整批结束；单条视频终态不能关闭整条事件流。
+ * 终态判据统一走 types.ts 的 isTerminalStatus：v0.17 P1-2 起不再单独导出一份状态数组，
+ * 之前 client.ts 与 stores/batch.ts 各抄一份，后端枚举一改就静默错。
+ */
 export function isBatchTerminalEvent(e: StageEvent): boolean {
-  return e.stage === 'batch' && e.video_id == null
-    && (TERMINAL_BATCH_STATUSES as readonly string[]).includes(e.status)
+  return e.stage === 'batch' && e.video_id == null && isTerminalStatus(e.status)
 }
 
 export interface ProgressHooks {

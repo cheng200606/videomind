@@ -176,7 +176,7 @@ useLeaveGuard(() => !leavingForResult.value && (fileList.value.length > 0 || bus
 .form { max-width: 100%; }
 .sec { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--vm-text, #1f2937); margin: 18px 0 12px; }
 .form .sec:first-child { margin-top: 0; }
-.no { width: 20px; height: 20px; border-radius: 50%; background: var(--el-color-primary, #3d6fd6); color: #fff; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.no { width: 20px; height: 20px; border-radius: 50%; background: var(--vm-primary-badge-bg, #3d6fd6); color: var(--vm-on-primary, #fff); font-size: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .hint { margin: 8px 0 0; font-size: 12px; color: var(--vm-muted, #5f6b7d); line-height: 1.6; }
 .summary { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .srow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
