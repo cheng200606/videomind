@@ -71,6 +71,9 @@ def check(md: Path) -> tuple[list[str], list[str], int, int]:
 
 
 def main() -> int:
+    # 控制台默认 GBK 时，输出里的中文/符号会抛 UnicodeEncodeError 把结论吞掉
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="docs/delivery")
     ap.add_argument("--out", default="output/v017/figure_refs.txt")

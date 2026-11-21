@@ -19,8 +19,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 # 匹配 `backend/app/pipeline.py:291` 或 `pipeline.py:291-300` 这类引用
+# 路径字符集必须含中文：仓库里 `docs/迭代方案_v0.16.md`、`docs/数据字典.md` 这类
+# 文件名带汉字，只写 ASCII 会把 `docs/迭代方案_v0.16.md:17` 截成 `_v0.16.md:17`
+# 并误报「文件不存在」（实测）。注意 `path` 组必须整体只出现一次，
+# 写成 `(?P<path>段)*` 会让 group 取到 None（TypeError: Path / None）。
+_CH = r"(?:[A-Za-z0-9_.\-]|[\u4e00-\u9fff])"
 REF = re.compile(
-    r"`?(?P<path>(?:[A-Za-z0-9_.\-]+/)*[A-Za-z0-9_.\-]+\.(?:py|ts|vue|js|json|md|spec\.ts))"
+    rf"`?(?P<path>(?:{_CH}+/)*{_CH}+\.(?:py|ts|vue|js|json|md|spec\.ts))"
     r":(?P<start>\d+)(?:\s*[-–~]\s*(?P<end>\d+))?`?"
 )
 
@@ -32,8 +37,9 @@ def resolve(path_text: str) -> Path | None:
     （`backend/app/pipeline.py:291`），逐个候选试探。
     """
     candidates = [ROOT / path_text]
-    # 带子目录的简写（`engines/frames.py`、`api/client.ts`）先挂到常见根下再判
-    for prefix in ("backend", "backend/app", "frontend", "frontend/src", "desktop"):
+    # 带子目录的简写（`engines/frames.py`、`api/client.ts`）先挂到常见根下再判；
+    # `交付与排期.md:107` 这类省略了 `docs/` 前缀的写法也要认（章内引用很常见）
+    for prefix in ("backend", "backend/app", "frontend", "frontend/src", "desktop", "docs"):
         candidates.append(ROOT / prefix / path_text)
     if "/" not in path_text:
         candidates += [
@@ -74,6 +80,9 @@ def check_file(md: Path) -> list[str]:
 
 
 def main() -> int:
+    # 控制台默认 GBK 时，输出里的中文/符号会抛 UnicodeEncodeError 把结论吞掉
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default="docs/delivery")
     ap.add_argument("--out", default="output/v017/doc_refs.txt")
