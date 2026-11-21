@@ -408,3 +408,18 @@
 - **程夏（组长）**：评审并合入 `feature/A-prototype-ia`（bc6838d）——墨刀 12 页与现网页面映射底稿 `docs/prototype-ia-map.html`；评审结论与跟进项见合并提交 1dc0148（页 1–6 W3 节点已过期、11/19 硬节点按「作品本体 + 设计说明 + AI 使用声明」标准重新验收）。CHANGELOG 条目由 A 本人补录
 - **程夏（组长）**：评审并合入 `feature/b-uml-diagrams`（1b974ba..1b974ba）——图 1 用例图（图源 drawio + SVG 矢量导出，与 §七 表格逐条对齐，include/extend 语义正确、核心差异化用例视觉强调）；评审结论见合并提交 cdd0d7b。CHANGELOG 条目由 B 本人补录
 - **程夏（组长）**：产品定义 §七 用例数口径修正——标题「图 1，9 条」与表格 10 行不一致（第 10 行为预留插件用例），改为「图 1，10 条，含 1 条预留」；属口径勘误，非范围改动
+
+---
+
+## [v0.17 原型线] — W4 高保真原型 22 页与墨刀交付（2026-11-21）
+
+> 本节由 **A** 本人署名；交付物落 `docs/prototype/`，对应 `docs/交付与排期.md` §4.1 的 12 页清单，不新增第 13 页。
+
+- **A**：`docs/prototype/README.md`（58 行）——交付物索引、墨刀与设计画布两个链接、页面清单、重新导出步骤
+- **A**：`docs/prototype/设计说明.md`（193 行）——视觉系统、页面优先级分级、逐页「用户任务 / 首屏主角 / 取舍与隐藏理由 / 热区」
+- **A**：`docs/prototype/AI使用声明.md`（27 行）——AI 参与范围与注意事项，符合红线中「AI 产出统一标注」的要求
+- **A**：`docs/prototype/exports/` 22 张 PNG——13 张界面图（`p00-cover` + `p01`–`p12`，2880 px 宽 = 1440 设计宽 × 2）与 9 张交互状态图（`p04b`/`p04c`/`p04d`/`p04e`/`p04f`/`p06b`/`p06c`/`p06d`/`p08b`）
+- **A**：`docs/prototype/source/` 14 个 `.dc.html` 设计画布源文件 + `canvas.json` / `export-2x.mjs` / `flow.mjs` / `make-states.mjs` / `modao-import.html` 五个辅助文件
+- **A**：墨刀原型 https://modao.cc/proto/WwJjWSTVtou53lgllCjdSJ/sharing ——项目「视析 · 高保真原型」22 页（12 页主页面 + 封面 + 9 张交互状态页），演示设备「网页 1440」；分享权限设为「拿到链接的人都能查看」，2026-11-21 以无登录态浏览器复验 22 页均可打开，导出操作需登录
+- **A**：页 4 动线 3 条、证据链抽屉、页 6 图种切换与全局顶栏跳转均为墨刀原生「单击 → 跳转页面」交互，改热区时改 `source/flow.mjs` 坐标表重新导入
+- **A**：声明复现性缺口——`source/export-2x.mjs` 重新导出依赖设计画布的运行时文件 `support.js`，该文件属画布工具、不入库；已在 `docs/prototype/README.md` 写明，故 `exports/` 为交付物、`source/` 为可编辑源稿而非可独立重建的工程
