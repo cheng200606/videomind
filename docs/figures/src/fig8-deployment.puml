@@ -1,0 +1,79 @@
+@startuml
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Source Han Sans CN"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundcorner 6
+skinparam linetype ortho
+skinparam nodesep 24
+skinparam ranksep 34
+skinparam ArrowColor #64748B
+skinparam ArrowFontColor #475569
+skinparam ArrowFontSize 11
+skinparam NodeBackgroundColor #FFFFFF
+skinparam NodeBorderColor #4338CA
+skinparam NodeFontColor #0F172A
+skinparam DatabaseBackgroundColor #EEF2FF
+skinparam DatabaseBorderColor #4338CA
+skinparam CloudBackgroundColor #F5F3FF
+skinparam CloudBorderColor #7C3AED
+skinparam ComponentBackgroundColor #FFFFFF
+skinparam ComponentBorderColor #4338CA
+skinparam ArtifactBackgroundColor #FFFFFF
+skinparam ArtifactBorderColor #CBD5E1
+skinparam FolderBackgroundColor #FFFFFF
+skinparam FolderBorderColor #7C3AED
+skinparam NoteBackgroundColor #FFFBEB
+skinparam NoteBorderColor #F59E0B
+skinparam NoteFontColor #92400E
+skinparam DefaultTextAlignment center
+hide stereotype
+
+actor "使用者" as user
+
+node "用户主机（Windows）" as host {
+  node "Electron 主进程\nmain.js" as main {
+    artifact "端口选择 freePort()\nspawn sidecar\n健康探测 /api/health" as mainArt
+  }
+  node "渲染进程（Chromium）\nVue 3 SPA" as renderer {
+    artifact "视频库 / 知识工作台\n播放器 / 证据抽屉 / 导出" as ui
+  }
+  node "FastAPI sidecar\nVideoMindBackend.exe" as sidecar {
+    component "API 路由\n/api/*" as api
+    component "解析流水线\n转写 → 关键帧 OCR\n→ 结构化 → 落库推送" as pipeline
+    component "静态资源\nfrontend_dist" as spa
+    component "ASR 引擎\nfaster-whisper（默认 tiny）" as asr
+    component "OCR 引擎\nRapidOCR" as ocr
+    database "SQLite\nvideomind.db" as db
+    folder "media/\n关键帧" as media
+    folder "cache/\n转写缓存" as cache
+    folder "logs/\n运行日志" as logs
+  }
+}
+
+cloud "DeepSeek / OpenAI 兼容 API" as llm
+node "第三方 AI 助手插件\n（预留接口，本期不实现）" as plugin
+cloud "GitHub Releases\n更新源（可选）" as update
+
+user --> renderer : 操作
+main --> sidecar : spawn + 健康探测
+main --> renderer : loadURL\nhttp://127.0.0.1:<port>/
+renderer --> sidecar : HTTP / SSE\n/api/*
+api --> pipeline
+pipeline --> asr
+pipeline --> ocr
+sidecar --> db
+sidecar --> media
+sidecar --> cache
+sidecar --> logs
+sidecar --> llm : HTTPS\n仅文本片段
+plugin --> api : REST\n/api/batches/{id}/structured
+main ..> update : HTTPS latest.yml\n（可选）
+
+note right of sidecar
+  数据目录：%APPDATA%\VideoMind\data
+  监听地址：127.0.0.1 随机空闲端口
+  视频与帧不出本机；仅文本片段出网
+end note
+
+@enduml
