@@ -215,6 +215,27 @@ def _media_url(frame_path: str, settings: Settings) -> str:
     return f"/media/{rel.as_posix()}"
 
 
+def _frames_cache_ok(value) -> bool:
+    """帧缓存的结构校验：形状不对（旧版本/手工改坏）就当未命中重抽，别在 KeyFrame(**) 处炸。"""
+    return (isinstance(value, list)
+            and all(isinstance(f, dict) and "ms" in f and "path" in f for f in value))
+
+
+def _asr_cache_ok(value) -> bool:
+    """转写缓存的结构校验：缺 duration_ms/segments 或段结构不对，都按损坏处理。"""
+    if not isinstance(value, dict) or "duration_ms" not in value:
+        return False
+    segments = value.get("segments")
+    if not isinstance(segments, list):
+        return False
+    if not all(isinstance(s, dict) and {"index", "start_ms", "end_ms", "text"} <= set(s)
+               for s in segments):
+        return False
+    frames = value.get("frames", [])
+    return isinstance(frames, list) and all(
+        isinstance(f, dict) and "ms" in f and "path" in f for f in frames)
+
+
 def _keyframes(video: Video) -> list[KeyFrame]:
     """Whisper/FunASR 只产转写不出帧：画面通道启用时用 av 独立抽样补齐关键帧。
 
@@ -222,7 +243,7 @@ def _keyframes(video: Video) -> list[KeyFrame]:
     降级为 SKIPPED，不能拖垮整条解析。缓存存的是 localize 后的稳定路径。
     """
     cache_key = cache.key_of(video.path, f"frames:{FRAME_INTERVAL_S:g}")
-    hit = cache.get(cache_key)
+    hit = cache.get(cache_key, validate=_frames_cache_ok)
     if hit is not None:
         return [KeyFrame(**f) for f in hit]
     try:
@@ -307,7 +328,7 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
     _set_stage(session, video, Stage.TRANSCRIBE, StageStatus.RUNNING)
     try:
         cache_key = cache.key_of(video.path, _asr_cache_name(asr))
-        hit = cache.get(cache_key)
+        hit = cache.get(cache_key, validate=_asr_cache_ok)
         if hit:
             from app.engines.base import AsrResult, TranscriptSegment
 
