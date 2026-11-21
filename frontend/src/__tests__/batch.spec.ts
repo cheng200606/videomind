@@ -100,6 +100,44 @@ describe('批次进度 store', () => {
     expect(mocks.getBatch).toHaveBeenCalledTimes(1)
   })
 
+  it('批次级非终态事件直接更新批次头状态，不再停在上一次快照的 pending', async () => {
+    // v0.17 P0-4：后端 parse_batch 一开跑就 emit(batch.id, None, "batch", "running")，
+    // 但 patchEvent 早先用 `e.video_id == null` 整体 return，首批非终态事件被静默丢弃，
+    // 批次头只能等终态重拉快照才刷新——解析过程中用户看到的一直是「等待」。
+    const store = useBatchStore()
+    const holder: { cb?: (e: StageEvent) => void } = {}
+    mocks.getBatch.mockResolvedValue({ ...snapshot('pending'), status: 'pending' })
+    mocks.openProgress.mockImplementation((_id: number, cb: (e: StageEvent) => void) => {
+      holder.cb = cb
+      return () => {}
+    })
+
+    await store.open(1)
+    expect(store.current?.status).toBe('pending')
+
+    holder.cb?.(event('running'))
+
+    expect(store.current?.status).toBe('running')
+    // 批次级事件不该顺手改动 videos 数组
+    expect(store.current?.videos[0].status).toBe('running')
+    expect(store.current?.videos[0].stages.transcribe).toBe('pending')
+  })
+
+  it('批次级未知状态串不写进批次头，避免把脏值当状态渲染', async () => {
+    const store = useBatchStore()
+    const holder: { cb?: (e: StageEvent) => void } = {}
+    mocks.getBatch.mockResolvedValue({ ...snapshot('running'), status: 'running' })
+    mocks.openProgress.mockImplementation((_id: number, cb: (e: StageEvent) => void) => {
+      holder.cb = cb
+      return () => {}
+    })
+
+    await store.open(1)
+    holder.cb?.(event('bogus'))
+
+    expect(store.current?.status).toBe('running')
+  })
+
   it('阶段事件即时更新矩阵，video_start 把视频置 running', async () => {
     const store = useBatchStore()
     const holder: { cb?: (e: StageEvent) => void } = {}

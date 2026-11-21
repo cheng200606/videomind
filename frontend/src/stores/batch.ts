@@ -53,10 +53,27 @@ export const useBatchStore = defineStore('batch', () => {
     }
   }
 
-  /** 事件只补矩阵；单条终态直接落状态，整批终态才重拉快照 */
+  /**
+   * 事件只补矩阵；单条终态直接落状态，整批终态才重拉快照。
+   *
+   * 批次级事件（video_id 为空）走单独一条路径：后端 parse_batch 一开跑就推
+   * `batch/running`，收尾推终态。这两条都得更新批次头，否则解析期间批次头会
+   * 一直停在快照里的「等待」，直到终态重拉才跳变（v0.17 修）。
+   * 注意不能并进下面的单条路径——那里紧接着按 video_id 查 videos，批次级事件
+   * 会查不到而再次 return，等于没改。
+   */
   function patchEvent(e: StageEvent) {
     const batch = current.value
-    if (!batch || e.batch_id !== batch.id || e.video_id == null) return
+    if (!batch || e.batch_id !== batch.id) return
+
+    if (e.video_id == null) {
+      // 只认后端 VideoStatus 枚举内的值：SSE 的 status 是裸字符串，别把脏值写进批次头
+      if (isTerminalStatus(e.status) || e.status === 'pending' || e.status === 'running') {
+        batch.status = e.status as VideoStatus
+      }
+      return
+    }
+
     const video = batch.videos.find((v) => v.id === e.video_id)
     if (!video) return
     if (e.stage === 'batch') {
