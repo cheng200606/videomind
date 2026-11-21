@@ -1,0 +1,253 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1240" viewBox="0 0 1800 1240" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9" fill="none" stroke="#64748B" stroke-width="1.2"/></marker>
+<marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 z" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.1"/></marker>
+<marker id="diamond" viewBox="0 0 12 12" refX="1" refY="6" markerWidth="10" markerHeight="10" orient="auto"><path d="M1,6 L6,1 L11,6 L6,11 z" fill="#4338CA" stroke="#4338CA" stroke-width="1"/></marker>
+</defs>
+<rect x="0" y="0" width="1800" height="1240" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<rect x="20" y="30" width="1760" height="280" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="36" y="54" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="start">解析与交付服务</text>
+<rect x="40" y="75" width="300" height="130" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M46,75 h288 a6,6 0 0 1 6,6 v38 h-300 v-38 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="40" y1="119" x2="340" y2="119" stroke="#4338CA" stroke-width="1"/>
+<text x="190.0" y="90" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«module»</text>
+<text x="190.0" y="109" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">pipeline.py</text>
+<text x="50" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+parse_video(session, video, settings=None) : Video</text>
+<text x="50" y="158" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+parse_batch(session, batch)</text>
+<text x="50" y="175" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+retry_video(session, video_id) : Video</text>
+<text x="50" y="192" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+recover_orphan_runs(session)</text>
+<rect x="370" y="75" width="280" height="137" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M376,75 h268 a6,6 0 0 1 6,6 v28 h-280 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="370" y1="109" x2="650" y2="109" stroke="#4338CA" stroke-width="1"/>
+<text x="510.0" y="97" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">ProgressBus</text>
+<text x="380" y="131" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+subscribe(batch_id)</text>
+<text x="380" y="148" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+unsubscribe(q)</text>
+<text x="380" y="165" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+reset(batch_id)</text>
+<text x="380" y="182" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+forget(batch_id)</text>
+<text x="380" y="199" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+emit(batch_id, video_id, stage, status, message)</text>
+<rect x="680" y="75" width="200" height="86" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M686,75 h188 a6,6 0 0 1 6,6 v28 h-200 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="680" y1="109" x2="880" y2="109" stroke="#4338CA" stroke-width="1"/>
+<text x="780.0" y="97" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">ParseMutex</text>
+<text x="690" y="131" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+claim(batch_id) : bool</text>
+<text x="690" y="148" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+release(batch_id)</text>
+<rect x="910" y="75" width="270" height="113" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M916,75 h258 a6,6 0 0 1 6,6 v38 h-270 v-38 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="910" y1="119" x2="1180" y2="119" stroke="#4338CA" stroke-width="1"/>
+<text x="1045.0" y="90" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«module»</text>
+<text x="1045.0" y="109" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">llm.py</text>
+<text x="920" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+structure(transcript, ocr_text, duration_ms)</text>
+<text x="920" y="158" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+report / progress 可选</text>
+<text x="920" y="175" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+test_connection(cfg=None) : tuple</text>
+<rect x="1210" y="75" width="270" height="96" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1216,75 h258 a6,6 0 0 1 6,6 v38 h-270 v-38 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1210" y1="119" x2="1480" y2="119" stroke="#4338CA" stroke-width="1"/>
+<text x="1345.0" y="90" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«module»</text>
+<text x="1345.0" y="109" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">export.py</text>
+<text x="1220" y="141" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+build_batch_markdown(session, batch_id) : str</text>
+<text x="1220" y="158" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+coverage_notices(session, video, items) : str[]</text>
+<rect x="910" y="210" width="270" height="86" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M916,210 h258 a6,6 0 0 1 6,6 v28 h-270 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="910" y1="244" x2="1180" y2="244" stroke="#4338CA" stroke-width="1"/>
+<text x="1045.0" y="232" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">StructuredDraft</text>
+<text x="920" y="266" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+chapters : Chapter[]</text>
+<text x="920" y="283" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+items : DraftItem[]</text>
+<rect x="20" y="330" width="1120" height="890" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="36" y="354" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="start">核心领域（11 个实体全画；完整字段见图 6）</text>
+<rect x="40" y="380" width="250" height="103" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M46,380 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="40" y1="414" x2="290" y2="414" stroke="#4338CA" stroke-width="1"/>
+<text x="165.0" y="402" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">VideoBatch</text>
+<text x="50" y="436" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="50" y="453" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+name : str</text>
+<text x="50" y="470" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+status : BatchStatus</text>
+<rect x="40" y="500" width="250" height="120" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M46,500 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="40" y1="534" x2="290" y2="534" stroke="#4338CA" stroke-width="1"/>
+<text x="165.0" y="522" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">Video</text>
+<text x="50" y="556" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="50" y="573" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+batchId : int</text>
+<text x="50" y="590" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+durationMs : int</text>
+<text x="50" y="607" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+status : VideoStatus</text>
+<rect x="40" y="640" width="250" height="120" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M46,640 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="40" y1="674" x2="290" y2="674" stroke="#4338CA" stroke-width="1"/>
+<text x="165.0" y="662" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">Segment</text>
+<text x="50" y="696" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="50" y="713" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+videoId : int</text>
+<text x="50" y="730" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+startMs : int</text>
+<text x="50" y="747" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+endMs : int</text>
+<rect x="40" y="780" width="250" height="137" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M46,780 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="40" y1="814" x2="290" y2="814" stroke="#4338CA" stroke-width="1"/>
+<text x="165.0" y="802" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">Evidence</text>
+<text x="50" y="836" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="50" y="853" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+videoId : int</text>
+<text x="50" y="870" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+startMs : int</text>
+<text x="50" y="887" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+quote : str</text>
+<text x="50" y="904" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+channel : Channel</text>
+<rect x="320" y="380" width="270" height="137" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M326,380 h258 a6,6 0 0 1 6,6 v28 h-270 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="320" y1="414" x2="590" y2="414" stroke="#4338CA" stroke-width="1"/>
+<text x="455.0" y="402" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">KnowledgeItem</text>
+<text x="330" y="436" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="330" y="453" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+videoId : int</text>
+<text x="330" y="470" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+type : ArtifactType</text>
+<text x="330" y="487" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+confidence : Confidence</text>
+<text x="330" y="504" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+evidenceId : int</text>
+<rect x="640" y="380" width="250" height="103" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M646,380 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="640" y1="414" x2="890" y2="414" stroke="#4338CA" stroke-width="1"/>
+<text x="765.0" y="402" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">Artifact</text>
+<text x="650" y="436" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="650" y="453" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+itemId : int</text>
+<text x="650" y="470" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+schemaType : ArtifactType</text>
+<rect x="640" y="500" width="250" height="103" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M646,500 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="640" y1="534" x2="890" y2="534" stroke="#4338CA" stroke-width="1"/>
+<text x="765.0" y="522" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">ConflictRecord</text>
+<text x="650" y="556" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="650" y="573" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+itemId : int</text>
+<text x="650" y="590" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+description : str</text>
+<rect x="640" y="640" width="250" height="103" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M646,640 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="640" y1="674" x2="890" y2="674" stroke="#4338CA" stroke-width="1"/>
+<text x="765.0" y="662" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">Note</text>
+<text x="650" y="696" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="650" y="713" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+itemId : int</text>
+<text x="650" y="730" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+anchorMs : int</text>
+<rect x="640" y="760" width="250" height="103" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M646,760 h238 a6,6 0 0 1 6,6 v28 h-250 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="640" y1="794" x2="890" y2="794" stroke="#4338CA" stroke-width="1"/>
+<text x="765.0" y="782" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">Revision</text>
+<text x="650" y="816" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="650" y="833" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+itemId : int</text>
+<text x="650" y="850" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+state : RevisionState</text>
+<rect x="930" y="380" width="190" height="86" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M936,380 h178 a6,6 0 0 1 6,6 v28 h-190 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="930" y1="414" x2="1120" y2="414" stroke="#4338CA" stroke-width="1"/>
+<text x="1025.0" y="402" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">Tag</text>
+<text x="940" y="436" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="940" y="453" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+name : str</text>
+<rect x="930" y="490" width="190" height="120" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M936,490 h178 a6,6 0 0 1 6,6 v28 h-190 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="930" y1="524" x2="1120" y2="524" stroke="#4338CA" stroke-width="1"/>
+<text x="1025.0" y="512" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">TagBinding</text>
+<text x="940" y="546" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+id : int</text>
+<text x="940" y="563" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+tagId : int</text>
+<text x="940" y="580" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+targetType : TagTarget</text>
+<text x="940" y="597" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+targetId : int</text>
+<text x="930" y="620" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#64748B" text-anchor="start">targetType=video|item</text>
+<text x="930" y="638" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#64748B" text-anchor="start">多态绑定，不设外键</text>
+<text x="40" y="980" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">VideoBatch → Video → Segment/Evidence/KnowledgeItem 是 1:N 主链；</text>
+<text x="40" y="1000" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">KnowledgeItem → Artifact/ConflictRecord/Note/Revision 是 1:N。</text>
+<text x="40" y="1020" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">TagBinding 通过 targetType=video|item 多态绑定，不设外键。</text>
+<text x="40" y="1040" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">主链基数：VideoBatch 1—0..* Video；Video 1—0..* Segment/Evidence/KnowledgeItem；</text>
+<text x="40" y="1060" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">KnowledgeItem 1—0..* Artifact/ConflictRecord/Note/Revision；Tag 1—0..* TagBinding。</text>
+<rect x="1160" y="330" width="620" height="890" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="1176" y="354" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="start">可插拔策略（三类 + 转写接缝）</text>
+<rect x="1180" y="380" width="240" height="96" rx="6" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.2"/>
+<path d="M1186,380 h228 a6,6 0 0 1 6,6 v38 h-240 v-38 a6,6 0 0 1 6,-6 z" fill="#F5F3FF"/>
+<line x1="1180" y1="424" x2="1420" y2="424" stroke="#7C3AED" stroke-width="1"/>
+<text x="1300.0" y="395" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«interface»  «策略»</text>
+<text x="1300.0" y="414" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">OcrEngine</text>
+<text x="1190" y="446" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+name : str</text>
+<text x="1190" y="463" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+recognize(frames) : FrameText[]</text>
+<rect x="1440" y="380" width="130" height="52" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1446,380 h118 a6,6 0 0 1 6,6 v28 h-130 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1440" y1="414" x2="1570" y2="414" stroke="#4338CA" stroke-width="1"/>
+<text x="1505.0" y="402" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">RapidOcr</text>
+<rect x="1440" y="430" width="130" height="52" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1446,430 h118 a6,6 0 0 1 6,6 v28 h-130 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1440" y1="464" x2="1570" y2="464" stroke="#4338CA" stroke-width="1"/>
+<text x="1505.0" y="452" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">PaddleOcr</text>
+<rect x="1440" y="480" width="130" height="52" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1446,480 h118 a6,6 0 0 1 6,6 v28 h-130 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1440" y1="514" x2="1570" y2="514" stroke="#4338CA" stroke-width="1"/>
+<text x="1505.0" y="502" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">VisionModelOcr</text>
+<rect x="1180" y="550" width="250" height="113" rx="6" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.2"/>
+<path d="M1186,550 h238 a6,6 0 0 1 6,6 v38 h-250 v-38 a6,6 0 0 1 6,-6 z" fill="#F5F3FF"/>
+<line x1="1180" y1="594" x2="1430" y2="594" stroke="#7C3AED" stroke-width="1"/>
+<text x="1305.0" y="565" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«interface»  «策略»</text>
+<text x="1305.0" y="584" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">OutputSchemaStrategy</text>
+<text x="1190" y="616" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+atype : ArtifactType</text>
+<text x="1190" y="633" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+payloadModel : type</text>
+<text x="1190" y="650" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+build(ctx) : ItemDraft[]</text>
+<rect x="1450" y="550" width="140" height="52" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1456,550 h128 a6,6 0 0 1 6,6 v28 h-140 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1450" y1="584" x2="1590" y2="584" stroke="#4338CA" stroke-width="1"/>
+<text x="1520.0" y="572" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">SummaryStrategy</text>
+<rect x="1450" y="600" width="140" height="52" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1456,600 h128 a6,6 0 0 1 6,6 v28 h-140 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1450" y1="634" x2="1590" y2="634" stroke="#4338CA" stroke-width="1"/>
+<text x="1520.0" y="622" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">UmlDraftStrategy</text>
+<rect x="1450" y="650" width="140" height="52" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1456,650 h128 a6,6 0 0 1 6,6 v28 h-140 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1450" y1="684" x2="1590" y2="684" stroke="#4338CA" stroke-width="1"/>
+<text x="1520.0" y="672" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">KeyPointsStrategy</text>
+<rect x="1450" y="700" width="140" height="52" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1456,700 h128 a6,6 0 0 1 6,6 v28 h-140 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1450" y1="734" x2="1590" y2="734" stroke="#4338CA" stroke-width="1"/>
+<text x="1520.0" y="722" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">CodeBlocksStrategy</text>
+<rect x="1180" y="760" width="250" height="79" rx="6" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.2"/>
+<path d="M1186,760 h238 a6,6 0 0 1 6,6 v38 h-250 v-38 a6,6 0 0 1 6,-6 z" fill="#F5F3FF"/>
+<line x1="1180" y1="804" x2="1430" y2="804" stroke="#7C3AED" stroke-width="1"/>
+<text x="1305.0" y="775" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«interface»  «策略 · 仅设计»</text>
+<text x="1305.0" y="794" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">AsrVocabularyCrossChecker</text>
+<text x="1190" y="826" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+crossCheck(asr, ocr) : Correction[]</text>
+<rect x="1180" y="900" width="250" height="113" rx="6" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.2"/>
+<path d="M1186,900 h238 a6,6 0 0 1 6,6 v38 h-250 v-38 a6,6 0 0 1 6,-6 z" fill="#F5F3FF"/>
+<line x1="1180" y1="944" x2="1430" y2="944" stroke="#7C3AED" stroke-width="1"/>
+<text x="1305.0" y="915" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" font-weight="normal" fill="#6D28D9" text-anchor="middle">«interface»  转写接缝</text>
+<text x="1305.0" y="934" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">AsrEngine</text>
+<text x="1190" y="966" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+name : str</text>
+<text x="1190" y="983" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+isAvailable() : bool</text>
+<text x="1190" y="1000" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">+transcribe(path) : AsrResult</text>
+<rect x="1450" y="900" width="150" height="86" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1456,900 h138 a6,6 0 0 1 6,6 v28 h-150 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<line x1="1450" y1="934" x2="1600" y2="934" stroke="#4338CA" stroke-width="1"/>
+<text x="1525.0" y="922" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="14" font-weight="bold" fill="#0F172A" text-anchor="middle">实现</text>
+<text x="1460" y="956" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">MockAsr / WhisperAsr</text>
+<text x="1460" y="973" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.2" font-weight="normal" fill="#334155" text-anchor="start">YueyingAsr / FunASR</text>
+<polyline points="340,120 370,120" fill="none" stroke="#64748B" stroke-width="1.1" stroke-linejoin="round"/>
+<polyline points="210,205 210,305 780,305 780,161" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="500" y="297" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="middle" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">进度 / 互斥</text>
+<polyline points="250,75 250,58 1045,58 1045,75" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="600" y="52" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="middle" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">结构化</text>
+<polyline points="190,205 190,312 460,312 460,380" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="300" y="304" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="middle" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">落库</text>
+<polyline points="1045,188 1045,210" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<polyline points="340,170 360,170 360,319 1130,319 1130,430 1180,430" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="700" y="311" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="middle" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">画面</text>
+<polyline points="350,190 365,190 365,326 1140,326 1140,605 1180,605" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="1000" y="318" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="middle" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">产物</text>
+<polyline points="350,200 355,200 355,333 1150,333 1150,950 1180,950" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="1000" y="325" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="middle" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">转写</text>
+<polyline points="165,480 165,500" fill="none" stroke="#64748B" stroke-width="1.1" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="165,620 165,640" fill="none" stroke="#64748B" stroke-width="1.1" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="290,560 305,560 305,855 290,855" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<polyline points="290,530 320,530" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="320,500 310,500 310,820 290,820" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<polyline points="600,430 640,430" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="600,500 640,500" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="600,530 620,530 620,690 640,690" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="600,510 630,510 630,820 640,820" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="1020,466 1020,490" fill="none" stroke="#64748B" stroke-width="1.1" marker-start="url(#diamond)" stroke-linejoin="round"/>
+<polyline points="1440,402 1420,410" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1440,452 1420,440" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1440,502 1420,470" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1450,571 1430,580" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1450,621 1430,600" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1450,671 1430,620" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1450,721 1430,640" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1180,780 1170,780 1170,430 1180,430" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="1164" y="600" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="end" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">读画面</text>
+<polyline points="1305,860 1305,900" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<text x="1312" y="878" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10" fill="#475569" text-anchor="start" stroke="#FFFFFF" stroke-width="3.2" paint-order="stroke" stroke-linejoin="round">仅设计</text>
+<text x="1180" y="1060" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">实线：关联 / 组合 / 调用；虚线：实现 / 设计级依赖；◆：组合；▷：实现。</text>
+<text x="1180" y="1080" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">三类策略：OcrEngine（画面）、OutputSchemaStrategy（产物）、AsrVocabularyCrossChecker（F5，仅设计，本期不实现）。</text>
+<text x="20" y="1080" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">DTO：AsrResult / TranscriptSegment / KeyFrame / FrameText / ParseContext / ItemDraft；StructuredDraft 另含 conflicts。</text>
+<text x="20" y="1120" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">DTO 字段：AsrResult(duration_ms, segments, frames)；</text>
+<text x="20" y="1140" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">ParseContext(draft, segments, frames, ocr, duration_ms, notices)；ItemDraft 见 artifacts.py:18。</text>
+<text x="20" y="1160" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">AsrEngine 实现：MockAsr / WhisperAsr / YueyingAsr / FunASR；不计入三类策略。</text>
+</svg>
