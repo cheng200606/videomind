@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ARTIFACT_LABEL, clock } from '../api/labels'
+import { ARTIFACT_LABEL, CHANNEL_LABEL, clock } from '../api/labels'
 import type { ItemDetail } from '../api/types'
 import ConfidenceTag from './ConfidenceTag.vue'
 
@@ -10,8 +10,6 @@ const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
   (e: 'seek', ms: number): void
 }>()
-
-const CHANNEL: Record<string, string> = { asr: '语音通道（听到的）', ocr: '画面通道（看到的）', both: '语音 + 画面' }
 
 function conflictClock(value: string): string {
   const n = Number(String(value).replace(/ms$/, ''))
@@ -66,7 +64,7 @@ const frameUrl = computed(() => {
             <span class="vm-ts">{{ clock(item.evidence.end_ms) }}</span>
           </el-link>
         </div>
-        <div class="row"><span class="k">通道</span><span>{{ CHANNEL[item.evidence.channel] ?? item.evidence.channel }}</span></div>
+        <div class="row"><span class="k">通道</span><span>{{ CHANNEL_LABEL[item.evidence.channel] ?? item.evidence.channel }}</span></div>
         <blockquote class="quote">{{ item.evidence.quote }}</blockquote>
         <el-image
           v-if="frameUrl"

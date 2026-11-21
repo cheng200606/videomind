@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { STAGE_STATUSES } from '@/api/types'
+import type { Channel } from '@/api/types'
 import {
-  ARTIFACT_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, STAGE_LABEL,
-  STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
+  ARTIFACT_LABEL, CHANNEL_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS,
+  STAGE_LABEL, STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
 } from '@/api/labels'
 
 describe('枚举中文映射', () => {
@@ -49,6 +50,16 @@ describe('枚举中文映射', () => {
     expect(STAGE_STATUS_TYPE.video_start).toBe('primary')
     // 反向也守住：没有中文标签的键不该偷偷有色值，否则说明有人只补了一边
     for (const k of typeKeys) expect(STAGE_STATUS_LABEL[k], k).toBeTruthy()
+  })
+
+  it('证据通道映射在 labels.ts 唯一出口里，覆盖 Channel 全部取值', () => {
+    // v0.17 P0-2：这三个中文名原先长在 EvidenceDrawer.vue 的本地常量里，
+    // 违反「枚举一律走 labels.ts」。现收归此处，并逐个守住 types.ts 的 Channel。
+    const channels: Channel[] = ['asr', 'ocr', 'both']
+    for (const c of channels) expect(CHANNEL_LABEL[c], c).toBeTruthy()
+    expect(CHANNEL_LABEL.asr).toContain('语音')
+    expect(CHANNEL_LABEL.ocr).toContain('画面')
+    expect(CHANNEL_LABEL.both).toContain('+')
   })
 
   it('产物类型与讲义状态映射齐备', () => {

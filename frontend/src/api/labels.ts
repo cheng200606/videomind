@@ -63,6 +63,13 @@ export const STAGE_STATUS_TYPE: Record<string, TagType> = {
   video_failed: 'danger'
 }
 
+/** 证据来源通道：asr 听到的、ocr 看到的、both 两路都在 */
+export const CHANNEL_LABEL: Record<string, string> = {
+  asr: '语音通道（听到的）',
+  ocr: '画面通道（看到的）',
+  both: '语音 + 画面'
+}
+
 export const ARTIFACT_LABEL: Record<string, string> = {
   summary: '内容总结',
   key_points: '知识要点',
