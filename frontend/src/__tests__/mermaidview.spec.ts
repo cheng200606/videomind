@@ -1,3 +1,12 @@
+// 本仓 tsconfig 的 types 白名单只有 vite/client（无 @types/node），但 vitest 本就跑在 Node 下，
+// node:fs 一定可用——这里只需压制 vue-tsc 的类型解析，不动 tsconfig / package.json。
+// @ts-ignore
+import { readFileSync } from 'node:fs'
+// @ts-ignore
+import { dirname, resolve } from 'node:path'
+// @ts-ignore
+import { fileURLToPath } from 'node:url'
+
 import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -130,5 +139,55 @@ describe('MermaidView 首行 flowchart-elk 归一化', () => {
   it('保留首行原有缩进，不把行首空白吃掉', async () => {
     const got = await renderedCode('   flowchart-elk TD\nA-->B')
     expect(got).toBe('   flowchart TD\nA-->B')
+  })
+})
+
+/**
+ * theme.css 与 MermaidView 的 themeVariables 是两份必须同步的常量：mermaid 读不到 CSS 变量，
+ * 只能把值写死在 JS 里。改了 theme.css 主色却忘了同步这里，页面不会出现编译错误，只会悄悄
+ * 配出色差。这个 describe 直接解析两份源文件比对——vitest 守不住 CSS 对比度，但能守住「同值」。
+ */
+describe('mermaid 主题常量与 theme.css 同源（v0.17 P1-5）', () => {
+  const here = dirname(fileURLToPath(import.meta.url))
+  const themeCss = readFileSync(resolve(here, '../styles/theme.css'), 'utf-8')
+  const vueSource = readFileSync(resolve(here, '../components/MermaidView.vue'), 'utf-8')
+
+  // 按 :root:root.dark 分段：亮块在前，暗块在后，同名的 CSS 变量各取一次
+  const darkIdx = themeCss.indexOf(':root:root.dark')
+  const lightBlock = themeCss.slice(0, darkIdx)
+  const darkBlock = themeCss.slice(darkIdx)
+
+  function cssVar(block: string, name: string): string {
+    const m = block.match(new RegExp(`${name}\\s*:\\s*(#[0-9a-fA-F]{6})`))
+    if (!m) throw new Error(`theme.css 未找到 ${name}`)
+    return m[1].toLowerCase()
+  }
+
+  // MermaidView 的 themeVariables 里，每个 key 出现两次：先暗（dark?）后亮（:）
+  function mermaidPair(key: string): [dark: string, light: string] {
+    const hits = [...vueSource.matchAll(new RegExp(`${key}\\s*:\\s*'(#[0-9a-fA-F]{6})'`, 'g'))]
+      .map((m) => m[1].toLowerCase())
+    if (hits.length !== 2) throw new Error(`MermaidView.vue 的 ${key} 期望 2 处（暗/亮），实际 ${hits.length}`)
+    return [hits[0], hits[1]]
+  }
+
+  it('primaryColor 对齐 --el-color-primary-light-8/-9', () => {
+    const [dark, light] = mermaidPair('primaryColor')
+    expect(light).toBe(cssVar(lightBlock, '--el-color-primary-light-9'))  // #eef3fd
+    expect(dark).toBe(cssVar(darkBlock, '--el-color-primary-light-8'))    // #182c53
+  })
+
+  it('primaryTextColor 对齐两套 --vm-text', () => {
+    const [dark, light] = mermaidPair('primaryTextColor')
+    expect(light).toBe(cssVar(lightBlock, '--vm-text'))  // #1f2937
+    expect(dark).toBe(cssVar(darkBlock, '--vm-text'))    // #e5e7eb
+  })
+
+  it('primaryBorderColor 与 lineColor 都对齐 --el-color-primary', () => {
+    const border = mermaidPair('primaryBorderColor')
+    const line = mermaidPair('lineColor')
+    expect(border).toEqual(line)  // 两处必须同值，不能一个跟了主色一个没跟
+    expect(border[0]).toBe(cssVar(darkBlock, '--el-color-primary'))    // 暗 #6f95e3
+    expect(border[1]).toBe(cssVar(lightBlock, '--el-color-primary'))   // 亮 #3d6fd6
   })
 })
