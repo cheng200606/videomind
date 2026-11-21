@@ -12,7 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from sqlmodel import Session
 
 from app import engines  # noqa: F401  导入即把引擎实现注册进 base 的注册表
-from app.config import get_settings
+from app.artifacts import REGISTRY, normalize_schemas
+from app.config import DEFAULT_OUTPUT_SCHEMAS, get_settings
 from app.db import engine, init_db
 from app.model_config import active_model_config, reset_model_config_cache
 from app.net import sanitize_proxy_env
@@ -21,6 +22,8 @@ from app.routers import delivery, knowledge, parse
 from app.routers import settings as settings_router
 
 sanitize_proxy_env()
+
+_log = logging.getLogger("uvicorn.error")
 
 _settings = get_settings()
 
@@ -63,9 +66,22 @@ def _load_saved_settings() -> None:
             setattr(_settings, attr, saved[attr])
     schemas = saved.get("output_schemas")
     if isinstance(schemas, str):
-        names = [s.strip() for s in schemas.split(",") if s.strip()]
-        if names:
-            _settings.output_schemas = ",".join(names)
+        # v0.17 收口：旧版这里只 split 不去重不校验，settings.json 被手工改坏后
+        # 产物集会静默缩成空集，解析仍报「成功」却零条目（假成功）。
+        valid, unknown = normalize_schemas(schemas.split(","))
+        if unknown:
+            # 不静默：升级后产物类型可能改名/下线，用户得知道自己的设置被改过
+            _log.warning("settings.json 含未知产物类型 %s，已忽略；可用类型 %s",
+                         unknown, list(REGISTRY))
+            changed = True
+        if not valid:
+            valid = normalize_schemas(DEFAULT_OUTPUT_SCHEMAS.split(","))[0]
+            _log.warning("settings.json 的产物集为空，已回退为默认 %s", ",".join(valid))
+            changed = True
+        _settings.output_schemas = ",".join(valid)
+        if saved.get("output_schemas") != _settings.output_schemas:
+            saved["output_schemas"] = _settings.output_schemas
+            changed = True
     if changed:
         try:
             path.write_text(json.dumps(saved, ensure_ascii=False), encoding="utf-8")

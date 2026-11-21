@@ -17,7 +17,7 @@ from sqlalchemy import delete
 from sqlmodel import Session, select
 
 from app import cache
-from app.artifacts import ItemDraft, ParseContext, resolve
+from app.artifacts import REGISTRY, ItemDraft, ParseContext, resolve
 from app.config import Settings, get_settings
 from app.enums import (
     STAGES,
@@ -400,12 +400,35 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
     # ④ 产物生成与落库
     _set_stage(session, video, Stage.ARTIFACT, StageStatus.RUNNING)
     try:
+        # resolve() 必须在 try 内：产物策略解析本身就可能是异常源（策略注册表被改坏、
+        # 第三方策略导入失败等），漏出来会让批次永久 RUNNING（v0.17 P0-2 回归点）
+        strategies = resolve(settings.output_schema_list)
+        if not strategies:
+            # 产物集为空 = 解析注定零条目。记「成功」会让零条目的视频披上 SUCCEEDED 的外衣，
+            # 直接违背诚实边界（v0.17 P0-2），因此这里如实标 FAILED 并给出可执行的修法。
+            message = ("产物集为空，未生成任何产物。请到设置页至少勾选一种产物类型"
+                       f"（可用：{'、'.join(REGISTRY)}）")
+            video.status = VideoStatus.FAILED
+            session.add(video)
+            session.commit()
+            _set_stage(session, video, Stage.ARTIFACT, StageStatus.FAILED, message)
+            return video
         ctx = ParseContext(draft=draft, segments=list(result.segments), frames=frames,
                            ocr=frame_texts, duration_ms=video.duration_ms,
                            notices=notices)
         drafts: list[ItemDraft] = []
-        for strategy in resolve(settings.output_schema_list):
+        for strategy in strategies:
             drafts.extend(strategy.build(ctx))
+        if not drafts:
+            # 产物集合法但一条也没产出（如只勾了 UML 草稿而视频无章节、只勾了代码块而无画面通道）：
+            # 如实标 PARTIAL，让「零条目」在状态上可见，而不是冒充成功
+            video.status = VideoStatus.PARTIAL
+            session.add(video)
+            session.commit()
+            _set_stage(session, video, Stage.ARTIFACT, StageStatus.PARTIAL,
+                       "选定产物集未产出任何条目：可能该视频缺少章节结构或画面通道未启用，"
+                       "可尝试勾选「内容总结」后重跑")
+            return video
         _persist(session, video, drafts, draft.conflicts, draft.tags)
     except Exception as exc:
         # 阶段④异常不能穿出后台任务：批次会永久 RUNNING、无法删除，SSE 也只剩余 ping

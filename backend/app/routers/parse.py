@@ -447,7 +447,7 @@ def set_engines(body: dict):
             raise HTTPException(422, f"未知 OCR 引擎，可选 {available_ocr()}")
         settings.ocr_engine = body["ocr"]
     if "output_schemas" in body:
-        from app.artifacts import REGISTRY
+        from app.artifacts import REGISTRY, normalize_schemas
 
         schemas = body["output_schemas"]
         if not isinstance(schemas, list):
@@ -456,12 +456,12 @@ def set_engines(body: dict):
             raise HTTPException(422, "至少保留一种产物类型")
         if any(not isinstance(s, str) for s in schemas):
             raise HTTPException(422, "产物类型必须是字符串")
-        deduped = list(dict.fromkeys(s.strip() for s in schemas if s.strip()))
+        # 与启动读回共用同一套归一逻辑（去空白/去重/挑未知），两处口径不许再分叉
+        deduped, unknown = normalize_schemas(schemas)
         if not deduped:
             raise HTTPException(422, "至少保留一种产物类型")
-        unknown = [s for s in deduped if s not in REGISTRY]
         if unknown:
-            raise HTTPException(422, f"未知产物类型 {unknown}")
+            raise HTTPException(422, f"未知产物类型 {unknown}，可选 {list(REGISTRY)}")
         settings.output_schemas = ",".join(deduped)
     _save_engine_settings()
     return engines()

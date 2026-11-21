@@ -1,12 +1,14 @@
 """垂直切片自检：不装任何引擎也能跑通「转写 → 结构化 → 产物 → 落库 → 导出」。"""
 
 from pathlib import Path
+import json
 from types import SimpleNamespace
 
 import pytest
 from sqlmodel import Session, select
 
 from app.artifacts import ItemDraft
+from app.config import get_settings
 from app.db import engine, init_db
 from app.enums import ArtifactType, BatchStatus, Confidence, RevisionState, Stage, StageStatus, VideoStatus
 from app.export import build_batch_markdown, ts
@@ -356,3 +358,101 @@ def test_whisper_cache_key_tracks_model_size(monkeypatch):
     mock = _asr_cache_name(SimpleNamespace(name="mock"))
     assert tiny != base, "换档位后不得复用旧缓存"
     assert mock == "asr:mock", "无档位概念的引擎保持原键格式"
+
+
+# ── v0.17 P0-2：零条目不许冒充成功（假成功收口）────────────────────────────
+
+
+def test_normalize_schemas_reports_unknown_instead_of_dropping():
+    """未知产物类型必须被挑出来交给调用方处理，不能在这里静默吞掉。"""
+    from app.artifacts import REGISTRY, normalize_schemas
+
+    valid, unknown = normalize_schemas([" summary ", "summary", "", "bogus", "key_points"])
+    assert valid == ["summary", "key_points"], "去空白、保序去重"
+    assert unknown == ["bogus"], "未知项必须显式返回，静默丢弃正是 P0-2 的成因"
+    assert set(REGISTRY) == {"summary", "uml_draft", "key_points", "code_blocks"}
+
+
+def test_empty_output_schemas_fails_instead_of_reporting_success(video: Video):
+    """产物集为空时解析注定零条目：必须 FAILED 并给出可执行的修法，不能 SUCCEEDED。"""
+    from app.pipeline import parse_video
+
+    broken = get_settings().model_copy(update={"output_schemas": " , "})
+    assert broken.output_schema_list == []
+
+    with Session(engine) as session:
+        parsed = parse_video(session, session.get(Video, video.id), broken)
+        items = session.exec(select(KnowledgeItem).where(KnowledgeItem.video_id == parsed.id)).all()
+
+    assert items == [], "空产物集不该产出条目（这里是反证前提）"
+    assert parsed.status == VideoStatus.FAILED, "零条目却 SUCCEEDED 是假成功"
+    assert parsed.artifact_status == StageStatus.FAILED
+    assert "产物集为空" in parsed.error
+    assert "设置页" in parsed.error, "错误文本要能给用户一条可执行的路"
+
+
+def test_schema_set_producing_zero_drafts_is_partial_not_success(video: Video):
+    """产物集合法但一条没产出（如只勾代码块而画面通道关闭）：标 PARTIAL，零条目必须可见。"""
+    from app.pipeline import bus, parse_video
+
+    only_code = get_settings().model_copy(update={"output_schemas": "code_blocks"})
+    q, _ = bus.subscribe(video.batch_id)
+    try:
+        with Session(engine) as session:
+            parsed = parse_video(session, session.get(Video, video.id), only_code)
+            items = session.exec(
+                select(KnowledgeItem).where(KnowledgeItem.video_id == parsed.id)).all()
+        _, history = bus.subscribe(video.batch_id)
+    finally:
+        bus.unsubscribe(q)
+
+    assert items == []
+    assert parsed.status == VideoStatus.PARTIAL
+    assert parsed.artifact_status == StageStatus.PARTIAL
+    # PARTIAL 的消息按现有 _set_stage 口径走事件流（只有 FAILED 才累加进 video.error）
+    artifact_events = [e for e in history if e["stage"] == Stage.ARTIFACT.value]
+    assert artifact_events[-1]["status"] == StageStatus.PARTIAL.value
+    assert "未产出任何条目" in artifact_events[-1]["message"]
+
+
+def test_saved_settings_with_unknown_schema_self_heals(tmp_path: Path, monkeypatch):
+    """settings.json 被改坏（未知类型/重复/空）时启动读回要归一、回退并写回，不能留成空集。"""
+    from app import main as app_main
+
+    settings_path = Path(get_settings().media_root).parent / "settings.json"
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings_path.write_text(json.dumps({
+        "schema_version": 2,
+        "asr_engine": get_settings().asr_engine,
+        "ocr_engine": get_settings().ocr_engine,
+        "output_schemas": "summary,  summary ,已下线的产物",
+    }, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(app_main._settings, "output_schemas", "")
+    app_main._load_saved_settings()
+
+    assert app_main._settings.output_schemas == "summary", "未知项被剔除、重复项被去重"
+    saved = json.loads(settings_path.read_text(encoding="utf-8"))
+    assert saved["output_schemas"] == "summary", "归一结果要写回，否则下次启动再算一遍"
+    settings_path.unlink(missing_ok=True)
+
+
+def test_saved_settings_with_only_unknown_schemas_falls_back_to_default(tmp_path: Path, monkeypatch):
+    """全是不认识的名字时回退默认四类——回退到空集等于把假成功又放回来。"""
+    from app import main as app_main
+    from app.config import DEFAULT_OUTPUT_SCHEMAS
+
+    settings_path = Path(get_settings().media_root).parent / "settings.json"
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings_path.write_text(json.dumps({
+        "schema_version": 2,
+        "asr_engine": get_settings().asr_engine,
+        "ocr_engine": get_settings().ocr_engine,
+        "output_schemas": "已下线A,已下线B",
+    }, ensure_ascii=False), encoding="utf-8")
+
+    monkeypatch.setattr(app_main._settings, "output_schemas", "")
+    app_main._load_saved_settings()
+
+    assert app_main._settings.output_schemas == DEFAULT_OUTPUT_SCHEMAS
+    settings_path.unlink(missing_ok=True)

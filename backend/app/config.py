@@ -2,6 +2,10 @@ from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# 默认产物集：万一 settings.json 被改坏到一种可用类型都不剩，回退到这里
+# （artifacts.REGISTRY 的四类，顺序即「默认渲染顺序」）
+DEFAULT_OUTPUT_SCHEMAS = "summary,uml_draft,key_points,code_blocks"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -15,7 +19,7 @@ class Settings(BaseSettings):
 
     asr_engine: str = "auto"
     ocr_engine: str = "none"
-    output_schemas: str = "summary,uml_draft,key_points,code_blocks"
+    output_schemas: str = DEFAULT_OUTPUT_SCHEMAS
     # F5 语音-视觉交叉校验：课程版只做设计，默认关闭（docs/产品定义.md §五）
     asr_vocabulary_crosscheck: bool = False
 

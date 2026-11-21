@@ -4,6 +4,7 @@
 新增产物类型不改主链路，只在这里加一个类并注册。
 """
 
+import logging
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -237,5 +238,28 @@ REGISTRY: dict[str, OutputSchemaStrategy] = {
 }
 
 
+_log = logging.getLogger("videomind.artifacts")
+
+
+def normalize_schemas(names: list[str]) -> tuple[list[str], list[str]]:
+    """产物类型名归一：去空白、去重、保序，并把不在注册表里的挑出来。
+
+    返回 (可用列表, 未知列表)。**调用方必须处理未知项**：静默丢弃会让产物集缩成空集，
+    解析仍报「成功」却零条目——那是假成功，踩的是项目的诚实边界（v0.17 收口）。
+    """
+    valid: list[str] = []
+    unknown: list[str] = []
+    for raw in names:
+        name = (raw or "").strip()
+        if not name or name in valid or name in unknown:
+            continue
+        (valid if name in REGISTRY else unknown).append(name)
+    return valid, unknown
+
+
 def resolve(names: list[str]) -> list[OutputSchemaStrategy]:
-    return [REGISTRY[n] for n in names if n in REGISTRY]
+    valid, unknown = normalize_schemas(names)
+    if unknown:
+        # 只告警不改口径：真正拦住「零条目却成功」的是 pipeline ④ 阶段的空集检查
+        _log.warning("忽略未知产物类型 %s；可用类型：%s", unknown, list(REGISTRY))
+    return [REGISTRY[n] for n in valid]
