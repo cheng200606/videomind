@@ -15,6 +15,20 @@ let mermaid: Mermaid | null = null
 let loading: Promise<Mermaid> | null = null
 let seq = 0
 
+/**
+ * Mermaid 12 里 `flowchart-elk` 这个图类型会让它自己的 detector 把 config.layout 改写成 'elk'
+ * （mermaid.core.mjs 全库唯一的 layout 赋值点），从而动态 import 那条 1.46 MB 的 elk 分支。
+ * 我们已经固定 layout: 'dagre'，而 flowchart-elk 在 dagre 下的排版结果与 flowchart 完全一致，
+ * 所以渲染前把首行的 `flowchart-elk` 收敛成 `flowchart` 即可：行为不变，但彻底切断 elk 下载路径。
+ *
+ * 只动首行的那一个单词，正文（节点定义、连线、缩进、注释）逐字保留——LLM 产出的结构不能被动过。
+ * 正则与 mermaid detector 同锚点（^\s*），保证判断条件与它一致。
+ */
+function normalizeElk(code: string): string {
+  if (!/^\s*flowchart-elk/.test(code)) return code
+  return code.replace(/^(\s*)flowchart-elk/, '$1flowchart')
+}
+
 function themeVariables(dark: boolean) {
   // 与 theme.css 的 :root:root / :root:root.dark 保持同值：primaryColor=primary-light-9/-8，text=--vm-text，border/line=主色
   return dark
@@ -55,7 +69,7 @@ async function render() {
       layout: 'dagre',
       themeVariables: themeVariables(mode.value === 'dark')
     })
-    const out = await mm.render(`vm-diagram-${++seq}`, props.code)
+    const out = await mm.render(`vm-diagram-${++seq}`, normalizeElk(props.code))
     host.value.innerHTML = out.svg
   } catch (err) {
     // LLM 生成的 mermaid 偶发语法错误，或按需加载失败；保留原文，不让整页崩
