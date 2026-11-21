@@ -47,6 +47,87 @@ ROOT = Path(__file__).resolve().parents[1]
 VENV_PY = ROOT / "backend" / ".venv" / "Scripts" / "python.exe"
 AXE_JS = ROOT / "frontend" / "node_modules" / "axe-core" / "axe.min.js"
 DIST_INDEX = ROOT / "frontend" / "dist" / "index.html"
+
+# 裁定二（Leader 2026-11-21）：含 linear-gradient 背景的元素，axe 把 color-contrast
+# 丢进 incomplete 桶而不判定——「violations=0」不等于对比度过关。这段脚本对每个
+# incomplete 的 color-contrast 节点：
+#   · 能定位到元素且背景是简单 linear-gradient 的，按元素中心在渐变轴上的位置插值
+#     算出背景色，给出 WCAG 比值与 pass/fail；
+#   · 算不了的显式标「待人工」，绝不静默当作通过。
+# 结果与 violations 分开存，**不计入 violations=0 的功劳**。
+INCOMPLETE_CONTRAST_JS = r"""
+(function(nodes) {
+  function parseRGB(s) {
+    const m = /rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/.exec(s || '');
+    return m ? [+m[1], +m[2], +m[3]] : null;
+  }
+  function lum(c) {
+    const a = c.map(v => { v /= 255; return v <= 0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055, 2.4); });
+    return 0.2126*a[0] + 0.7152*a[1] + 0.0722*a[2];
+  }
+  function ratio(fg, bg) {
+    const a = lum(fg), b = lum(bg), hi = Math.max(a,b), lo = Math.min(a,b);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+  function gradientBg(el) {
+    let p = el;
+    while (p && p !== document.documentElement) {
+      const bi = getComputedStyle(p).backgroundImage || '';
+      if (bi.indexOf('linear-gradient') !== -1) {
+        const inner = bi.slice(bi.indexOf('(')+1, bi.lastIndexOf(')'));
+        const colors = [], re = /(rgba?\([^)]*\))/g; let m;
+        while ((m = re.exec(inner))) { const c = parseRGB(m[1]); if (c) colors.push(c); }
+        if (colors.length < 2) return {raw: bi};
+        const stops = [], re2 = /(\d+(?:\.\d+)?)%/g; let m2;
+        while ((m2 = re2.exec(inner))) stops.push(+m2[1]/100);
+        if (stops.length !== colors.length) {
+          stops.length = 0;
+          colors.forEach((_, i) => stops.push(colors.length === 1 ? 0 : i/(colors.length-1)));
+        }
+        const r = p.getBoundingClientRect(), er = el.getBoundingClientRect();
+        const horizontal = /to right|to left|90deg|270deg/.test(inner);
+        const denom = horizontal ? (r.width||1) : (r.height||1);
+        const start = horizontal ? r.left : r.top;
+        const pos = horizontal ? (er.left+er.width/2) : (er.top+er.height/2);
+        const f = Math.max(0, Math.min(1, (pos-start)/denom));
+        let bg = colors[colors.length-1];
+        for (let i=0; i<stops.length-1; i++) {
+          if (f >= stops[i] && f <= stops[i+1]) {
+            const t = (f-stops[i]) / ((stops[i+1]-stops[i]) || 1);
+            bg = colors[i].map((v,k) => Math.round(v + (colors[i+1][k]-v)*t));
+            break;
+          }
+        }
+        return {bg, raw: bi, fraction: f};
+      }
+      p = p.parentElement;
+    }
+    return null;
+  }
+  return nodes.map(n => {
+    const sel = (n.target||[]).join(' ');
+    let el = null;
+    try { el = document.querySelector(sel); } catch(e) {}
+    const d = (n.any && n.any[0] && n.any[0].data) || {};
+    const fg = parseRGB(getComputedStyle(el).color) || parseRGB(d.fgColor);
+    const g = el ? gradientBg(el) : null;
+    const out = {target: n.target, html: (n.html||'').slice(0, 200),
+                 fgColor: d.fgColor || (fg ? fg.join(', ') : null),
+                 messageKey: d.messageKey, fontSize: d.fontSize};
+    if (g && g.bg && fg) {
+      const r = ratio(fg, g.bg);
+      out.computed = {method: 'gradient-interpolation',
+                      ratio: +r.toFixed(2), bgColor: 'rgb(' + g.bg.join(', ') + ')',
+                      fraction: +g.fraction.toFixed(3), pass: r >= 4.5};
+    } else {
+      out.computed = {status: '待人工',
+                      reason: g ? '渐变无法自动插值' : (el ? '未找到可判定的渐变背景' : '元素定位不到'),
+                      bgImage: g && g.raw};
+    }
+    return out;
+  });
+})
+"""
 EDGE_CANDIDATES = [
     Path(r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"),
     Path(r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
@@ -644,6 +725,27 @@ def scan_page(cdp: Cdp, url: str, theme: str, axe_src: str,
         f"document.querySelectorAll({json.dumps(sel)}).length") or 0
         for sel in (exclude or [])}
     res = run_axe(cdp, exclude=exclude)
+    # 裁定二：incomplete 桶里的 color-contrast 不能悄悄算进「0 violation」的功劳。
+    # 逐节点列出来，能按渐变位置插值的给实测比值/判定，算不了的标「待人工」。
+    inc = res.get("incomplete") or []
+    inc_contrast = [v for v in inc if v.get("id") == "color-contrast"]
+    inc_detail: list[dict] = []
+    if inc_contrast:
+        # flatten：axe 按规则分组，每组一个 nodes 数组；插值脚本要的是平铺的节点列表
+        flat_nodes = [n for v in inc_contrast for n in (v.get("nodes") or [])]
+        nodes_json = json.dumps(flat_nodes)
+        try:
+            inc_detail = cdp.evaluate(
+                INCOMPLETE_CONTRAST_JS + f"({nodes_json})") or []
+        except Exception as exc:                                   # noqa: BLE001
+            inc_detail = [{"status": "待人工", "reason": f"插值脚本异常：{exc}"}]
+    res["incomplete_contrast"] = {
+        "groups": len(inc_contrast),
+        "nodes": sum(len(v.get("nodes") or []) for v in inc_contrast),
+        "detail": inc_detail,
+        "note": "含 linear-gradient 背景的元素被 axe 放进 incomplete 而不判定；"
+                "这些节点不计入 violations=0，须按 interpolated 比值或待人工处理。",
+    }
     res["settle"] = {
         "rounds": settle_rounds,
         "elements": elements,
@@ -790,6 +892,8 @@ def main() -> int:
                             } for n in (v.get("nodes") or [])],
                         } for v in violations],
                         "blocking": len(blocking),
+                        # 裁定二：incomplete 的 color-contrast 单列，不算 violations 的功劳
+                        "incomplete_contrast": res.get("incomplete_contrast"),
                         # 落盘时带上「扫的时候页面长什么样」，两轮结论不同才能对账
                         "settle": res.get("settle"),
                     })
@@ -865,6 +969,20 @@ def main() -> int:
         for u in unclaimed:
             print(f"    · {u}")
 
+    # 裁定二：incomplete 桶里的 color-contrast 必须显式列清单。它不算 violations 的功劳，
+    # 也绝不因为「0 violation」就被当成对比度过关——报告里单独成节。
+    inc_items = [(r["theme"], r["path"], r["state"], r["incomplete_contrast"])
+                 for r in results if (r.get("incomplete_contrast") or {}).get("nodes")]
+    if inc_items:
+        print(f"[G4] incomplete 中的 color-contrast（{len(inc_items)} 组，"
+              f"不计入 violations=0，须按实测比值或待人工处理）：")
+        for theme, path, state, ic in inc_items:
+            fails = [d for d in ic["detail"] if d.get("computed", {}).get("pass") is False]
+            manual = [d for d in ic["detail"]
+                      if d.get("computed", {}).get("status") == "待人工"]
+            print(f"    · {theme} {path} [{state}] {ic['nodes']} 节点"
+                  f"（插值不达标 {len(fails)} · 待人工 {len(manual)}）")
+
     if len(results) < len(planned):
         print(f"[G4] 失败：{len(planned) - len(results)} 组没扫成（见上面的未覆盖清单）")
         code = 1
@@ -907,6 +1025,11 @@ def main() -> int:
                                    "excluded": args.exclude,
                                    "export_both_themes_zero_violation": export_both_ok,
                                    "export_checks": export_checks,
+                                   "incomplete_contrast": {
+                                       "note": "含渐变背景的元素被 axe 放入 incomplete 而不判定，"
+                                               "不计入 violations=0；须按实测比值或待人工处理。",
+                                       "groups": len(inc_items), "items": inc_items,
+                                   },
                                    "accepted": accepted,
                                    "unaccepted": unaccepted,
                                    "unclaimed": unclaimed,
