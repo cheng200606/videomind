@@ -8,7 +8,7 @@ from sqlmodel import Session, select
 
 from app.artifacts import ItemDraft
 from app.db import engine, init_db
-from app.enums import ArtifactType, BatchStatus, Confidence, RevisionState, StageStatus, VideoStatus
+from app.enums import ArtifactType, BatchStatus, Confidence, RevisionState, Stage, StageStatus, VideoStatus
 from app.export import build_batch_markdown, ts
 from app.models import Artifact, ConflictRecord, Evidence, KnowledgeItem, Segment, Video, VideoBatch
 from app.pipeline import ProgressBus, _persist, parse_batch, parse_video, recover_orphan_runs, retry_video
@@ -267,6 +267,80 @@ def test_sanitize_error_strips_local_paths():
     assert "/tmp/" not in msg2 and "本机路径" in msg2
     assert sanitize_error("普通错误信息保持原样") == "普通错误信息保持原样"
     assert sanitize_error("") == ""
+
+
+def test_cache_key_is_content_addressed(tmp_path: Path):
+    """同名同大小不同内容不能命中同一份缓存；不可读时回退不打断解析。"""
+    from app.cache import key_of
+
+    first = tmp_path / "a" / "lecture.mp4"
+    second = tmp_path / "b" / "lecture.mp4"
+    first.parent.mkdir()
+    second.parent.mkdir()
+    first.write_bytes(b"AAA" + b"\x00" * 4096)
+    second.write_bytes(b"BBB" + b"\x00" * 4096)
+    assert first.stat().st_size == second.stat().st_size
+
+    k1 = key_of(str(first), "asr:mock")
+    k2 = key_of(str(second), "asr:mock")
+    assert k1 != k2, "内容不同必须换键，否则会拿到旧视频的转写/证据"
+    assert key_of(str(first), "asr:mock") == k1, "同一文件同一引擎必须稳定命中"
+    assert key_of(str(first), "asr:tiny") != k1, "引擎/档位仍参与键"
+    assert key_of(str(tmp_path / "已不存在.mp4"), "asr:mock").startswith("vmind:asr:mock:")
+
+
+def test_non_failed_stage_sanitizes_sse_error(video: Video):
+    """非 FAILED 态（如 RUNNING 进度）也不能把本机绝对路径推给 SSE。"""
+    from app.pipeline import _set_stage, bus
+
+    raw = r"加载进度：C:\Users\lenovo\AppData\Local\Temp\model.bin 正在读取"
+    q, _ = bus.subscribe(video.batch_id)
+    try:
+        with Session(engine) as session:
+            current = session.get(Video, video.id)
+            assert current is not None
+            _set_stage(session, current, Stage.STRUCTURE, StageStatus.RUNNING, raw)
+            assert "C:" not in current.error
+        _, history = bus.subscribe(video.batch_id)
+        message = history[-1]["message"]
+        assert history[-1]["status"] == "running"
+        assert "C:" not in message and "\\" not in message
+        assert "本机路径" in message
+    finally:
+        bus.unsubscribe(q)
+
+
+def test_fallback_notice_reaches_summary_and_export(video: Video):
+    """无 Key 规则兜底必须随摘要 notice 进入工作台与导出文稿。"""
+    from app import pipeline
+
+    real_structure = pipeline.structure
+
+    def structure_with_extra_notice(*args, **kwargs):
+        # 同时触发一条既有 notice，验证 fallback 是追加而不是覆盖
+        draft = real_structure(*args, **kwargs)
+        kwargs["report"]["transcript_truncated"] = True
+        return draft
+
+    pipeline.structure = structure_with_extra_notice
+    try:
+        with Session(engine) as session:
+            parsed = parse_video(session, session.get(Video, video.id))
+            summary = session.exec(select(KnowledgeItem).where(
+                KnowledgeItem.video_id == parsed.id,
+                KnowledgeItem.type == ArtifactType.SUMMARY)).first()
+            assert summary is not None
+            artifact = session.exec(select(Artifact).where(
+                Artifact.item_id == summary.id)).first()
+            assert artifact is not None
+            notice = str((artifact.payload or {}).get("notice") or "")
+            assert "未调用大模型，条目为规则切分结果，仅供参考" in notice
+            assert "转写单段超长" in notice, "既有 notice 不能被 fallback 覆盖"
+
+            md = build_batch_markdown(session, video.batch_id)
+            assert "未调用大模型，条目为规则切分结果，仅供参考" in md
+    finally:
+        pipeline.structure = real_structure
 
 
 def test_whisper_cache_key_tracks_model_size(monkeypatch):

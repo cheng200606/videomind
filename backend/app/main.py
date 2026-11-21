@@ -157,6 +157,20 @@ def _spa_root() -> Path:
     return Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 
+def _safe_spa_target(root: Path, full_path: str) -> Path:
+    """把前端历史路由拼到 dist 根下，拒绝任何越界路径（含 ../ 与符号链接）。
+
+    Uvicorn 对 raw path 只 unquote、不规范化 `..`；直接拼接会让
+    `/%2e%2e/%2e%2e/backend/.env` 读到 dist 之外的明文配置。resolve 后
+    必须是根目录自身或其后代，才允许交给 FileResponse。
+    """
+    base = root.resolve()
+    target = (base / full_path).resolve()
+    if target != base and base not in target.parents:
+        raise HTTPException(404, "资源不存在")
+    return target
+
+
 _spa = _spa_root()
 if _spa.is_dir() and (_spa / "index.html").exists():
 
@@ -166,7 +180,7 @@ if _spa.is_dir() and (_spa / "index.html").exists():
             # catch-all 兜的是前端历史路由；拼错/不存在的 /api 路径要回 404 JSON，
             # 回 index.html 会让调用方把 HTML 当响应体解析，掩盖真实错误
             raise HTTPException(404, "接口不存在：请检查请求路径")
-        target = _spa / full_path
+        target = _safe_spa_target(_spa, full_path)
         if full_path and target.is_file():
             return FileResponse(target)
         return FileResponse(_spa / "index.html")

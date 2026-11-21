@@ -50,6 +50,20 @@ def test_no_key_in_test_env():
     assert llm_ready() is False
 
 
+def test_structure_marks_fallback_in_report_without_key():
+    """无 Key 的等分规则草稿必须在 report 里显式标注，不能冒充模型结果。"""
+    from app import llm
+
+    transcript = [
+        (0, 4000, "第一句比较长的话讲生命周期"),
+        (4000, 8000, "第二句也足够长用来做条目"),
+    ]
+    report: dict = {}
+    draft = llm.structure(transcript, [], 8000, report=report)
+    assert report["fallback"] is True, "未调用大模型时必须给上层可判定的标记"
+    assert draft.items, "兜底仍要出条目，切片不能中断"
+
+
 def test_structure_chunks_long_transcript(monkeypatch):
     """长转写按段边界分块逐段调用：全部内容参与结构化，合并后跨块产物齐全。"""
     from app import llm

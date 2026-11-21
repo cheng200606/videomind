@@ -3,10 +3,13 @@
 TestClient 会在响应返回后同步执行 BackgroundTasks，所以不用轮询等待。
 """
 
+import asyncio
 import json
 from pathlib import Path
 
+import httpx
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
@@ -26,6 +29,48 @@ def client():
 def test_health(client: TestClient):
     r = client.get("/api/health")
     assert r.status_code == 200 and r.json()["ok"] is True
+
+
+def test_spa_catch_all_rejects_encoded_path_traversal(tmp_path: Path, monkeypatch):
+    """前端历史路由 catch-all 不能越过 dist 根读到 .env（P0 路径穿越回归）。
+
+    TestClient 会归一化 `..`，这里用 httpx.ASGITransport 直接发未归一化的
+    scope：httpx.URL.path 与 Uvicorn 一样只 unquote、不 normpath，raw_path
+    仍是 `%2e%2e`，和线上攻击串的 ASGI 输入一致。
+    """
+    from app import main as app_main
+
+    url = "http://testserver/%2e%2e/leak.env"
+    parsed = httpx.URL(url)
+    assert parsed.path == "/../leak.env"       # 未归一化，确实带 ..
+    assert parsed.raw_path == b"/%2e%2e/leak.env"
+
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text("<html>spa-ok</html>", encoding="utf-8")
+    secret = tmp_path / "leak.env"
+    secret.write_text("DEEPSEEK_API_KEY=sk-must-never-leak\n", encoding="utf-8")
+    monkeypatch.setattr(app_main, "_spa", dist)
+
+    # 纯函数层：越界拒绝、正常历史路由放行
+    with pytest.raises(HTTPException) as exc:
+        app_main._safe_spa_target(dist, "../leak.env")
+    assert exc.value.status_code == 404
+    assert app_main._safe_spa_target(dist, "videos/3") == dist / "videos" / "3"
+
+    async def raw_get(path: str) -> tuple[int, str]:
+        transport = httpx.ASGITransport(app=app_main.app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as ac:
+            resp = await ac.get(path, follow_redirects=False)
+        return resp.status_code, resp.text
+
+    status, body = asyncio.run(raw_get("/%2e%2e/leak.env"))
+    assert 400 <= status < 500, body
+    assert "sk-" not in body and "DEEPSEEK" not in body
+
+    # 正常 SPA 历史路由与静态资源不受影响
+    status, body = asyncio.run(raw_get("/videos/3"))
+    assert status == 200 and "spa-ok" in body
 
 
 def test_engine_settings_roundtrip(client: TestClient):

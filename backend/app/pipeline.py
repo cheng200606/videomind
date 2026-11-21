@@ -164,14 +164,16 @@ parse_mutex = ParseMutex()
 
 def _set_stage(session: Session, video: Video, stage: Stage, status: StageStatus, error: str = "") -> None:
     setattr(video, f"{stage.value}_status", status)
+    # SSE 与落库用同一份清洗结果：非失败态的降级/进度说明也是本机路径的高发区，
+    # 只在 FAILED 分支清洗会让 RUNNING/PARTIAL 把原始路径直接推给前端
+    message = sanitize_error(error)
     if error and status == StageStatus.FAILED:
         # 多个阶段可能先后失败：累加而不是覆盖，失败定位以阶段状态为准；
         # SKIPPED 的说明（如“画面通道未启用”）只是降级原因，不该伪装成错误
-        error = sanitize_error(error)
-        video.error = f"{video.error}\n{error}".strip()[:500]
+        video.error = f"{video.error}\n{message}".strip()[:500]
     session.add(video)
     session.commit()
-    bus.emit(video.batch_id, video.id, stage.value, status.value, error)
+    bus.emit(video.batch_id, video.id, stage.value, status.value, message)
 
 
 def _transcript_rows(session: Session, video_id: int) -> list[tuple[int, int, str]]:
@@ -375,6 +377,9 @@ def parse_video(session: Session, video: Video, settings: Settings | None = None
             notices.append(f"转写较长，已按时间切 {report['chunk_count']} 段完整结构化")
         if report.get("output_salvaged"):
             notices.append("部分段落的模型输出被截断，已保留可解析的条目，对应内容可能不完整")
+        if report.get("fallback"):
+            # 无 Key 走规则兜底：条目与 LLM 结果同形，不标注就会假装是模型产出
+            notices.append("未调用大模型，条目为规则切分结果，仅供参考")
 
         if failed_chunks:
             # 内容真缺了一块：阶段置 PARTIAL，视频随之 PARTIAL，比「成功但缺内容」诚实

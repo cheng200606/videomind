@@ -307,8 +307,12 @@ def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, 
         report["transcript_truncated"] = False
         report["output_salvaged"] = False
         report["failed_chunks"] = []
+        report["fallback"] = False
 
     if not llm_ready():
+        # 没有 Key 时产出的是规则草稿而非模型结果，必须显式标注，供上层写入 notice
+        if report is not None:
+            report["fallback"] = True
         return fallback_draft(transcript)
 
     n = len(chunks)
@@ -355,9 +359,11 @@ def structure(transcript: list[tuple[int, int, str]], ocr_text: list[tuple[int, 
 
 
 def fallback_draft(transcript: list[tuple[int, int, str]]) -> StructuredDraft:
-    """无 Key / 断网时的规则兜底：按静音间隙切章、取长句为条目。
+    """无 Key / 断网时的规则兜底：按段数等分切章、取长句为条目。
 
-    宝贵的是切片不中断——答辩截图不能因为当天没网就出不了。
+    切章依据是转写段的数量等分（step = len(chunks)//4），不是静音间隙；
+    条目取前 12 段中长度 ≥ 12 字的句子。宝贵的是切片不中断——答辩截图
+    不能因为当天没网就出不了；结果非模型产出，调用方须向用户标注。
     """
     if not transcript:
         return StructuredDraft(one_line="（无转写内容）")

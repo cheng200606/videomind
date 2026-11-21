@@ -19,8 +19,30 @@ if _settings.redis_url:
         _redis = None
 
 
+_CHUNK_SIZE = 1024 * 1024
+
+
+def _file_sha256(source: Path) -> str:
+    """流式算内容摘要：分块读，整条视频也不会一次进内存。"""
+    digest = hashlib.sha256()
+    with source.open("rb") as stream:
+        for block in iter(lambda: stream.read(_CHUNK_SIZE), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def key_of(path: str, engine_name: str) -> str:
-    digest = hashlib.sha256(f"{Path(path).name}:{Path(path).stat().st_size}:{engine_name}".encode()).hexdigest()
+    """缓存键内容寻址：同名同大小但内容不同的文件不再共用旧解析结果。"""
+    source = Path(path)
+    try:
+        identity = f"sha256:{_file_sha256(source)}"
+    except OSError:
+        # 文件已删/被占用：退回旧的 name:size 口径，不让缓存环节打断解析
+        try:
+            identity = f"stat:{source.name}:{source.stat().st_size}"
+        except OSError:
+            identity = f"stat:{source.name}:unreadable"
+    digest = hashlib.sha256(f"{identity}:{engine_name}".encode()).hexdigest()
     return f"vmind:{engine_name}:{digest[:24]}"
 
 
