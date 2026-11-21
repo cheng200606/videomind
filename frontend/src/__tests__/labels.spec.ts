@@ -40,6 +40,17 @@ describe('枚举中文映射', () => {
     expect(STAGE_STATUS_TYPE.partial).toBe('warning')
   })
 
+  it('STAGE_STATUS_LABEL 与 STAGE_STATUS_TYPE 逐键对齐：有中文名就必须有配色', () => {
+    // v0.17 P0-1：原先 LABEL 有 video_start、TYPE 没有，事件流里「开始解析」被染成 info 灰。
+    // 这条断言替代靠人眼的逐项核对——两侧键集合必须完全相同，缺一个就红。
+    const labelKeys = Object.keys(STAGE_STATUS_LABEL).sort()
+    const typeKeys = Object.keys(STAGE_STATUS_TYPE).sort()
+    expect(typeKeys).toEqual(labelKeys)
+    expect(STAGE_STATUS_TYPE.video_start).toBe('primary')
+    // 反向也守住：没有中文标签的键不该偷偷有色值，否则说明有人只补了一边
+    for (const k of typeKeys) expect(STAGE_STATUS_LABEL[k], k).toBeTruthy()
+  })
+
   it('产物类型与讲义状态映射齐备', () => {
     expect(ARTIFACT_LABEL.summary).toBe('内容总结')
     expect(REVISION_LABEL.pending_confirm).toBe('待确认')
