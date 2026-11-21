@@ -18,12 +18,23 @@ SIMILAR_THRESHOLD = 6.0    # 16x16 灰度均值差低于该值视为同页课件
 
 
 def _interval_from_env() -> float:
+    """抽帧间隔的唯一取值口径（v0.17 P0-5）。
+
+    改前这个函数是死代码：`pipeline._keyframes` 直接传常量 `FRAME_INTERVAL_S`，
+    环境变量设了也不生效。现在 pipeline 只调 `effective_interval_s()` 一次，同一个
+    返回值既喂给 `sample_frames` 又参与缓存键，杜绝「取值一套、算键另一套」的分叉。
+    """
     raw = os.environ.get("VMIND_FRAME_INTERVAL_S", "")
     try:
         value = float(raw)
     except ValueError:
         return FRAME_INTERVAL_S
     return value if value > 0 else FRAME_INTERVAL_S
+
+
+def effective_interval_s() -> float:
+    """本次抽帧实际使用的间隔（秒）。调用方必须用它同时构造缓存键与 sample_frames 实参。"""
+    return _interval_from_env()
 
 
 def sample_frames(video_path: str, interval_s: float | None = None,

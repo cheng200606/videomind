@@ -4,6 +4,7 @@
 失败只影响单条，批次进 PARTIAL，重试只重跑这一条。
 """
 
+import logging
 import queue
 import re
 import shutil
@@ -29,7 +30,7 @@ from app.enums import (
     VideoStatus,
 )
 from app.engines.base import AsrEngine, KeyFrame, OcrEngine, build_asr, build_ocr
-from app.engines.frames import FRAME_INTERVAL_S, sample_frames
+from app.engines.frames import effective_interval_s, sample_frames
 from app.llm import structure
 from app.media import display_name
 from app.models import (
@@ -45,6 +46,8 @@ from app.models import (
     Video,
     VideoBatch,
 )
+
+_log = logging.getLogger("videomind.pipeline")
 
 
 class ProgressBus:
@@ -187,10 +190,16 @@ def _localize_frames(video_id: int, frames: list[KeyFrame]) -> list[KeyFrame]:
     输入输出都是本机绝对路径（画面通道 OCR 还要直接读文件）；入库时经 _media_url
     转成 /media URL。yueying 默认把帧写在临时目录，不复制的话 /media 不可达，
     进程重启后缓存里的旧路径也会失效。缓存里存的即这里的稳定路径。
+
+    落盘后顺手清掉本轮之外的旧帧（v0.17 P0-5）：只写不删的话，重跑一次就会留下
+    上一轮的全部关键帧，`/media` 是静态目录，这些孤儿帧会一直占盘且不会被引用。
     """
-    if not frames:
-        return frames
     root = Path(get_settings().media_root) / "frames" / str(video_id)
+    if not frames:
+        # 本轮没抽到帧（例如换引擎/换参数后抽样失败）：把上一轮的残留也清掉，
+        # 否则它们还挂在 /media 上，看起来像这个视频仍有画面证据。
+        _prune_frame_dir(video_id, keep_ms=set())
+        return frames
     root.mkdir(parents=True, exist_ok=True)
     out: list[KeyFrame] = []
     for i, frame in enumerate(frames):
@@ -201,6 +210,7 @@ def _localize_frames(video_id: int, frames: list[KeyFrame]) -> list[KeyFrame]:
         if not dest.exists():
             shutil.copyfile(src, dest)
         out.append(KeyFrame(ms=frame.ms, path=str(dest)))
+    _prune_frame_dir(video_id, keep_ms={frame.ms for frame in out})
     return out
 
 
@@ -241,13 +251,19 @@ def _keyframes(video: Video) -> list[KeyFrame]:
 
     结果走独立缓存（键含采样间隔），与 ASR 缓存互不影响；抽样失败只让画面通道
     降级为 SKIPPED，不能拖垮整条解析。缓存存的是 localize 后的稳定路径。
+
+    v0.17 P0-5：间隔只取一次 `effective_interval_s()`，**同一个变量**既进缓存键又做
+    `sample_frames` 实参。这两处若各取一次，`VMIND_FRAME_INTERVAL_S` 改过之后就会
+    用新间隔算键、却按旧间隔抽帧（或反之），拿别的档位缓存当自己的结果且无任何报错
+    ——v0.16 whisper 档位没进缓存键踩的正是同一个坑。
     """
-    cache_key = cache.key_of(video.path, f"frames:{FRAME_INTERVAL_S:g}")
+    interval_s = effective_interval_s()
+    cache_key = cache.key_of(video.path, f"frames:{interval_s:g}")
     hit = cache.get(cache_key, validate=_frames_cache_ok)
     if hit is not None:
         return [KeyFrame(**f) for f in hit]
     try:
-        frames = sample_frames(video.path, FRAME_INTERVAL_S)
+        frames = sample_frames(video.path, interval_s)
     except Exception:
         return []
     if not frames:
@@ -272,11 +288,39 @@ def _clear_derived_items(session: Session, video_id: int) -> None:
     session.commit()
 
 
+def _prune_frame_dir(video_id: int, keep_ms: set[int]) -> None:
+    """删掉 media_root/frames/{video_id}/ 里本轮抽到的帧之外的旧文件（v0.17 P0-5）。
+
+    改前 `_localize_frames` 只写不删，`_clear_video_data` 也不动这个目录：同一条视频
+    重跑一次，上一轮的关键帧（含时长变化、换引擎、换采样间隔产生的帧）会一直留在盘上。
+    `/media` 是静态目录，这些孤儿帧不会被任何条目引用，却会一直占着空间、也让「这个视频
+    到底有几帧」无法从磁盘上读出来。清理是纯清理：删失败只告警，绝不能影响解析。
+    """
+    root = Path(get_settings().media_root) / "frames" / str(video_id)
+    if not root.is_dir():
+        return
+    for file in root.iterdir():
+        if not file.is_file():
+            continue
+        # 文件名形如 frame_{ms}_{i}.jpg；按前缀匹配 ms，避免把时间戳相近的帧误删
+        stem = file.stem
+        if stem.startswith("frame_"):
+            parts = stem.split("_")
+            if len(parts) >= 3 and parts[1].isdigit() and int(parts[1]) in keep_ms:
+                continue
+        try:
+            file.unlink()
+        except OSError as exc:
+            _log.warning("旧关键帧清理失败：%s（%s）", file.name, exc)
+
+
 def _clear_video_data(session: Session, video_id: int) -> None:
     """重跑前清空上次解析的派生数据，保证重试 / 整批重解析幂等，不产生重复条目。
 
     删除顺序按外键依赖：绑定与子表在前，KnowledgeItem 在 Note 之后，Evidence/Segment 最后。
     Tag 本体跨视频共享，保留；条目上的 Note 随条目一起清（锚点指向的条目已不存在）。
+    关键帧目录不在这里删——本轮要抽的帧还没有，删了会让「重跑」先变成「无帧」；
+    实际清理在 `_localize_frames` 落盘后按本轮帧集做（见 `_prune_frame_dir`）。
     """
     _clear_derived_items(session, video_id)
     session.exec(delete(Segment).where(Segment.video_id == video_id))

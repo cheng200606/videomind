@@ -456,3 +456,116 @@ def test_saved_settings_with_only_unknown_schemas_falls_back_to_default(tmp_path
 
     assert app_main._settings.output_schemas == DEFAULT_OUTPUT_SCHEMAS
     settings_path.unlink(missing_ok=True)
+
+
+# ── v0.17 P0-5：关键帧目录清理 + 帧间隔口径 ─────────────────────────────────
+
+
+def _fake_frames(tmp_path: Path, ms_list: list[int]) -> list:
+    """造一组「引擎刚抽出来的」关键帧（临时目录里的真实文件，_localize_frames 要 copy）。"""
+    from app.engines.base import KeyFrame
+
+    out = []
+    for ms in ms_list:
+        src = tmp_path / f"src_{ms}.jpg"
+        src.write_bytes(b"\xff\xd8\xff\xe0stub")
+        out.append(KeyFrame(ms=ms, path=str(src)))
+    return out
+
+
+def _frame_dir(video_id: int) -> Path:
+    return Path(get_settings().media_root) / "frames" / str(video_id)
+
+
+def test_rerun_prunes_stale_frame_files(video: Video, tmp_path: Path):
+    """重跑换了一套关键帧：上一轮的帧文件必须被清掉，不能一直留在 /media 下当孤儿。"""
+    from app.pipeline import _localize_frames
+
+    first = _localize_frames(video.id, _fake_frames(tmp_path, [0, 30000, 60000]))
+    assert len(list(_frame_dir(video.id).iterdir())) == 3
+
+    second = _localize_frames(video.id, _fake_frames(tmp_path, [0, 90000]))
+    kept = sorted(f.name for f in _frame_dir(video.id).iterdir())
+
+    assert {f.ms for f in second} == {0, 90000}
+    assert len(kept) == 2, f"上一轮 30000/60000 的帧应被清理，实际残留：{kept}"
+    assert all(any(str(f.ms) in name for name in kept) for f in second)
+    # 返回的路径必须仍指向真实存在的文件，清早了会让证据链断掉
+    assert all(Path(f.path).exists() for f in second)
+    assert first, "第一轮确实落过盘（反证前提）"
+
+
+def test_frame_interval_env_drives_both_sampling_and_cache_key(video: Video, monkeypatch):
+    """VMIND_FRAME_INTERVAL_S 必须同时影响「抽帧实参」和「缓存键」（v0.17 P0-5）。
+
+    改前 pipeline 直接传常量，环境变量是死配置；而只把它塞进键、实参仍用常量的话，
+    换间隔会拿别人的帧当自己的缓存命中，且不报任何错。
+    """
+    from app import cache
+    from app import pipeline as pipeline_mod
+    from app.engines.base import KeyFrame
+
+    calls: list[float | None] = []
+
+    def fake_sample(path, interval_s=None, **kwargs):
+        calls.append(interval_s)
+        src = Path(path).parent / "fake_frame.jpg"
+        src.write_bytes(b"\xff\xd8\xff\xe0stub")
+        return [KeyFrame(ms=0, path=str(src))]
+
+    monkeypatch.setattr(pipeline_mod, "sample_frames", fake_sample)
+    monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", "5")
+
+    with Session(engine) as session:
+        frames = pipeline_mod._keyframes(session.get(Video, video.id))
+
+    assert calls == [5.0], "实参必须来自同一份取值，而不是常量 30"
+    assert frames and frames[0].ms == 0
+
+    hit = cache.get(cache.key_of(video.path, "frames:5"))
+    assert hit is not None, "缓存键要用 5 秒档位；用常量算键会让换档后命中别的缓存"
+    assert cache.get(cache.key_of(video.path, "frames:30")) is None
+
+    # 相同内容换档位：必须重抽，不能拿 5 秒档的结果当 30 秒档
+    calls.clear()
+    monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", "30")
+    with Session(engine) as session:
+        pipeline_mod._keyframes(session.get(Video, video.id))
+    assert calls == [30.0], "换档位必须重抽"
+
+
+def test_invalid_frame_interval_falls_back_to_constant(monkeypatch):
+    """非法/零/负数间隔回退默认值——配错了不能把抽帧变成无限循环或空跑。"""
+    from app.engines.frames import FRAME_INTERVAL_S, effective_interval_s
+
+    for raw in ("", "abc", "0", "-3"):
+        monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", raw)
+        assert effective_interval_s() == FRAME_INTERVAL_S
+
+    monkeypatch.setenv("VMIND_FRAME_INTERVAL_S", "7.5")
+    assert effective_interval_s() == 7.5
+
+
+def test_empty_frame_set_clears_previous_residue(video: Video, tmp_path: Path):
+    """本轮一帧没抽到（换引擎/换参数失败）：上一轮残留也得清，否则界面上像仍有画面证据。"""
+    from app.pipeline import _localize_frames
+
+    _localize_frames(video.id, _fake_frames(tmp_path, [0, 30000]))
+    assert _frame_dir(video.id).is_dir()
+
+    assert _localize_frames(video.id, []) == []
+    assert list(_frame_dir(video.id).iterdir()) == [], "无帧时不能留下上一轮的孤儿帧"
+
+
+def test_prune_tolerates_missing_and_foreign_files(video: Video, tmp_path: Path):
+    """目录不存在、或里面有非关键帧文件时清理不能抛——清理是纯优化。"""
+    from app.pipeline import _localize_frames, _prune_frame_dir
+
+    _prune_frame_dir(video.id, keep_ms=set())      # 目录不存在：不抛
+    _localize_frames(video.id, _fake_frames(tmp_path, [0]))
+    stray = _frame_dir(video.id) / "notes.txt"
+    stray.write_text("不是我放的", encoding="utf-8")
+
+    _prune_frame_dir(video.id, keep_ms={0})
+    assert not stray.exists(), "非帧文件也一并清，目录约定只存关键帧"
+    assert [f for f in _frame_dir(video.id).iterdir() if f.suffix == ".jpg"]

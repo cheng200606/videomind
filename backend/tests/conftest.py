@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 
 _HERE = Path(__file__).resolve().parent
@@ -23,3 +24,9 @@ os.environ["VMIND_FIXTURE_DIR"] = str(_HERE / "fixtures")
 (_WORK / "model_settings.json").unlink(missing_ok=True)
 # 测试库一次性：标签采纳/驳回会改 Tag.suggested_by_ai 并跨运行持久，残留会污染断言
 (_WORK / "test.db").unlink(missing_ok=True)
+# 媒体与缓存目录同样一次性（v0.17 P0-5）：缓存键是内容寻址的，各测试的视频内容高度相似
+# （多为 1 字节桩文件），跨运行残留的转写/帧缓存会让「该重抽却命中旧缓存」的用例假通过或
+# 假失败；关键帧又按 video.id 落盘，而 test.db 删掉后 SQLite 主键会复用，残留帧会串到新视频上。
+for _dir in ("media", "cache"):
+    shutil.rmtree(_WORK / _dir, ignore_errors=True)
+
