@@ -88,7 +88,14 @@ export const useBatchStore = defineStore('batch', () => {
     }
   }
 
-  /** 重连会回放历史；按完整事件去重，进程重启后 seq 归零也不会误吞新事件 */
+  /**
+   * 重连会回放历史；按完整事件去重，进程重启后 seq 归零也不会误吞新事件。
+   *
+   * 已知取舍（v0.17 P2，评估后保留现状）：超过 1000 条时把整个去重集清空，是为了防止
+   * 长跑批次内存无界增长。代价是清空后若历史事件中有一条恰好被 SSE 再次回放，可能被
+   * 接纳一次——但 events 数组另有 200 条上限、且每批次终态还会重拉一次快照兜底，
+   * 重复一条的可见影响可忽略。真要严格去重得改成带过期的 LRU，收益不足以在 v0.17 引入。
+   */
   function remember(e: StageEvent): boolean {
     const key = JSON.stringify(e)
     if (seen.has(key)) return false

@@ -271,6 +271,12 @@ function insertAnchor() {
             >{{ f.label }}</el-button>
           </div>
         </div>
+        <!--
+          版本时间线不走 useProgressiveList（v0.17 P2 评估结论，非遗漏）：
+          revisions 是这篇笔记的手动保存历史，正常量级是个位数到几十条，远低于
+          渐进渲染约定的「几百条」门槛；且这里需要一次性看全历史，截断反而妨碍对比版本。
+          若将来后端放开自动保存导致历史暴涨，再接 useProgressiveList 不迟。
+        -->
         <el-timeline class="tl">
           <el-timeline-item v-for="r in detail.revisions" :key="r.id" :timestamp="fmtDateTime(r.edited_at)" placement="top">
             <div>{{ REVISION_LABEL[r.state] ?? r.state }} · {{ EDITOR_LABEL[r.editor] ?? r.editor }}</div>
