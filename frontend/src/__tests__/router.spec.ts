@@ -17,6 +17,17 @@ describe('路由表', () => {
     expect(router.resolve('/upload').meta.title).toBe('批量上传')
   })
 
+  it('笔记跳回原片：工作台深链带视频 id 与条目 item 参数', () => {
+    // NotesView.sourceRoute 使用的就是这一组 name/params/query
+    const r = router.resolve({
+      name: 'workbench', params: { id: '7' }, query: { item: '42' }
+    })
+    expect(r.name).toBe('workbench')
+    expect(r.params.id).toBe('7')
+    expect(r.query.item).toBe('42')
+    expect(r.href).toBe('/videos/7?item=42')
+  })
+
   it('未知路径仍落到 404 页', () => {
     const r = router.resolve('/no/such/page')
     expect(r.name).toBe('not-found')

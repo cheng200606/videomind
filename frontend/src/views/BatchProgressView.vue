@@ -183,12 +183,12 @@ async function retry(row: VideoState) {
       <el-timeline class="tl">
         <el-timeline-item
           v-for="(e, i) in store.events.slice(-12)" :key="e.seq ?? i"
-          :type="STAGE_STATUS_TYPE[e.status as StageStatus] ?? 'info'"
+          :type="STAGE_STATUS_TYPE[e.status] ?? 'info'"
           :timestamp="fmtTime(e.ts)"
           placement="top"
         >
           <div class="evt">
-            <el-tag size="small" :type="STAGE_STATUS_TYPE[e.status as StageStatus] ?? 'info'" disable-transitions>
+            <el-tag size="small" :type="STAGE_STATUS_TYPE[e.status] ?? 'info'" disable-transitions>
               {{ EVENT_STAGE_LABEL[e.stage] ?? e.stage }} ·
               {{ STAGE_STATUS_LABEL[e.status] ?? STATUS_LABEL[e.status] ?? e.status }}
             </el-tag>

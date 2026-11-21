@@ -2,7 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 import { TERMINAL_BATCH_STATUSES, getBatch, listBatches, openProgress } from '@/api/client'
-import type { BatchState, BatchSummary, Stage, StageEvent, StageStatus, VideoStatus } from '@/api/types'
+import { STAGE_STATUSES } from '@/api/types'
+import type { BatchState, BatchSummary, Stage, StageEvent, VideoStatus } from '@/api/types'
 
 const TERMINAL_VIDEO_STATUSES: VideoStatus[] = ['succeeded', 'partial', 'failed']
 
@@ -70,7 +71,9 @@ export const useBatchStore = defineStore('batch', () => {
       return
     }
     if (e.stage in video.stages) {
-      video.stages[e.stage as Stage] = e.status as StageStatus
+      // SSE 的 status 是裸字符串：先按后端枚举收窄，非法值不写进阶段矩阵
+      const status = STAGE_STATUSES.find((s) => s === e.status)
+      if (status) video.stages[e.stage as Stage] = status
     }
   }
 

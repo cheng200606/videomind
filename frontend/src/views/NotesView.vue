@@ -4,7 +4,7 @@ import { WarningFilled } from '@element-plus/icons-vue'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, type RouteLocationRaw } from 'vue-router'
 
 import { addNote, getItem, revise, updateNote } from '../api/client'
 import { EDITOR_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, REVISION_TYPE, clock, fmtDateTime } from '../api/labels'
@@ -24,6 +24,16 @@ const crumbs = computed(() => detail.value ? [
   { label: '视频库', to: '/' },
   { label: detail.value.video_name || '知识工作台', to: `/videos/${detail.value.video_id}` }
 ] : undefined)
+/** 来源时间 → 原片工作台的条目深链，与检索面板的 ?item= 契约一致 */
+const sourceRoute = computed<RouteLocationRaw>(() => ({
+  name: 'workbench',
+  params: { id: String(detail.value?.video_id ?? 0) },
+  query: { item: String(itemId.value) }
+}))
+const sourceHref = computed(() => router.resolve(sourceRoute.value).href)
+function openSource() {
+  void router.push(sourceRoute.value)
+}
 const noteId = ref<number | null>(null)
 const noteDraft = ref('')
 const lectureDraft = ref('')
@@ -192,7 +202,10 @@ function insertAnchor() {
         <template #header><b>来源条目</b></template>
         <div class="row">
           <ConfidenceTag :confidence="detail.confidence" />
-          <span class="ts">{{ clock(detail.anchor_ms) }}</span>
+          <el-link
+            type="primary" class="ts" :href="sourceHref" :underline="false"
+            title="跳回原片条目" @click.prevent="openSource"
+          >{{ clock(detail.anchor_ms) }}</el-link>
           <span class="muted">{{ detail.video_name }}</span>
         </div>
         <h2 class="title">{{ detail.title }}</h2>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { STAGE_STATUSES } from '@/api/types'
 import {
   ARTIFACT_LABEL, EDITOR_LABEL, EVENT_STAGE_LABEL, REVISION_LABEL, REVISION_TRANSITIONS, STAGE_LABEL,
   STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, clock, fmtTime, pct
@@ -14,6 +15,15 @@ describe('枚举中文映射', () => {
     expect(STATUS_TYPE.failed).toBe('danger')
     expect(STATUS_TYPE.partial).toBe('warning')
     expect(STATUS_LABEL.succeeded).toBe('成功')
+  })
+
+  it('阶段状态映射覆盖 types.ts StageStatus 联合类型的全部取值（含 partial）', () => {
+    for (const s of STAGE_STATUSES) {
+      expect(STAGE_STATUS_LABEL[s], s).toBeTruthy()
+      expect(STAGE_STATUS_TYPE[s], s).toBeTruthy()
+    }
+    expect(STAGE_STATUSES).toContain('partial')
+    expect(STAGE_STATUS_LABEL.partial).toBe('部分成功')
   })
 
   it('四阶段矩阵与事件流条目（batch / video_start）都有中文名，且互不串用', () => {

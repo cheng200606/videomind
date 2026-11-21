@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { bindTag, dismissTag, getBatch, getItem, getItems, getTranscript, getVideo, listTags } from '../api/client'
@@ -61,11 +61,15 @@ async function loadTags() {
   tags.value = (await listTags('video', videoId.value)).filter((t) => t.bound)
 }
 
+/** 深链 ?item= 进入时：选中并打开证据抽屉，同时跳到条目锚点（笔记反向跳转的落点） */
 function openQueryItem() {
   const wanted = Number(route.query.item)
   if (!wanted || !items.value.length) return
   const item = items.value.find((i) => i.id === wanted)
-  if (item) select(item)
+  if (item) {
+    select(item)
+    seek(item.anchor_ms ?? 0)
+  }
 }
 
 const loadSeq = ref(0)
@@ -95,6 +99,9 @@ async function load() {
     items.value = its
     transcript.value = trs
     openQueryItem()
+    // 首次加载时 player 还没挂载，seek 先暂存；DOM 刷新后再补跳
+    await nextTick()
+    flushPendingSeek()
     // 同批次列表失败不阻塞工作台主体
     void getBatch(v.batch_id).then((b) => { if (mine === loadSeq.value) batchVideos.value = b.videos }).catch(() => {})
     // 标签失败不阻塞工作台主体
@@ -108,8 +115,22 @@ async function load() {
 watch(() => route.params.id, () => void load(), { immediate: true })
 watch(() => route.query.item, openQueryItem)
 
+const pendingSeek = ref<number | null>(null)
+
 function seek(ms: number) {
-  player.value?.seek(ms)
+  if (!player.value) {
+    // 视频组件未挂载（首次 load 的异步间隙）：记住锚点，挂载后补跳
+    pendingSeek.value = ms
+    return
+  }
+  player.value.seek(ms)
+}
+
+function flushPendingSeek() {
+  const ms = pendingSeek.value
+  if (ms === null || !player.value) return
+  pendingSeek.value = null
+  player.value.seek(ms)
 }
 
 function select(item: Item) {

@@ -2,7 +2,9 @@ export type Confidence = 'explicit' | 'inferred' | 'low'
 export type ArtifactType = 'summary' | 'uml_draft' | 'key_points' | 'code_blocks'
 export type Channel = 'asr' | 'ocr' | 'both'
 export type Stage = 'transcribe' | 'visual' | 'structure' | 'artifact'
-export type StageStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped'
+/** 四阶段状态与后端 app/enums.py 同源；partial=部分成功（分块产物不完整）。 */
+export const STAGE_STATUSES = ['pending', 'running', 'done', 'partial', 'failed', 'skipped'] as const
+export type StageStatus = (typeof STAGE_STATUSES)[number]
 export type VideoStatus = 'pending' | 'running' | 'succeeded' | 'partial' | 'failed'
 export type RevisionState = 'draft' | 'pending_confirm' | 'confirmed' | 'revised'
 

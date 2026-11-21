@@ -15,14 +15,19 @@ const video = ref<HTMLVideoElement | null>(null)
 const current = ref(0)
 const mediaDuration = ref(0)
 const videoError = ref('')
+const pendingSeek = ref<number | null>(null)
 
 /** 不引播放器库：进度条上的证据刻度自绘，溯源跳转就是 video.currentTime 一次赋值 */
 const total = computed(() => props.durationMs || mediaDuration.value || 1)
 const percent = computed(() => pct(current.value, total.value))
 
 function seek(ms: number) {
-  if (!video.value) return
   const clamped = Math.min(total.value, Math.max(0, ms))
+  if (!video.value) {
+    // 深链跳进来时 <video> 可能还没挂载，等加载完成再补跳
+    pendingSeek.value = clamped
+    return
+  }
   video.value.currentTime = clamped / 1000
   current.value = clamped
   emit('time', clamped)
@@ -36,6 +41,10 @@ function onTimeUpdate() {
 
 function onLoadedMetadata() {
   mediaDuration.value = (video.value?.duration ?? 0) * 1000
+  const ms = pendingSeek.value
+  if (ms === null) return
+  pendingSeek.value = null
+  seek(ms)
 }
 
 function onVideoError() {
@@ -62,6 +71,7 @@ watch(() => props.src, () => {
   videoError.value = ''
   mediaDuration.value = 0
   current.value = 0
+  pendingSeek.value = null
 })
 
 defineExpose({ seek })
