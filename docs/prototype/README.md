@@ -9,7 +9,7 @@ W4 原型交付物（负责人 A）。12 页与 `docs/交付与排期.md` §4.1 
 | `exports/` | 13 张界面图，2880 px 宽（1440 设计宽 × 2） |
 | `source/` | 设计画布源文件（`.dc.html` + `canvas.json`）与导出脚本 `export-2x.mjs` |
 
-**墨刀原型（交付用）**：https://modao.cc/proto/WwJjWSTVtou53lgllCjdSJ/sharing ，项目名「视析 · 高保真原型」，22 页（12 页主页面 + 封面 + 9 张交互状态页），演示设备「网页 1440」，首页为「00 封面与目录」。组员能否打开取决于墨刀「分享」里的访问权限设置。
+**墨刀原型（交付用）**：https://modao.cc/proto/WwJjWSTVtou53lgllCjdSJ/sharing ，项目名「视析 · 高保真原型」，22 页（12 页主页面 + 封面 + 9 张交互状态页），演示设备「网页 1440」，首页为「00 封面与目录」。分享权限为「拿到链接的人都能查看」（2026-11-21 以无登录态浏览器复验：22 页均可打开与浏览；导出操作需登录）。
 
 **设计画布（源稿）**：https://claude.ai/artifact/GTp6DyPRJWw44fcPAcLQLJ （私有，需负责人在 Share 菜单分享后组员才能打开）
 
