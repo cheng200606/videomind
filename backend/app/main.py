@@ -13,7 +13,7 @@ from sqlmodel import Session
 
 from app import engines  # noqa: F401  导入即把引擎实现注册进 base 的注册表
 from app.artifacts import REGISTRY, normalize_schemas
-from app.config import DEFAULT_OUTPUT_SCHEMAS, get_settings
+from app.config import APP_VERSION, DEFAULT_OUTPUT_SCHEMAS, get_settings
 from app.db import engine, init_db
 from app.model_config import active_model_config, reset_model_config_cache
 from app.net import sanitize_proxy_env
@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="VideoMind 视析 API",
-    version="0.1.0",
+    version=APP_VERSION,
     description="知识/讲解类视频批量结构化 · 垂直切片。所有识别结果仅供参考。",
     lifespan=lifespan,
 )
@@ -162,7 +162,12 @@ async def unhandled_handler(request: Request, exc: Exception):
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "asr": _settings.asr_engine, "ocr": _settings.ocr_engine}
+    return {
+        "ok": True,
+        "version": APP_VERSION,
+        "asr": _settings.asr_engine,
+        "ocr": _settings.ocr_engine,
+    }
 
 
 # 桌面版（PyInstaller）把前端 dist 打进包里同源服务，源码开发时本地 npm run build 后也可直连。
