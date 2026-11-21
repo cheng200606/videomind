@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>04 知识工作台</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;font-weight:900;font-size:14px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b.s{height:34px;padding:0 14px;font-size:13px}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.chap{all:unset;cursor:pointer;box-sizing:border-box;color:#FFFFFF;font-size:11.5px;padding:4px 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.chap:hover{background:#E4002B!important}
+.chap:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.mk{all:unset;cursor:pointer;position:absolute;z-index:2;box-sizing:border-box;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:"Inter Tight",sans-serif;font-weight:800}
+.mk:hover{transform:scale(1.15)}
+.mk:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.tab{all:unset;cursor:pointer;padding:10px 0 8px;font-size:14.5px;color:#6B6B6B;border-bottom:3px solid transparent;font-weight:500}
+.tab:hover{color:#0A0A0A}
+.tab.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.tab:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.ol{all:unset;cursor:pointer;display:grid;grid-template-columns:46px minmax(0,1fr);gap:8px;padding:9px 0;border-bottom:1px solid #E0E0E0;box-sizing:border-box;width:100%}
+.ol:hover .olt{color:#E4002B}
+.ol.on .olt{font-weight:900}
+.ol.on .oln{color:#E4002B}
+.ol:focus-visible{outline:3px solid #E4002B;outline-offset:-1px}
+.t{all:unset;cursor:pointer;font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:600;border-bottom:2px solid #0A0A0A;line-height:1.3;white-space:nowrap}
+.t:hover{color:#E4002B;border-bottom-color:#E4002B}
+.t:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.it{all:unset;cursor:pointer;font-size:15px;font-weight:500;line-height:1.45}
+.it:hover{color:#E4002B}
+.it:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.node{all:unset;cursor:pointer;box-sizing:border-box;width:100%;display:flex;justify-content:space-between;gap:10px;padding:9px 12px;box-shadow:inset 0 0 0 2px #0A0A0A;font-size:13.5px;font-weight:500}
+.node:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.node:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+@media (max-width:1100px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box;position:relative">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav on" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:18px 64px 48px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px">
+    <nav style="font-size:13px;color:#6B6B6B" aria-label="面包屑"><a href="P01Library.dc.html" style="color:#6B6B6B">视频库</a> / <a href="P03Progress.dc.html" style="color:#6B6B6B">Vue3 组合式 API 速通</a> / 第 3 条</nav>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:end">
+      <span class="n" style="grid-column:1 / span 2;font-weight:900;font-size:150px;line-height:.74">03</span>
+      <div style="grid-column:3 / span 7;display:flex;flex-direction:column;gap:8px">
+        <h1 style="margin:0;font-size:42px;line-height:1.08;font-weight:900">ref 与 reactive 的区别</h1>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;align-items:baseline;font-size:14px">
+          <span><b class="n" style="font-weight:800;font-size:20px">28:14</b> 时长</span>
+          <span><b class="n" style="font-weight:800;font-size:20px">6</b> 条要点</span>
+          <span style="color:#E4002B"><b class="n" style="font-weight:800;font-size:20px">2</b> 处易错</span>
+        </div>
+      </div>
+      <div style="grid-column:10 / span 3;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">
+        <label style="display:flex;flex-direction:column;font-size:12px;color:#6B6B6B">同批视频
+          <select style="font-family:inherit;font-size:13px;height:34px;border:2px solid #0A0A0A;background:#FFFFFF;border-radius:0;padding:0 6px;color:#0A0A0A">
+            <option>03 ref 与 reactive</option><option>01 为什么要用组合式 API</option><option>02 setup 与生命周期</option><option>04 computed 与 watch</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section aria-label="刻度尺时间线：点章节或编号跳转" style="position:relative;height:132px;margin-top:6px">
+      <div style="position:absolute;left:0;right:0;top:0;height:26px;display:flex;gap:2px">
+        <sc-for list="{{chapters}}" as="c" hint-placeholder-count="6">
+          <button class="chap" onClick="{{c.seek}}" style="{{c.style}}" aria-label="{{c.aria}}">{{c.title}}</button>
+        </sc-for>
+      </div>
+      <div style="position:absolute;left:45.75%;width:20.37%;top:30px;height:40px;background:repeating-linear-gradient(135deg,rgba(228,0,43,.22) 0 6px,transparent 6px 12px)" aria-hidden="true"></div>
+      <span style="position:absolute;left:45.75%;top:72px;font-size:11px;color:#E4002B;font-weight:500;padding-left:4px;white-space:nowrap">12:55 – 18:40 说法前后不一致</span>
+      <div style="position:absolute;left:0;right:0;top:30px;height:2px;background:#0A0A0A" aria-hidden="true"></div>
+      <div style="position:absolute;left:0;right:0;top:32px;height:10px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px 3.5419%)" aria-hidden="true"></div>
+      <div style="position:absolute;left:0;right:0;top:32px;height:18px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 2px,transparent 2px 17.7096%)" aria-hidden="true"></div>
+      <sc-for list="{{ticks}}" as="k" hint-placeholder-count="6"><span class="n" style="position:absolute;top:50px;font-weight:800;font-size:12px;{{k.pos}}">{{k.tc}}</span></sc-for>
+      <sc-for list="{{marks}}" as="mk" hint-placeholder-count="6">
+        <span aria-hidden="true" style="position:absolute;top:32px;height:62px;width:1px;{{mk.line}}"></span>
+        <button class="mk" onClick="{{mk.open}}" aria-label="{{mk.aria}}" style="{{mk.style}}">{{mk.n}}</button>
+      </sc-for>
+      <div aria-hidden="true" style="position:absolute;top:30px;bottom:6px;width:3px;margin-left:-1px;background:#E4002B;pointer-events:none;{{headPos}}">
+        <span style="position:absolute;top:-8px;left:-6px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid #E4002B"></span>
+      </div>
+    </section>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:24px;border-top:2px solid #0A0A0A;padding-top:16px;align-items:start">
+      <aside style="grid-column:1 / span 3;display:flex;flex-direction:column;min-width:0" aria-label="大纲">
+        <div style="display:flex;gap:20px;border-bottom:2px solid #0A0A0A">
+          <button class="{{lOut}}" onClick="{{showOut}}">章节</button>
+          <button class="{{lTr}}" onClick="{{showTr}}">原话</button>
+        </div>
+        <sc-if value="{{isOut}}" hint-placeholder-val="{{ true }}">
+          <sc-for list="{{chapters}}" as="c" hint-placeholder-count="6">
+            <button class="{{c.cls}}" onClick="{{c.seek}}">
+              <span class="m oln" style="font-size:12px;padding-top:2px">{{c.tc}}</span>
+              <span style="display:flex;flex-direction:column;min-width:0"><span class="olt" style="font-size:14px">{{c.title}}</span><span style="font-size:12.5px;color:#6B6B6B">{{c.gist}}</span></span>
+            </button>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{isTr}}" hint-placeholder-val="{{ false }}">
+          <sc-for list="{{lines}}" as="l" hint-placeholder-count="8">
+            <button class="{{l.cls}}" onClick="{{l.seek}}">
+              <span class="m oln" style="font-size:12px;padding-top:2px">{{l.tc}}</span>
+              <span class="olt" style="font-size:13.5px">{{l.text}}</span>
+            </button>
+          </sc-for>
+        </sc-if>
+      </aside>
+
+      <section style="grid-column:4 / span 5;display:flex;flex-direction:column;gap:12px;min-width:0" aria-label="播放器">
+        <div style="aspect-ratio:16/9;max-width:100%;background:#0A0A0A;position:relative;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:0 9%;box-sizing:border-box;overflow:hidden">
+          <span style="color:#FFFFFF;font-weight:900;font-size:clamp(16px,1.6vw,22px)">{{chapterTitle}}</span>
+          <pre class="m" style="margin:0;color:#BDBDBD;font-size:clamp(10.5px,.9vw,13px);line-height:1.7;white-space:pre-wrap">{{frameCode}}</pre>
+          <p style="position:absolute;left:0;right:0;bottom:12px;margin:0;text-align:center;color:#FFFFFF;font-size:14px;padding:0 16px">{{caption}}</p>
+          <span class="n" style="position:absolute;left:0;top:0;background:#E4002B;color:#FFFFFF;font-weight:800;font-size:13px;padding:3px 8px">▶ {{nowTc}}</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+          <span class="n" style="font-weight:900;font-size:40px;line-height:1">{{nowTc}}</span>
+          <span class="n" style="font-weight:500;color:#6B6B6B">/ 28:14</span>
+          <span style="flex:1"></span>
+          <button class="b o s" onClick="{{back10}}" aria-label="后退 10 秒">−10s</button>
+          <button class="b o s" onClick="{{fwd10}}" aria-label="前进 10 秒">+10s</button>
+          <a class="b s" href="P07Notes.dc.html">记笔记</a>
+        </div>
+      </section>
+
+      <section style="grid-column:9 / span 4;display:flex;flex-direction:column;min-width:0" aria-label="结构化产物">
+        <div style="display:flex;gap:20px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+          <button class="{{tSum}}" onClick="{{goSum}}">总结</button>
+          <button class="{{tPts}}" onClick="{{goPts}}">要点 6</button>
+          <button class="{{tUml}}" onClick="{{goUml}}">UML</button>
+          <button class="{{tCode}}" onClick="{{goCode}}">代码块</button>
+        </div>
+
+        <sc-if value="{{isSum}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:16px;padding-top:16px">
+            <p style="margin:0;font-size:25px;line-height:1.32;font-weight:900">ref 管基本类型，reactive 管对象，解构前先 toRefs。</p>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{take}}" as="t" hint-placeholder-count="3">
+                <div style="display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:8px 0;border-bottom:1px solid #E0E0E0">
+                  <b class="n" style="font-weight:900;font-size:17px">{{t.n}}</b><span style="font-size:14px">{{t.text}}</span><button class="t" onClick="{{t.seek}}">{{t.tc}}</button>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#E4002B;color:#FFFFFF;padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+              <b>考前注意 · 2 处易错</b>
+              <span style="font-size:13.5px">12:55 的说法被讲师自己在 18:40 推翻了，以后者为准。</span>
+              <span style="display:flex;gap:8px;flex-wrap:wrap">
+                <button class="b s" onClick="{{openConflict}}" style="background:#FFFFFF;color:#0A0A0A">看证据链</button>
+                <button class="b s" onClick="{{goPit}}" style="background:transparent;box-shadow:inset 0 0 0 2px #FFFFFF">只看易错</button>
+              </span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isPts}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column">
+            <label style="display:flex;align-items:center;gap:8px;padding:10px 0;font-size:13px;border-bottom:1px solid #E0E0E0"><input type="checkbox" checked="{{onlyPit}}" onChange="{{togglePit}}" style="accent-color:#E4002B;width:16px;height:16px">只看易错</label>
+            <sc-for list="{{items}}" as="it" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:start;padding:11px 0;border-bottom:1px solid #E0E0E0">
+                <span aria-hidden="true" style="width:24px;height:24px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:12px;{{it.dot}}">{{it.n}}</span>
+                <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                  <button class="it" onClick="{{it.open}}" style="{{it.fg}}">{{it.title}}</button>
+                  <span style="font-size:12px;color:#6B6B6B">{{it.meta}}</span>
+                </span>
+                <button class="t" onClick="{{it.seek}}">{{it.tc}}</button>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isUml}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:0;padding-top:14px">
+            <span style="font-size:12.5px;color:#6B6B6B;margin-bottom:10px">章节流程草稿 · 点节点跳到讲到它的那一秒</span>
+            <sc-for list="{{uml}}" as="u" hint-placeholder-count="5">
+              <div style="display:flex;flex-direction:column;align-items:center">
+                <button class="node" onClick="{{u.seek}}"><span>{{u.label}}</span><span class="m" style="font-size:12px">{{u.tc}}</span></button>
+                <sc-if value="{{u.arrow}}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="width:2px;height:14px;background:#0A0A0A"></span></sc-if>
+              </div>
+            </sc-for>
+            <a href="P06Uml.dc.html" style="margin-top:12px;font-weight:900;font-size:13.5px;border-bottom:2px solid #0A0A0A;align-self:flex-start">用例 / 类 / 时序 →</a>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isCode}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;padding-top:14px">
+            <div style="display:flex;justify-content:space-between;align-items:baseline"><b>toRefs 解构示例</b><button class="t" onClick="{{seekCode}}">19:22</button></div>
+            <pre class="m" style="margin:0;background:#0A0A0A;color:#EDEDED;font-size:13px;line-height:1.75;padding:14px 16px;white-space:pre-wrap">const state = reactive({ count: 0, name: 'vm' })
+const { count, name } = toRefs(state)
+count.value++</pre>
+            <span style="font-size:12px;color:#6B6B6B">来源：画面识别 · 推断 · 专有名词已用讲师原话校正</span>
+          </div>
+        </sc-if>
+      </section>
+    </section>
+  </main>
+
+  <sc-if value="{{drawer}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" style="position:absolute;inset:0;z-index:10;background:rgba(255,255,255,.72)"></div>
+    <aside role="dialog" aria-label="证据链" style="position:absolute;z-index:11;top:0;right:0;bottom:0;width:min(500px,100%);background:#FFFFFF;border-left:2px solid #0A0A0A;display:flex;flex-direction:column;overflow:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 28px;min-height:48px;border-bottom:2px solid #0A0A0A">
+        <b>证据链</b>
+        <button class="b o s" onClick="{{close}}">关闭</button>
+      </div>
+      <div style="padding:22px 28px 32px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:start">
+          <span style="width:52px;height:52px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:900;font-size:24px;{{sel.dot}}">{{sel.n}}</span>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <h2 style="margin:0;font-size:24px;line-height:1.3;font-weight:900">{{sel.title}}</h2>
+            <span style="font-size:13px;color:#6B6B6B">{{sel.meta}}</span>
+          </div>
+        </div>
+
+        <sc-if value="{{sel.conflict}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:0;border-top:3px solid #E4002B">
+            <span style="font-weight:900;color:#E4002B;padding:10px 0 4px">讲师前后说法不一致</span>
+            <div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid #E0E0E0;align-items:baseline">
+              <button class="t" onClick="{{seekA}}" style="color:#6B6B6B;border-bottom-color:#6B6B6B">12:55</button>
+              <span style="color:#6B6B6B;text-decoration:line-through;text-decoration-color:#E4002B;text-decoration-thickness:2px">「reactive 返回的对象，你直接解构出来用也没问题」</span>
+            </div>
+            <div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid #E0E0E0;align-items:baseline">
+              <button class="t" onClick="{{seekB}}">18:40</button>
+              <span style="font-weight:500">「刚才说错了，解构 reactive 会丢失响应性」</span>
+            </div>
+            <span style="font-size:12px;color:#6B6B6B;padding-top:6px">按时间先后以后一次为准。检出结果仅供参考。</span>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:12px;color:#6B6B6B;font-weight:500">原话</span>
+          <p style="margin:0;font-size:19px;line-height:1.55;font-weight:500;border-left:3px solid #0A0A0A;padding-left:14px">「{{sel.quote}}」</p>
+          <button class="b s" onClick="{{seekSel}}" style="align-self:flex-start">▶ 回放 {{sel.tc}}</button>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <span style="font-size:12px;color:#6B6B6B;font-weight:500">来源帧 · {{sel.channel}}</span>
+          <div style="aspect-ratio:16/9;max-width:100%;background:#0A0A0A;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;justify-content:center">
+            <span style="color:#FFFFFF;font-weight:900;font-size:14px">{{sel.frameTitle}}</span>
+            <pre class="m" style="margin:0;color:#BDBDBD;font-size:11.5px;line-height:1.6;white-space:pre-wrap;box-shadow:inset 0 0 0 2px #E4002B;padding:8px">{{sel.frame}}</pre>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:2px solid #0A0A0A;padding-top:14px">
+          <span style="font-size:12px;color:#6B6B6B">识别结果仅供参考，请回看原片核对。</span>
+          <a class="b s" href="P07Notes.dc.html">从这条建笔记</a>
+        </div>
+      </div>
+    </aside>
+  </sc-if>
+
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:absolute;z-index:12;left:50%;bottom:28px;transform:translateX(-50%);background:#0A0A0A;color:#FFFFFF;font-size:13.5px;font-weight:500;padding:10px 18px;border-left:4px solid #E4002B">{{toastText}}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"initial":{"editor":"enum","options":["none","evidence"],"default":"none"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    const ev = props.initial === 'evidence';
+    this.state = { t: ev ? 1120 : 242, tab: ev ? 'pts' : 'sum', left: 'out', drawer: ev ? 'k3' : null, onlyPit: false, toast: '' };
+  }
+  renderVals() {
+    const D = 1694, s = this.state;
+    const fmt = (x) => String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(Math.floor(x % 60)).padStart(2, '0');
+    const pct = (x) => (x / D * 100).toFixed(2) + '%';
+    const seek = (x, msg) => () => {
+      this.setState({ t: x, drawer: null, toast: msg || '' });
+      if (msg) { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: '' }), 2200); }
+    };
+    const CH = [
+      { t: 0, title: '开场：为什么用组合式 API', gist: '选项式 API 在大组件里逻辑分散' },
+      { t: 200, title: 'ref：包装基本类型', gist: '.value 访问，模板自动解包' },
+      { t: 585, title: 'reactive：对象代理', gist: '只接受对象类型' },
+      { t: 910, title: '解构陷阱与 toRefs', gist: '最常踩的坑，含一次口误更正' },
+      { t: 1290, title: 'computed 与 watch', gist: '派生值用 computed，副作用用 watch' },
+      { t: 1565, title: '小结', gist: '三个结论' }
+    ];
+    let ci = 0; CH.forEach((c, i) => { if (s.t >= c.t) ci = i; });
+    const CODE = [
+      'export default {\n  data() { return { count: 0 } },\n  methods: { inc() { this.count++ } }\n}',
+      'const count = ref(0)\nconsole.log(count.value) // 0\ncount.value++',
+      'const state = reactive({ count: 0 })\nstate.count++\nreactive(1) // ⚠ value cannot be made reactive',
+      "const state = reactive({ count: 0, name: 'vm' })\nconst { count } = state        // ✗ 失去响应性\nconst { count } = toRefs(state) // ✓",
+      'const double = computed(() => count.value * 2)\nwatch(state, (v) => save(v)) // 默认深度监听',
+      '1. ref → 基本类型\n2. reactive → 对象\n3. 解构前先 toRefs'
+    ];
+    const L = [
+      [12, '今天我们把组合式 API 里最容易混的 ref 和 reactive 讲清楚'], [200, '先看 ref，它把一个基本类型包成一个对象'],
+      [242, '在 script 里要通过 .value 访问，模板里会自动解包'], [585, 'reactive 接收一个对象，返回它的响应式代理'],
+      [618, '注意 reactive 只接受对象，传数字进去会有警告'], [775, 'reactive 返回的对象，你直接解构出来用也没问题'],
+      [910, '好，我们来看一个大家最常踩的坑'], [1120, '刚才说错了，解构 reactive 会丢失响应性'],
+      [1162, '正确做法是先用 toRefs 转一下再解构'], [1385, 'watch 监听 reactive 对象时默认是深度的'],
+      [1488, 'computed 里不要去改别的状态'], [1565, '最后总结一下今天的三个结论']
+    ];
+    let li = 0; L.forEach((l, i) => { if (s.t >= l[0]) li = i; });
+    const CONF = { explicit: '明述', inferred: '推断', low: '低置信' };
+    const IT = [
+      { id: 'k1', n: 1, t: 242, title: 'ref 用 .value 访问，模板里自动解包', conf: 'explicit', ch: '语音', quote: '在 script 里要通过 .value 访问，模板里会自动解包', fT: 'ref：包装基本类型', frame: CODE[1] },
+      { id: 'k2', n: 2, t: 618, title: 'reactive 只接受对象，传数字会报警告', conf: 'explicit', ch: '语音', quote: '注意 reactive 只接受对象，传数字进去会有警告', fT: 'reactive：对象代理', frame: CODE[2] },
+      { id: 'k3', n: 3, t: 1120, title: '解构 reactive 对象会丢失响应性', conf: 'explicit', ch: '语音', pit: true, conflict: true, quote: '刚才说错了，解构 reactive 会丢失响应性', fT: '解构陷阱与 toRefs', frame: 'const { count } = state // ✗ 失去响应性' },
+      { id: 'k4', n: 4, t: 1162, title: '先 toRefs(state) 再解构', conf: 'inferred', ch: '画面', quote: '正确做法是先用 toRefs 转一下再解构', fT: '解构陷阱与 toRefs', frame: CODE[3] },
+      { id: 'k5', n: 5, t: 1385, title: 'watch 监听 reactive 对象默认深度监听', conf: 'inferred', ch: '语音', quote: 'watch 监听 reactive 对象时默认是深度的', fT: 'computed 与 watch', frame: CODE[4] },
+      { id: 'k6', n: 6, t: 1488, title: 'computed 里不要改别的状态', conf: 'low', ch: '画面', pit: true, quote: 'computed 里不要去改别的状态', fT: 'computed 与 watch', frame: 'computed(() => { total.value = 1 }) // ✗' }
+    ];
+    const dot = (k) => {
+      const c = k.pit ? '#E4002B' : '#0A0A0A';
+      if (k.conf === 'explicit') return 'background:' + c + ';color:#FFFFFF';
+      if (k.conf === 'inferred') return 'border:2px solid ' + c + ';color:' + c + ';background:#FFFFFF';
+      return 'border:2px dashed ' + c + ';color:' + c + ';background:#FFFFFF';
+    };
+    const open = (id) => () => this.setState({ drawer: id, tab: 'pts' });
+    const deco = (k) => ({ ...k, tc: fmt(k.t), dot: dot(k), fg: k.pit ? 'color:#E4002B' : '',
+      meta: CONF[k.conf] + ' · 来源' + k.ch + (k.pit ? ' · 易错' : '') + (k.conflict ? ' · 前后不一致' : ''),
+      channel: k.ch === '语音' ? '语音转写' : '画面识别', frameTitle: k.fT, conflict: !!k.conflict, seek: seek(k.t), open: open(k.id) });
+    const selRaw = IT.find((k) => k.id === s.drawer) || IT[2];
+    const tabCls = (k) => 'tab' + (s.tab === k ? ' on' : '');
+    const setTab = (k) => () => this.setState({ tab: k });
+    return {
+      chapters: CH.map((c, i) => ({ ...c, tc: fmt(c.t), aria: fmt(c.t) + ' ' + c.title,
+        style: 'flex:' + (((CH[i + 1] || { t: D }).t) - c.t) + ' 1 0;background:' + (i === ci ? '#E4002B' : (i % 2 ? '#5A5A5A' : '#0A0A0A')) + (i === ci ? ';font-weight:900' : ''),
+        cls: 'ol' + (i === ci ? ' on' : ''), seek: seek(c.t) })),
+      ticks: [0, 5, 10, 15, 20, 25].map((m) => ({ tc: String(m).padStart(2, '0'), pos: 'left:' + pct(m * 60) })),
+      marks: IT.map((k) => {
+        const big = k.pit;
+        const sz = big ? 32 : 24;
+        return { n: k.n, aria: fmt(k.t) + ' 第 ' + k.n + ' 条：' + k.title, open: open(k.id),
+          line: 'left:' + pct(k.t) + ';background:' + (k.pit ? '#E4002B' : '#0A0A0A'),
+          style: 'left:' + pct(k.t) + ';top:' + (94 - sz / 2 + 12) + 'px;width:' + sz + 'px;height:' + sz + 'px;margin-left:-' + (sz / 2) + 'px;font-size:' + (big ? 15 : 12) + 'px;' + dot(k) };
+      }),
+      headPos: 'left:' + pct(s.t),
+      lOut: tabCls2(s.left === 'out'), lTr: tabCls2(s.left === 'tr'),
+      showOut: () => this.setState({ left: 'out' }), showTr: () => this.setState({ left: 'tr' }),
+      isOut: s.left === 'out', isTr: s.left === 'tr',
+      lines: L.map((l, i) => ({ tc: fmt(l[0]), text: l[1], cls: 'ol' + (i === li ? ' on' : ''), seek: seek(l[0]) })),
+      chapterTitle: CH[ci].title, frameCode: CODE[ci], caption: L[li][1], nowTc: fmt(s.t),
+      back10: () => this.setState({ t: Math.max(0, s.t - 10) }), fwd10: () => this.setState({ t: Math.min(D, s.t + 10) }),
+      tSum: tabCls('sum'), tPts: tabCls('pts'), tUml: tabCls('uml'), tCode: tabCls('code'),
+      goSum: setTab('sum'), goPts: setTab('pts'), goUml: setTab('uml'), goCode: setTab('code'),
+      isSum: s.tab === 'sum', isPts: s.tab === 'pts', isUml: s.tab === 'uml', isCode: s.tab === 'code',
+      take: [
+        { n: 1, text: 'ref 包装基本类型，script 里用 .value', tc: '04:02', seek: seek(242) },
+        { n: 2, text: 'reactive 只接受对象，返回响应式代理', tc: '10:18', seek: seek(618) },
+        { n: 3, text: '解构 reactive 前先 toRefs', tc: '19:22', seek: seek(1162) }
+      ],
+      openConflict: open('k3'), goPit: () => this.setState({ tab: 'pts', onlyPit: true }),
+      onlyPit: s.onlyPit, togglePit: () => this.setState({ onlyPit: !s.onlyPit }),
+      items: IT.filter((k) => !s.onlyPit || k.pit).map(deco),
+      uml: CH.slice(1, 5).map((c, i, a) => ({ label: c.title, tc: fmt(c.t), arrow: i < a.length - 1, seek: seek(c.t, '已跳到 ' + fmt(c.t) + ' · ' + c.title) })),
+      seekCode: seek(1162),
+      drawer: !!s.drawer, sel: deco(selRaw), close: () => this.setState({ drawer: null }),
+      seekA: seek(775), seekB: seek(1120), seekSel: seek(selRaw.t),
+      toast: !!s.toast, toastText: s.toast
+    };
+    function tabCls2(on) { return 'tab' + (on ? ' on' : ''); }
+  }
+}
+</script>
+</body>
+</html>

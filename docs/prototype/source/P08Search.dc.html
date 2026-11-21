@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>08 标签与检索</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;font-weight:900;font-size:14px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b.s{height:32px;padding:0 12px;font-size:13px}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.res{display:grid;grid-template-columns:34px minmax(0,1fr) 220px;gap:18px;align-items:start;padding:16px 0;border-bottom:1px solid #E0E0E0}
+.res:hover .rt{text-decoration:underline;text-decoration-thickness:2px}
+.hit{color:#E4002B;font-weight:900}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}.res{grid-template-columns:34px minmax(0,1fr)!important}.res .mini{grid-column:2}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box;position:relative">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav on" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:28px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <form role="search" onSubmit="{{noSubmit}}" style="display:flex;align-items:stretch;border-bottom:4px solid #0A0A0A;flex-wrap:wrap;gap:12px">
+      <label for="kw" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">关键词</label>
+      <input id="kw" value="解构" style="flex:1;min-width:200px;font-family:inherit;font-size:64px;font-weight:900;border:0;padding:0 0 4px;outline:none;background:transparent;color:#0A0A0A;letter-spacing:-.01em">
+      <span style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:14px;font-weight:900;box-shadow:inset 0 0 0 2px #0A0A0A;padding:4px 10px">#Vue3 ×</span>
+        <span style="font-size:14px;font-weight:900;box-shadow:inset 0 0 0 2px #0A0A0A;padding:4px 10px">#考试周 ×</span>
+        <button class="b">检索</button>
+      </span>
+    </form>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:24px;align-items:start">
+      <div style="grid-column:1 / span 9;display:flex;flex-direction:column;min-width:0" aria-label="检索结果">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;padding-bottom:10px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+          <span style="display:flex;align-items:flex-end;gap:14px"><span class="n" style="font-weight:900;font-size:72px;line-height:.78">{{countPad}}</span><span style="padding-bottom:2px">条命中 · 来自 2 个视频 · 标题命中优先<br><span style="font-size:12.5px;color:#6B6B6B">按标签和关键词过滤，不是语义检索</span></span></span>
+          <label style="font-size:13px;display:flex;align-items:center;gap:6px;color:#6B6B6B">置信度
+            <select onChange="{{pickConf}}" style="font-family:inherit;font-size:13px;height:32px;border:2px solid #0A0A0A;background:#FFFFFF;border-radius:0;color:#0A0A0A"><option value="all">全部</option><option value="explicit">只看明述</option><option value="nolow">排除低置信</option></select>
+          </label>
+        </div>
+        <sc-for list="{{results}}" as="r" hint-placeholder-count="4">
+          <a class="res" href="Workbench.dc.html">
+            <span aria-label="置信度 {{r.confLabel}}" style="width:28px;height:28px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px;margin-top:2px;{{r.dot}}">{{r.n}}</span>
+            <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+              <span class="rt" style="font-size:18px;font-weight:500;line-height:1.4"><sc-for list="{{r.seg}}" as="s" hint-placeholder-count="2"><sc-if value="{{s.hit}}" hint-placeholder-val="{{ false }}"><span class="hit">{{s.t}}</span></sc-if><sc-if value="{{s.plain}}" hint-placeholder-val="{{ true }}">{{s.t}}</sc-if></sc-for></span>
+              <span style="font-size:13.5px;color:#3A3A3A">{{r.quote}}</span>
+              <span style="font-size:12.5px;color:#6B6B6B">{{r.video}} · {{r.confLabel}}<sc-if value="{{r.pit}}" hint-placeholder-val="{{ false }}"> · <b style="color:#E4002B">易错</b></sc-if></span>
+            </span>
+            <span class="mini" aria-label="在视频中的位置 {{r.tc}}" style="display:flex;flex-direction:column;gap:4px;padding-top:6px">
+              <span style="position:relative;height:16px;border-bottom:2px solid #0A0A0A;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px 25%);background-size:100% 6px;background-repeat:no-repeat;background-position:0 100%">
+                <i style="position:absolute;bottom:-2px;width:3px;height:18px;margin-left:-1px;{{r.pos}}"></i>
+              </span>
+              <span style="display:flex;justify-content:space-between;font-size:11px"><span class="n" style="font-weight:800">00:00</span><b class="m" style="font-size:12px">{{r.tc}}</b><span class="n" style="font-weight:800;color:#6B6B6B">{{r.len}}</span></span>
+            </span>
+          </a>
+        </sc-for>
+      </div>
+
+      <aside style="grid-column:10 / span 3;display:flex;flex-direction:column;gap:20px" aria-label="标签">
+        <div style="display:flex;flex-direction:column;gap:8px;border-top:2px solid #0A0A0A;padding-top:12px">
+          <button class="b" onClick="{{openSug}}" style="justify-content:space-between">AI 标签建议<span class="n" style="background:#E4002B;padding:0 8px;font-weight:900">{{sugCount}}</span></button>
+          <button class="b o" onClick="{{openMgr}}">管理标签</button>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <span style="font-size:12px;color:#6B6B6B;font-weight:500;padding-bottom:6px">常用标签</span>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E0E0"><b>#考试周</b><span class="n" style="font-weight:800">31</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E0E0"><b>#Vue3</b><span class="n" style="font-weight:800">22</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E0E0"><span>#响应式</span><span class="n" style="font-weight:800">9</span></div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #E0E0E0"><span>#UML</span><span class="n" style="font-weight:800">7</span></div>
+        </div>
+        <span style="font-size:12.5px;color:#6B6B6B">标签可以打在整条视频上，也可以打在单个条目上。</span>
+      </aside>
+    </section>
+  </main>
+
+  <sc-if value="{{drawer}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" style="position:absolute;inset:0;background:rgba(255,255,255,.72)"></div>
+    <aside role="dialog" aria-label="{{dTitle}}" style="position:absolute;top:0;right:0;bottom:0;width:min(440px,100%);background:#FFFFFF;border-left:2px solid #0A0A0A;display:flex;flex-direction:column;overflow:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0 24px;min-height:48px;border-bottom:2px solid #0A0A0A"><b>{{dTitle}}</b><button class="b o s" onClick="{{close}}">关闭</button></div>
+      <sc-if value="{{isSug}}" hint-placeholder-val="{{ true }}">
+        <div style="padding:8px 24px 24px;display:flex;flex-direction:column">
+          <sc-for list="{{sugs}}" as="g" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:14px 0;border-bottom:1px solid #E0E0E0">
+              <span><b style="font-size:16px">#{{g.tag}}</b> <span style="font-size:12.5px;color:#6B6B6B">→ {{g.target}}</span></span>
+              <span style="font-size:13px;color:#3A3A3A">依据：{{g.why}}</span>
+              <span style="display:flex;gap:8px"><button class="b s" onClick="{{g.adopt}}">采纳</button><button class="b o s" onClick="{{g.reject}}">驳回</button></span>
+            </div>
+          </sc-for>
+          <sc-if value="{{sugDone}}" hint-placeholder-val="{{ false }}"><p style="margin:16px 0 0;color:#6B6B6B">建议都处理完了。</p></sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{isMgr}}" hint-placeholder-val="{{ false }}">
+        <div style="padding:8px 24px 24px;display:flex;flex-direction:column">
+          <sc-for list="{{mgr}}" as="m" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid #E0E0E0">
+              <span><b>#{{m.name}}</b> <span class="n" style="font-weight:800;color:#6B6B6B">{{m.n}}</span></span>
+              <button class="b o s">重命名</button><button class="b o s">合并到…</button>
+            </div>
+          </sc-for>
+          <button class="b o s" style="margin-top:14px;align-self:flex-start;color:#E4002B;box-shadow:inset 0 0 0 2px #E4002B">删除未使用的标签</button>
+        </div>
+      </sc-if>
+    </aside>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { conf: 'all', drawer: null, handled: [] }; }
+  renderVals() {
+    const N = { explicit: '明述', inferred: '推断', low: '低置信' };
+    const R = [
+      { n: 1, t: '解构 reactive 对象会丢失响应性', q: '「刚才说错了，解构 reactive 会丢失响应性」', v: 'Vue3 · 03 ref 与 reactive', at: 1120, len: 1694, c: 'explicit', pit: true },
+      { n: 2, t: '先用 toRefs 转成 ref 集合，再解构', q: '「正确做法是先用 toRefs 转一下再解构」', v: 'Vue3 · 03 ref 与 reactive', at: 1162, len: 1694, c: 'inferred' },
+      { n: 3, t: 'props 解构同样会丢响应性，用 toRefs(props)', q: '「props 也一样，别直接解构」', v: 'Vue3 · 02 setup 与生命周期', at: 906, len: 1265, c: 'inferred', pit: true },
+      { n: 4, t: '数组解构 ref 不影响 .value 访问', q: '画面代码：const [a, b] = [ref(1), ref(2)]', v: 'Vue3 · 02 setup 与生命周期', at: 1051, len: 1265, c: 'low' }
+    ];
+    const fmt = (x) => String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(Math.floor(x % 60)).padStart(2, '0');
+    const kw = '解构';
+    const seg = (t) => t.split(kw).flatMap((p, i, a) => (i < a.length - 1 ? [{ t: p, hit: false, plain: true }, { t: kw, hit: true, plain: false }] : [{ t: p, hit: false, plain: true }])).filter((x) => x.t);
+    const dot = (r) => {
+      const c = r.pit ? '#E4002B' : '#0A0A0A';
+      if (r.c === 'explicit') return 'background:' + c + ';color:#FFFFFF';
+      if (r.c === 'inferred') return 'border:2px solid ' + c + ';color:' + c;
+      return 'border:2px dashed ' + c + ';color:' + c;
+    };
+    const f = this.state.conf;
+    const res = R.filter((r) => f === 'all' || (f === 'explicit' ? r.c === 'explicit' : r.c !== 'low'));
+    const S = [
+      { id: 1, tag: '响应式', target: '03 ref 与 reactive（整条视频）', why: '全片反复讲响应式的边界' },
+      { id: 2, tag: '易错', target: '条目「props 解构同样会丢响应性」', why: '讲师用「别」强调' },
+      { id: 3, tag: '考试周', target: '04 computed 与 watch（整条视频）', why: '与同批次已采纳的标签一致' }
+    ];
+    const left = S.filter((s) => !this.state.handled.includes(s.id));
+    const done = (id) => () => this.setState({ handled: [...this.state.handled, id] });
+    return {
+      results: res.map((r) => ({ n: r.n, seg: seg(r.t), quote: r.q, video: r.v, confLabel: N[r.c], pit: !!r.pit, dot: dot(r),
+        tc: fmt(r.at), len: fmt(r.len), pos: 'left:' + (r.at / r.len * 100).toFixed(1) + '%;background:' + (r.pit ? '#E4002B' : '#0A0A0A') })),
+      countPad: String(res.length).padStart(2, '0'),
+      pickConf: (e) => this.setState({ conf: e.target.value }), noSubmit: (e) => e.preventDefault(),
+      sugCount: left.length,
+      openSug: () => this.setState({ drawer: 'sug' }), openMgr: () => this.setState({ drawer: 'mgr' }), close: () => this.setState({ drawer: null }),
+      drawer: !!this.state.drawer, isSug: this.state.drawer === 'sug', isMgr: this.state.drawer === 'mgr',
+      dTitle: this.state.drawer === 'mgr' ? '管理标签' : 'AI 标签建议',
+      sugs: left.map((s) => ({ ...s, adopt: done(s.id), reject: done(s.id) })), sugDone: left.length === 0,
+      mgr: [{ name: '考试周', n: 31 }, { name: 'Vue3', n: 22 }, { name: '前端', n: 18 }, { name: '响应式', n: 9 }, { name: 'UML', n: 7 }, { name: 'vue3', n: 2 }]
+    };
+  }
+}
+</script>
+</body>
+</html>

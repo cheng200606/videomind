@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>09 导出</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;font-weight:900;font-size:15px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.mk{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;color:#B0B0B0;font-weight:400}
+.ts{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-size:12px;font-weight:600;border-bottom:2px solid #0A0A0A;margin-left:6px}
+summary{cursor:pointer}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}.doc{padding:24px 20px!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box;position:relative">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav on" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:18px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <nav style="font-size:13px;color:#6B6B6B" aria-label="面包屑"><a href="P01Library.dc.html" style="color:#6B6B6B">视频库</a> / <a href="P03Progress.dc.html" style="color:#6B6B6B">Vue3 组合式 API 速通</a> / 导出</nav>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:end">
+      <span class="n" style="grid-column:1 / span 2;font-weight:900;font-size:200px;line-height:.74">4</span>
+      <div style="grid-column:3 / span 7;display:flex;flex-direction:column;gap:8px;padding-bottom:4px">
+        <h1 style="margin:0;font-size:46px;line-height:1.05;font-weight:900">条视频进入文稿</h1>
+        <span style="font-size:15px"><b class="n" style="font-weight:800;font-size:20px">22</b> 条要点 · <b class="n" style="font-weight:800;font-size:20px">3</b> 张 UML 草稿 · 每条要点都带原片时间码</span>
+      </div>
+      <div style="grid-column:10 / span 3;display:flex;flex-direction:column;gap:8px;padding-bottom:4px">
+        <button class="b" onClick="{{download}}">下载 Markdown</button>
+        <button class="b o" onClick="{{copy}}">{{copyLabel}}</button>
+      </div>
+    </section>
+
+    <p style="margin:0;border-top:3px solid #E4002B;padding-top:10px;font-size:14.5px"><b style="color:#E4002B">缺 1 条：</b>05 组合式函数封装 解析失败，未写入文稿。文稿开头也会注明这一点。<a href="P03Progress.dc.html" style="font-weight:900;border-bottom:2px solid #0A0A0A;margin-left:8px">去重试</a></p>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:24px;align-items:start">
+      <article class="doc" aria-label="文稿预览" style="grid-column:1 / span 8;box-shadow:inset 0 0 0 2px #0A0A0A;padding:40px 56px;display:flex;flex-direction:column;gap:14px;min-width:0">
+        <span class="m" style="font-size:12px;color:#6B6B6B">vue3-composition-api.md</span>
+        <h2 style="margin:0;font-size:30px;font-weight:900;line-height:1.2"><span class="mk"># </span>Vue3 组合式 API 速通</h2>
+        <h3 style="margin:8px 0 0;font-size:21px;font-weight:900"><span class="mk">## </span>03 ref 与 reactive 的区别</h3>
+        <p style="margin:0;font-size:15px"><b>一句话：</b>ref 管基本类型，reactive 管对象，解构前先 toRefs。</p>
+        <ol style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column">
+          <li style="display:grid;grid-template-columns:28px minmax(0,1fr);padding:6px 0;border-bottom:1px solid #E0E0E0"><b class="n" style="font-weight:900">1</b><span>ref 用 .value 访问，模板里自动解包<span class="ts">04:02</span></span></li>
+          <li style="display:grid;grid-template-columns:28px minmax(0,1fr);padding:6px 0;border-bottom:1px solid #E0E0E0"><b class="n" style="font-weight:900">2</b><span>reactive 只接受对象<span class="ts">10:18</span></span></li>
+          <li style="display:grid;grid-template-columns:28px minmax(0,1fr);padding:6px 0;border-bottom:1px solid #E0E0E0"><b class="n" style="font-weight:900;color:#E4002B">3</b><span><b>易错：</b>解构 reactive 对象会丢失响应性<span class="ts" style="color:#E4002B;border-bottom-color:#E4002B">18:40</span><br><span style="font-size:13px;color:#6B6B6B">讲师 12:55 曾说可以直接解构，18:40 更正。</span></span></li>
+          <li style="display:grid;grid-template-columns:28px minmax(0,1fr);padding:6px 0"><b class="n" style="font-weight:500">4</b><span>先 toRefs(state) 再解构<span class="ts">19:22</span></span></li>
+        </ol>
+        <pre class="m" style="margin:4px 0 0;background:#F5F5F5;padding:12px 14px;font-size:12.5px;line-height:1.7;white-space:pre-wrap">```mermaid
+flowchart TD
+  A[ref 包装基本类型] --> B[reactive 对象代理]
+  B --> C[解构陷阱与 toRefs]
+```</pre>
+        <p style="margin:6px 0 0;color:#6B6B6B;font-size:13px;border-top:1px dashed #B0B0B0;padding-top:12px">其余 3 条视频（01 · 02 · 04）· 共 58 分钟</p>
+      </article>
+
+      <aside style="grid-column:9 / span 4;display:flex;flex-direction:column;gap:24px">
+        <section aria-label="版本记录" style="display:flex;flex-direction:column;border-top:2px solid #0A0A0A;padding-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:16px">版本记录</b><a href="P07Notes.dc.html" style="font-size:13px;font-weight:900;border-bottom:2px solid #0A0A0A">去讲义修改</a></div>
+          <div style="display:grid;grid-template-columns:52px minmax(0,1fr);gap:0 12px;margin-top:10px;font-size:13.5px">
+            <span class="n" style="font-weight:800;padding:8px 0;border-bottom:1px solid #E0E0E0">11-18</span><span style="padding:8px 0;border-bottom:1px solid #E0E0E0"><b>已修订</b> · 03 补充 toRefs 示例</span>
+            <span class="n" style="font-weight:800;padding:8px 0;border-bottom:1px solid #E0E0E0">11-17</span><span style="padding:8px 0;border-bottom:1px solid #E0E0E0"><b>已确认</b> · 03 ref 与 reactive</span>
+            <span class="n" style="font-weight:800;padding:8px 0;border-bottom:1px solid #E0E0E0">11-17</span><span style="padding:8px 0;border-bottom:1px solid #E0E0E0"><b>已确认</b> · 01 为什么要用组合式 API</span>
+          </div>
+          <span style="font-size:12.5px;color:#6B6B6B;margin-top:8px">只导出已确认和已修订的讲义版本。</span>
+        </section>
+        <details style="border-top:1px solid #E0E0E0;padding-top:10px;font-size:13px;color:#3A3A3A">
+          <summary>给插件用的结构化数据</summary>
+          <p style="margin:8px 0 0">AI 助手插件可读取本批次的只读结构化快照（预留接口）。</p>
+        </details>
+        <p style="margin:0;font-size:12.5px;color:#6B6B6B">UML 以 Mermaid 源码写入，提交到 GitHub 可直接渲染。识别结果仅供参考。</p>
+      </aside>
+    </section>
+  </main>
+
+  <sc-if value="{{toast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:#0A0A0A;color:#FFFFFF;font-size:13.5px;font-weight:500;padding:10px 18px;border-left:4px solid #E4002B">已保存 vue3-composition-api.md</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { copied: false, toast: false }; }
+  renderVals() {
+    return {
+      copyLabel: this.state.copied ? '已复制' : '复制全文',
+      copy: () => this.setState({ copied: true }),
+      download: () => { this.setState({ toast: true }); setTimeout(() => this.setState({ toast: false }), 2200); },
+      toast: this.state.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

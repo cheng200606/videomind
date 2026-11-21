@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>10 批次与任务后台</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,input:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;font-weight:900;font-size:14px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b.r{background:#E4002B}
+.b.r:hover{background:#0A0A0A}
+.b.x{background:#FFFFFF;color:#B0B0B0;box-shadow:inset 0 0 0 2px #E0E0E0;cursor:not-allowed}
+.b.s{height:32px;padding:0 12px;font-size:13px}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+table{border-collapse:collapse;width:100%}
+th{font-size:12.5px;font-weight:500;color:#6B6B6B;text-align:left;padding:0 12px 8px 0;border-bottom:2px solid #0A0A0A;white-space:nowrap}
+td{padding:13px 12px 13px 0;border-bottom:1px solid #E0E0E0;vertical-align:middle}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav on" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:28px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px">
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:end">
+      <span class="n" style="grid-column:1 / span 5;font-weight:900;font-size:200px;line-height:.74">{{used}}</span>
+      <div style="grid-column:6 / span 7;display:flex;flex-direction:column;gap:8px;padding-bottom:4px">
+        <h1 style="margin:0;font-size:46px;line-height:1.05;font-weight:900">GB 占用在本机</h1>
+        <span style="font-size:15px">视频源文件、关键帧和解析结果。勾选不再需要的批次，删除释放空间。</span>
+      </div>
+    </section>
+
+    <section aria-label="占用分布" style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;gap:2px;height:28px"><sc-for list="{{bars}}" as="b" hint-placeholder-count="5"><span title="{{b.name}}" style="{{b.style}}"></span></sc-for></div>
+      <div style="height:8px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px {{tick}})"></div>
+      <div style="display:flex;justify-content:space-between;font-size:12px"><b class="n" style="font-weight:800">0</b><span style="color:#6B6B6B">每格 1 GB · 红色为已勾选</span><b class="n" style="font-weight:800">{{used}} GB</b></div>
+    </section>
+
+    <section aria-label="批次列表" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;border-top:2px solid #0A0A0A;padding-top:12px">
+        <span style="font-size:15px">已选 <b class="n" style="font-weight:900;font-size:22px">{{selCount}}</b> 个 · 可释放 <b class="n" style="font-weight:900;font-size:22px;color:#E4002B">{{selGb}}</b> GB</span>
+        <span style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <sc-if value="{{confirming}}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:13.5px;font-weight:500;color:#E4002B">删除后不可恢复，原视频文件不受影响。</span>
+            <button class="b o" onClick="{{cancel}}">取消</button>
+            <button class="b r" onClick="{{doDelete}}">确认删除 {{selCount}} 个</button>
+          </sc-if>
+          <sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><button class="{{delCls}}" onClick="{{ask}}">删除所选</button></sc-if>
+        </span>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th style="width:34px"><span style="position:absolute;width:1px;height:1px;overflow:hidden">选择</span></th><th>批次</th><th>状态</th><th style="text-align:right">视频</th><th style="text-align:right">占用</th><th>创建</th><th style="text-align:right">操作</th></tr></thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+              <tr>
+                <td><input type="checkbox" checked="{{r.sel}}" onChange="{{r.toggle}}" aria-label="选择 {{r.name}}" style="width:18px;height:18px;accent-color:#E4002B"></td>
+                <td><a href="P03Progress.dc.html" style="font-weight:{{r.nw}};font-size:15px">{{r.name}}</a></td>
+                <td style="font-size:13.5px;font-weight:{{r.sw}};color:{{r.sc}}">{{r.status}}</td>
+                <td class="n" style="text-align:right;font-weight:800">{{r.n}}</td>
+                <td class="n" style="text-align:right;font-weight:800;font-size:16px">{{r.gb}}</td>
+                <td class="n" style="font-weight:500;color:#6B6B6B">{{r.date}}</td>
+                <td style="text-align:right">
+                  <sc-if value="{{r.failed}}" hint-placeholder-val="{{ false }}"><a class="b s" href="P03Progress.dc.html">重试失败条目</a></sc-if>
+                  <sc-if value="{{r.ok}}" hint-placeholder-val="{{ true }}"><a href="P03Progress.dc.html" style="font-weight:900;font-size:13px;border-bottom:2px solid #0A0A0A">查看</a></sc-if>
+                </td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <sc-if value="{{deleted}}" hint-placeholder-val="{{ false }}"><p role="status" style="margin:0;font-size:13.5px">已删除 {{deletedCount}} 个批次。</p></sc-if>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { sel: [4], gone: [], confirming: false }; }
+  renderVals() {
+    const s = this.state;
+    const D = [
+      { id: 1, name: '数据库系统概论 第 6–8 周', status: '解析中', n: 4, gb: 4.6, date: '11-21' },
+      { id: 2, name: 'Vue3 组合式 API 速通', status: '部分成功', n: 5, gb: 1.9, date: '11-17', failed: true },
+      { id: 3, name: '软件工程 · 需求分析录播', status: '成功', n: 3, gb: 2.8, date: '11-12' },
+      { id: 4, name: '操作系统 期中前录播（旧）', status: '成功', n: 6, gb: 5.2, date: '10-28' },
+      { id: 5, name: '试跑 · 样例视频', status: '失败', n: 1, gb: 0.3, date: '10-24', failed: true }
+    ];
+    const live = D.filter((d) => !s.gone.includes(d.id));
+    const tot = live.reduce((a, d) => a + d.gb, 0);
+    const picked = live.filter((d) => s.sel.includes(d.id));
+    const shades = ['#0A0A0A', '#5A5A5A', '#0A0A0A', '#5A5A5A', '#0A0A0A'];
+    const toggle = (id) => () => this.setState({ sel: s.sel.includes(id) ? s.sel.filter((x) => x !== id) : [...s.sel, id], confirming: false });
+    return {
+      used: tot.toFixed(1), tick: (1 / tot * 100).toFixed(3) + '%',
+      bars: live.slice().sort((a, b) => b.gb - a.gb).map((d, i) => ({ name: d.name + ' ' + d.gb + ' GB',
+        style: 'flex:' + d.gb + ' 1 0;background:' + (s.sel.includes(d.id) ? '#E4002B' : shades[i]) })),
+      rows: live.map((d) => ({ ...d, gb: d.gb.toFixed(1), sel: s.sel.includes(d.id), toggle: toggle(d.id),
+        failed: !!d.failed, ok: !d.failed, nw: s.sel.includes(d.id) ? 900 : 500,
+        sc: d.failed ? '#E4002B' : '#0A0A0A', sw: d.failed ? 900 : 500 })),
+      selCount: picked.length, selGb: picked.reduce((a, d) => a + d.gb, 0).toFixed(1),
+      delCls: 'b' + (picked.length ? ' r' : ' x'),
+      ask: () => { if (picked.length) this.setState({ confirming: true }); },
+      cancel: () => this.setState({ confirming: false }),
+      doDelete: () => this.setState({ gone: [...s.gone, ...s.sel], sel: [], confirming: false }),
+      confirming: s.confirming, idle: !s.confirming,
+      deleted: s.gone.length > 0, deletedCount: s.gone.length
+    };
+  }
+}
+</script>
+</body>
+</html>
