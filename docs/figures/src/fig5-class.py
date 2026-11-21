@@ -137,7 +137,7 @@ label(1312,878,"仅设计",anchor="start")
 
 # notes/legend
 text(1180,1060,"实线：关联 / 组合 / 调用；虚线：实现 / 设计级依赖；◆：组合；▷：实现。",10.5,"normal","#64748B")
-text(1180,1080,"三类策略：OcrEngine（画面）、OutputSchemaStrategy（产物）、AsrVocabularyCrossChecker（F5，仅设计）。",10.5,"normal","#64748B")
+text(1180,1080,"三类策略：OcrEngine（画面）、OutputSchemaStrategy（产物）、AsrVocabularyCrossChecker（F5，仅设计，本期不实现）。",10.5,"normal","#64748B")
 text(20,1080,"DTO：AsrResult / TranscriptSegment / KeyFrame / FrameText / ParseContext / ItemDraft；StructuredDraft 另含 conflicts。",10.5,"normal","#64748B")
 text(20,1120,"DTO 字段：AsrResult(duration_ms, segments, frames)；",10.5,"normal","#64748B")
 text(20,1140,"ParseContext(draft, segments, frames, ocr, duration_ms, notices)；ItemDraft 见 artifacts.py:18。",10.5,"normal","#64748B")

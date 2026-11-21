@@ -183,7 +183,7 @@ note right of AsrEngine
   YueyingAsr / FunAsr
 end note
 note bottom of AsrVocabularyCrossChecker
-  课程版仅设计，未实现
+  课程版仅设计，本期不实现
 end note
 note bottom of pipeline
   DTO：AsrResult / TranscriptSegment /
