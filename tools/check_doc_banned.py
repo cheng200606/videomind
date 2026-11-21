@@ -56,6 +56,7 @@ WHITELIST: list[tuple[str, int, str, str]] = [
     ("CONTRIBUTING.md", 13, "唯一", "「唯一代码与文档版本库」指单一仓库，非产品能力宣称"),
     ("CONTRIBUTING.md", 38, "唯一", "「唯一路径」指协作流程单一路径，非产品能力宣称"),
     ("AGENTS.md", 8, "唯一", "「枚举中文映射唯一出口」指代码结构单一口径，非产品能力宣称"),
+    ("docs/README.md", 13, "唯一", "「风险的唯一出处」是排他性口径说明，指单一出处，非产品能力宣称"),
 ]
 
 # 历史记录类文件不做正文审查：它们记录的是当时发生过的事实
@@ -124,6 +125,7 @@ def is_rule_quote(line: str, word: str) -> bool:
         "杜绝",
         "不得出现",
         "未出现",  # PR 模板的检查句式：「文档中未出现无据表述（首次 / 唯一 / ...）」
+        "不使用",  # 原型线《AI使用声明》：「文档中不使用「首次」「唯一」…等表述」
     )
     if not any(e in line for e in enforcement):
         return False
