@@ -21,6 +21,7 @@ AGENTS.md
 .workbuddy/
 .qoder/
 .zcode/
+.dsh/
 
 # ── 依赖与构建产物 ───────────────────────────────────────────
 node_modules/
