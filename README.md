@@ -57,14 +57,14 @@ AI 生成的字幕、代码块、知识点、UML 草稿与总结均为**识别�
 
 ## 四、当前进度
 
-| 线 | 状态（2026-11-13） |
+| 线 | 状态（2026-11-23） |
 | --- | --- |
-| 代码线（组长） | **v0.13 已完成**：上传 → 四阶段解析 → 证据溯源 → 检索 → 笔记/讲义 → Markdown 导出全链路可用；桌面发行版线上最新 Release **v0.12.0**（v0.13 只迭代代码，未发 Release） |
+| 代码线（组长） | **v0.17 已冻结发布**：上传 → 四阶段解析 → 证据溯源 → 检索 → 笔记/讲义 → Markdown 导出全链路可用；质量门与文档核对脚本在 `tools/`；最新 Release **v0.17.0**（2026-11-23，课程交付版本冻结） |
 | 回归基线 | 以后端 pytest / 前端 vitest 全绿为准，例数见最新 `CHANGELOG.md`；`npm run build`（vue-tsc + vite）通过 |
-| 文档 / UML / 原型线（组员） | 按 `docs/分工与任务卡.md` 的 W2–W7 任务卡各自推进；进度以周会纪要为准，本文不代为标注 |
+| 文档 / UML / 原型线（组员） | **v0.17 交付物已并入 `develop`**：高保真原型与交互状态页（A）、图 5 类图 / 图 6 ER 图 / 图 8 部署图与数据字典（C）、辅图、交付文档章节与 Word 骨架（组长）；索引见 `docs/README.md`，逐条留痕见 `CHANGELOG.md` v0.17 条目 |
 | 交付节奏 | W1–W7 倒排与硬节点见 `docs/交付与排期.md`；最终交付 2026-12-11 |
 
-版本逐条留痕见 `CHANGELOG.md`；测试与迭代结论见 `docs/测试与迭代报告_v0.7.md` / `_v0.8.md` / `_v0.11.md` / `_v0.12.md` 与 `docs/迭代方案_v0.13.md`。
+版本逐条留痕见 `CHANGELOG.md`；测试与迭代结论见 `docs/测试与迭代报告_v0.7.md` / `_v0.8.md` / `_v0.11.md` / `_v0.12.md`，迭代方案见 `docs/迭代方案_v0.13.md` 至 `_v0.17.md`；文档导航见 `docs/README.md`。
 
 **文档口径优先级**（冲突时按序）：`docs/产品定义.md` → `docs/交付与排期.md` → `docs/分工与任务卡.md` → 本文件。
 
@@ -100,6 +100,11 @@ AI 生成的字幕、代码块、知识点、UML 草稿与总结均为**识别�
 ├── frontend/                    Vue 3 + Vite（9 视图 / api 契约 / 组件 / 组合式函数）
 ├── desktop/                     Electron 壳 + IPC 桥 + NSIS/ZIP 构建与发布脚本
 ├── docs/                        权威口径文档、迭代方案、测试报告、发布方案
+│   ├── README.md                docs 导航：看什么、去哪看、写完放哪
+│   ├── delivery/                交付文档章节、排版规范与 Word 骨架
+│   ├── figures/                 UML 图与辅图（源文件 + SVG 导出物成对入库）
+│   └── prototype/               高保真原型导出物、设计说明与墨刀链接
+├── tools/                       质量门与文档/契约核对脚本（v0.17 起）
 └── docker-compose.yml           可选容器运行方式
 ```
 
@@ -130,7 +135,7 @@ AI 生成的字幕、代码块、知识点、UML 草稿与总结均为**识别�
 
 ## 九、桌面版下载与更新
 
-**[下载最新安装包 →](https://github.com/cheng200606/videomind/releases/latest)** 每个 Release 提供两个附件：`VideoMind-Setup-x.y.z.exe`（NSIS 安装版）与 `VideoMind-x.y.z-win.zip`（便携版，解压即用，适合无安装权限的机器）。
+**[查看 Releases →](https://github.com/cheng200606/videomind/releases)** 桌面安装包随桌面版本发布，最近的带附件版本为 **v0.12.0**（`VideoMind-Setup-0.12.0.exe`，NSIS 安装版）；**v0.17.0（2026-11-23）为课程交付版本冻结**，Release Notes 列出交付物清单与已知边界，不含安装包附件。
 
 - 安装包内置 Python 后端 sidecar、本地 Whisper（faster-whisper tiny）与 RapidOCR 运行时，无需另配 Python 环境
 - 内置演示样例（mock）无需 API Key 即可走通四阶段流程；**mock 只回放同名内置样例，不读取真实视频内容**。处理自己的视频请使用内置 Whisper 引擎，并在「设置 → 模型」填写 DeepSeek 或 OpenAI 兼容模型的 API Key；未配置时走无 Key 兜底，结论质量会下降
