@@ -1,0 +1,116 @@
+"""独立关键帧抽样：av 解码视频流，按固定间隔取帧。
+
+yueying 的抽帧随其缺席而消失（桌面版只带 Whisper，纯音频通道），画面通道要在此也能用，
+抽帧必须不依赖任何 ASR 引擎。相邻相似帧用 16x16 灰度缩略的均值差丢弃——numpy 手写，
+不引入 imagehash+scipy（桌面安装包要为它们多付约 120MB）。
+"""
+
+import os
+import tempfile
+from pathlib import Path
+
+from app.engines.base import KeyFrame
+
+# 采样间隔（秒）：30s 对讲座类内容足够密，1h 视频约 120 帧，RapidOCR 2 线程约 1-2 分钟
+FRAME_INTERVAL_S = 30.0
+_MAX_FRAMES = 400          # 兜底上限：异常超长视频不至于拖死解析
+SIMILAR_THRESHOLD = 6.0    # 16x16 灰度均值差低于该值视为同页课件，丢弃（OCR 阶段同口径复用）
+
+
+def _interval_from_env() -> float:
+    """抽帧间隔的唯一取值口径（v0.17 P0-5）。
+
+    改前这个函数是死代码：`pipeline._keyframes` 直接传常量 `FRAME_INTERVAL_S`，
+    环境变量设了也不生效。现在 pipeline 只调 `effective_interval_s()` 一次，同一个
+    返回值既喂给 `sample_frames` 又参与缓存键，杜绝「取值一套、算键另一套」的分叉。
+    """
+    raw = os.environ.get("VMIND_FRAME_INTERVAL_S", "")
+    try:
+        value = float(raw)
+    except ValueError:
+        return FRAME_INTERVAL_S
+    return value if value > 0 else FRAME_INTERVAL_S
+
+
+def effective_interval_s() -> float:
+    """本次抽帧实际使用的间隔（秒）。调用方必须用它同时构造缓存键与 sample_frames 实参。"""
+    return _interval_from_env()
+
+
+def sample_frames(video_path: str, interval_s: float | None = None,
+                  max_frames: int = _MAX_FRAMES) -> list[KeyFrame]:
+    """按 interval 抽帧；相邻缩略图均值差过小的帧丢弃（满屏课件连续采样几乎相同）。
+
+    任何失败（无视频流、编码不支持、缺 PIL）都返回已抽到的部分或空列表——
+    抽帧失败只应让画面通道降级为 SKIPPED，不能拖垮整条解析。
+    """
+    try:
+        import av
+        import numpy as np
+    except ImportError:
+        return []
+
+    interval = interval_s or _interval_from_env()
+    out: list[KeyFrame] = []
+    try:
+        tmp = Path(tempfile.mkdtemp(prefix="vmind_frames_"))
+        container = av.open(video_path)
+    except Exception:
+        return out
+
+    next_ts = 0.0
+    last_thumb: np.ndarray | None = None
+    try:
+        with container:
+            if not container.streams.video:
+                return out
+            duration_s = (container.duration or 0) / 1_000_000
+            # 异常长的视频自动放粗间隔，保证帧数有上限
+            if duration_s > max_frames * interval:
+                interval = duration_s / max_frames
+            for frame in container.decode(video=0):
+                ts = frame.time
+                if ts is None or ts + 1e-6 < next_ts:
+                    continue
+                thumb = frame.reformat(width=16, height=16, format="gray").to_ndarray()
+                if last_thumb is not None and abs_diff(thumb, last_thumb) < SIMILAR_THRESHOLD:
+                    next_ts = ts + interval
+                    continue
+                path = tmp / f"frame_{int(ts * 1000)}.jpg"
+                try:
+                    frame.to_image().save(path)
+                except Exception:   # 缺 PIL 等存图失败：画面通道降级，不影响音频通道
+                    return out
+                out.append(KeyFrame(ms=int(ts * 1000), path=str(path)))
+                last_thumb = thumb.astype("float32")
+                next_ts = ts + interval
+                if len(out) >= max_frames:
+                    break
+    except Exception:
+        return out
+    return out
+
+
+def abs_diff(a: "np.ndarray", b: "np.ndarray") -> float:
+    """两张 16x16 灰度缩略图的平均绝对差——抽帧与 OCR 两阶段共用的去重口径。"""
+    import numpy as np
+
+    return float(np.abs(a.astype("float32") - b).mean())
+
+
+def file_thumbnail(path: str) -> "np.ndarray | None":
+    """把已落盘的帧图读成 16x16 灰度缩略图，供 OCR 阶段复用同一套去重口径。
+
+    Pillow / numpy 都是 OCR 运行时自带的依赖（桌面安装包内亦有）；读图失败返回
+    None，调用方必须原样保留该帧——去重是优化，绝不能因它丢画面。
+    """
+    try:
+        import numpy as np
+        from PIL import Image
+    except ImportError:
+        return None
+    try:
+        with Image.open(path) as im:
+            return np.asarray(im.convert("L").resize((16, 16)), dtype="float32")
+    except Exception:
+        return None

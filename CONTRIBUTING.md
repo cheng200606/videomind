@@ -87,7 +87,7 @@ chore(repo): 更新 CONTRIBUTING 评审规则
 | --- | --- |
 | 图源文件 | `docs/figures/src/fig<N>-<名称>.drawio`（PlantUML 同理用 `.puml`），**必须入库** |
 | 图导出物 | `docs/figures/svg/fig<N>-<名称>.svg`，**矢量导出**，禁止 PNG 代替结构图 |
-| 章节文档 | `docs/chapters/<章节号>-<名称>.md`，最终由组长合并为**一个 Word** |
+| 章节文档 | `docs/delivery/v0.17_ch<章节号>_<名称>.md`（v0.17 起；此前本节写作 `docs/chapters/`，属口径勘误），最终由组长合并为**一个 Word** |
 | 界面图 | 墨刀 2x 导出位图，在正文中标注「界面图」，与「示意图」严格区分 |
 | 数据样例 | `data/samples/*.json`，脱敏后入库；视频素材**不入库** |
 

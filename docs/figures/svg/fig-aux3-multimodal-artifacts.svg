@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="850" viewBox="0 0 1800 850" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif">
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
+ orient="auto-start-reverse"><path d="M1,1 L9,5 L1,9" fill="none" stroke="#64748B"
+ stroke-width="1.2"/></marker>
+<marker id="tri" viewBox="0 0 12 12" refX="11" refY="6" markerWidth="10" markerHeight="10"
+ orient="auto-start-reverse"><path d="M1,1 L11,6 L1,11 z" fill="#FFFFFF" stroke="#7C3AED"
+ stroke-width="1.1"/></marker>
+</defs>
+<rect x="0" y="0" width="1800" height="850" rx="0" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="1"/>
+<text x="30" y="40" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="18" font-weight="bold" fill="#0F172A" text-anchor="start">辅图 3 · 多模态双通道解析与四类可插拔产物</text>
+<text x="30" y="64" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#64748B" text-anchor="start">每条产物携带 Evidence（时间戳 + 原话 + 片段帧 + 通道）；产物类型由 OutputSchemaStrategy 插拔点决定，新增产物不改主链路。</text>
+<rect x="30" y="92" width="430" height="570" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="46" y="118" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="start">输入通道（两个可插拔接缝）</text>
+<rect x="48" y="132" width="394" height="118" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M54,132 h382 a6,6 0 0 1 6,6 v28 h-394 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<polyline points="48,166 442,166" fill="none" stroke="#4338CA" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="245.0" y="155" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13.5" font-weight="bold" fill="#0F172A" text-anchor="middle">AsrEngine · 音频通道</text>
+<text x="60" y="186" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">+ name : str   + isAvailable() : bool</text>
+<text x="60" y="203" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">+ transcribe(path) : AsrResult</text>
+<text x="60" y="220" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">实现：MockAsr / WhisperAsr /</text>
+<text x="60" y="237" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">        YueyingAsr / FunASR</text>
+<text x="48" y="272" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">开关 ASR_ENGINE（默认 auto）</text>
+<rect x="48" y="292" width="394" height="136" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M54,292 h382 a6,6 0 0 1 6,6 v28 h-394 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<polyline points="48,326 442,326" fill="none" stroke="#4338CA" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="245.0" y="315" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13.5" font-weight="bold" fill="#0F172A" text-anchor="middle">OcrEngine · 画面通道</text>
+<text x="60" y="346" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">+ name : str</text>
+<text x="60" y="363" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">+ recognize(frames) : FrameText[]</text>
+<text x="60" y="380" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">实现：RapidOcr / PaddleOcr /</text>
+<text x="60" y="397" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">        VisionModelOcr</text>
+<text x="60" y="414" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">可用性按实际依赖过滤</text>
+<text x="48" y="452" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">开关 OCR_ENGINE（rapid|paddle|vision|none）</text>
+<rect x="48" y="474" width="394" height="104" rx="6" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.1"/>
+<text x="62" y="498" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12" font-weight="bold" fill="#92400E" text-anchor="start">前置：抽帧与去重</text>
+<text x="62" y="520" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">ffmpeg 按固定间隔抽帧 → media/{batch}_{file}/</text>
+<text x="62" y="537" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">frames.file_thumbnail + abs_diff 均值差去重</text>
+<text x="62" y="554" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">SIMILAR_THRESHOLD 与 ocr.dedupe_frames 同源</text>
+<text x="62" y="571" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">读图失败只保留该帧并记 warning，不静默</text>
+<text x="48" y="604" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">失败隔离：单条失败只影响该条，批次进 PARTIAL；重试只重跑该条。</text>
+<text x="48" y="628" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">同一时刻仅一个批次在解析（ParseMutex，占用时 409）。</text>
+<text x="48" y="652" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">mock 只回放同名内置样例，绝不冒充转写。</text>
+<rect x="480" y="92" width="370" height="570" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="496" y="118" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="start">结构化（LLM，单次或分块）</text>
+<rect x="498" y="132" width="334" height="136" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M504,132 h322 a6,6 0 0 1 6,6 v28 h-334 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<polyline points="498,166 832,166" fill="none" stroke="#4338CA" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="665.0" y="155" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13.5" font-weight="bold" fill="#0F172A" text-anchor="middle">llm.structure()</text>
+<text x="510" y="186" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">入参 segments + ocr + duration_ms</text>
+<text x="510" y="203" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">出参 StructuredDraft</text>
+<text x="510" y="220" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">      .chapters / .items / .language</text>
+<text x="510" y="237" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">      .report（截断等诚实提示）</text>
+<text x="510" y="254" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">分块输入时间归零，只出相对毫秒</text>
+<rect x="498" y="280" width="334" height="110" rx="6" fill="#F5F3FF" stroke="#7C3AED" stroke-width="1.1"/>
+<text x="512" y="304" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12" font-weight="bold" fill="#5B21B6" text-anchor="start">分块与合并（长转写）</text>
+<text x="512" y="326" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#5B21B6" text-anchor="start">按段边界切块，逐块调用后合并</text>
+<text x="512" y="343" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#5B21B6" text-anchor="start">_rebase_draft 按块起点回移并夹取锚点</text>
+<text x="512" y="360" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#5B21B6" text-anchor="start">个别块失败 → 阶段 PARTIAL（不静默丢）</text>
+<text x="512" y="377" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#5B21B6" text-anchor="start">解析疑似截断先 _salvage_truncated</text>
+<rect x="498" y="404" width="334" height="136" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M504,404 h322 a6,6 0 0 1 6,6 v28 h-334 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<polyline points="498,438 832,438" fill="none" stroke="#4338CA" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="665.0" y="427" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13.5" font-weight="bold" fill="#0F172A" text-anchor="middle">ParseContext</text>
+<text x="510" y="458" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">draft : StructuredDraft</text>
+<text x="510" y="475" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">segments : TranscriptSegment[]</text>
+<text x="510" y="492" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">frames : KeyFrame[]   ocr : FrameText[]</text>
+<text x="510" y="509" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">duration_ms : int</text>
+<text x="510" y="526" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">notices : str[]（诚实提示随产物落库）</text>
+<rect x="498" y="552" width="334" height="88" rx="6" fill="#FFFBEB" stroke="#F59E0B" stroke-width="1.1"/>
+<text x="512" y="576" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12" font-weight="bold" fill="#92400E" text-anchor="start">无 Key / 调用失败</text>
+<text x="512" y="598" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">降级为规则草稿（fallback_draft），</text>
+<text x="512" y="615" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">report.fallback = True 并写入 notice。</text>
+<text x="512" y="632" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#92400E" text-anchor="start">不得当成模型效果演示。</text>
+<rect x="870" y="92" width="900" height="570" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="886" y="118" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="start">输出产物（build(ctx) 按 OutputSchemaStrategy 插拔点产出）</text>
+<rect x="888" y="132" width="204" height="118" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M894,132 h192 a6,6 0 0 1 6,6 v28 h-204 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<polyline points="888,166 1092,166" fill="none" stroke="#4338CA" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="990.0" y="155" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12.5" font-weight="bold" fill="#0F172A" text-anchor="middle">SummaryStrategy</text>
+<text x="900" y="186" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">atype = SUMMARY</text>
+<text x="900" y="203" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">payload = SummaryPayload</text>
+<text x="900" y="220" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">one_line / chapters</text>
+<text x="900" y="237" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">notice：截断提示随产物带走</text>
+<rect x="1102" y="132" width="204" height="118" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1108,132 h192 a6,6 0 0 1 6,6 v28 h-204 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<polyline points="1102,166 1306,166" fill="none" stroke="#4338CA" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="1204.0" y="155" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12.5" font-weight="bold" fill="#0F172A" text-anchor="middle">UmlDraftStrategy</text>
+<text x="1114" y="186" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">atype = UML_DRAFT</text>
+<text x="1114" y="203" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">payload = UmlPayload</text>
+<text x="1114" y="220" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">diagram_type / mermaid</text>
+<text x="1114" y="237" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">elements；标签经 _safe 洗字符</text>
+<rect x="1316" y="132" width="204" height="118" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<path d="M1322,132 h192 a6,6 0 0 1 6,6 v28 h-204 v-28 a6,6 0 0 1 6,-6 z" fill="#EEF2FF"/>
+<polyline points="1316,166 1520,166" fill="none" stroke="#4338CA" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="1418.0" y="155" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12.5" font-weight="bold" fill="#0F172A" text-anchor="middle">KeyPointsStrategy</text>
+<text x="1328" y="186" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">atype = KEY_POINTS</text>
+<text x="1328" y="203" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">payload = KeyPointsPayload</text>
+<text x="1328" y="220" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">points / pitfalls</text>
+<text x="1328" y="237" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">卡点即 pitfalls，可跳回原片</text>
+<rect x="1530" y="132" width="204" height="118" rx="6" fill="#FFFFFF" stroke="#7C3AED" stroke-width="1.2"/>
+<path d="M1536,132 h192 a6,6 0 0 1 6,6 v28 h-204 v-28 a6,6 0 0 1 6,-6 z" fill="#F5F3FF"/>
+<polyline points="1530,166 1734,166" fill="none" stroke="#7C3AED" stroke-width="1.1" stroke-linejoin="round"/>
+<text x="1632.0" y="155" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12.5" font-weight="bold" fill="#0F172A" text-anchor="middle">CodeBlocksStrategy</text>
+<text x="1542" y="186" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">atype = CODE_BLOCKS</text>
+<text x="1542" y="203" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">payload = CodeBlocksPayload</text>
+<text x="1542" y="220" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">language / blocks</text>
+<text x="1542" y="237" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">仅画面通道触发，channel=OCR</text>
+<rect x="888" y="272" width="846" height="92" rx="6" fill="#FFFFFF" stroke="#4338CA" stroke-width="1.2"/>
+<text x="902" y="296" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12" font-weight="bold" fill="#3730A3" text-anchor="start">插拔点契约（backend/app/artifacts.py · OutputSchemaStrategy）</text>
+<text x="902" y="318" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#0F172A" text-anchor="start">class OutputSchemaStrategy(Protocol):</text>
+<text x="910" y="338" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">atype : ArtifactType      payload_model : type[BaseModel]</text>
+<text x="910" y="356" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">build(self, ctx: ParseContext) -&gt; list[ItemDraft]</text>
+<rect x="888" y="380" width="846" height="92" rx="6" fill="#EEF2FF" stroke="#4338CA" stroke-width="1.1"/>
+<text x="902" y="404" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="12" font-weight="bold" fill="#3730A3" text-anchor="start">注册与解析（artifacts.py · REGISTRY / resolve）</text>
+<text x="902" y="426" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.8" font-weight="normal" fill="#3730A3" text-anchor="start">REGISTRY: dict[str, OutputSchemaStrategy] = {summary, uml_draft, key_points, code_blocks}</text>
+<text x="902" y="444" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.8" font-weight="normal" fill="#3730A3" text-anchor="start">resolve(names) -&gt; list[OutputSchemaStrategy]：按需装配本次要跑的产物集合</text>
+<text x="902" y="462" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.8" font-weight="normal" fill="#3730A3" text-anchor="start">新增产物类型 = 新策略类 + 注册一行，parse_video 主链路不动</text>
+<text x="888" y="502" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11.5" font-weight="bold" fill="#334155" text-anchor="start">落库与视图落点</text>
+<text x="888" y="526" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="bold" fill="#4338CA" text-anchor="start">SUMMARY</text>
+<text x="982" y="526" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">→  工作台摘要 + 章节大纲；notice 驱动截断横幅</text>
+<text x="888" y="546" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="bold" fill="#4338CA" text-anchor="start">UML_DRAFT</text>
+<text x="982" y="546" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">→  MermaidView 渲染（主题变量随暗色切换）</text>
+<text x="888" y="566" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="bold" fill="#4338CA" text-anchor="start">KEY_POINTS</text>
+<text x="982" y="566" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">→  知识点区 + pitfalls 卡点，时间码可跳回原片</text>
+<text x="888" y="586" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="bold" fill="#4338CA" text-anchor="start">CODE_BLOCKS</text>
+<text x="982" y="586" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">→  代码块视图；缺失类型如实为空，不以规则文本冒充</text>
+<text x="888" y="620" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">一条产物 = KnowledgeItem + 一条 Evidence + 一个 Artifact payload；</text>
+<text x="888" y="640" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#475569" text-anchor="start">Artifact.item_id → KnowledgeItem.id，schema_type 取该策略的 atype。</text>
+<polyline points="990.0,250 990.0,270" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1204.0,250 1204.0,270" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1418.0,250 1418.0,270" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="1632.0,250 1632.0,270" fill="none" stroke="#64748B" stroke-width="1.1" stroke-dasharray="5 4" marker-end="url(#tri)" stroke-linejoin="round"/>
+<polyline points="442,191 470,191 470,200 498,200" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<polyline points="442,360 470,360 470,472 498,472" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<polyline points="832,472 860,472 860,318 886,318" fill="none" stroke="#64748B" stroke-width="1.1" marker-end="url(#arrow)" stroke-linejoin="round"/>
+<rect x="30" y="682" width="1740" height="140" rx="8" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+<text x="46" y="710" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="13" font-weight="bold" fill="#475569" text-anchor="start">读图与口径</text>
+<text x="46" y="736" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">① 双通道各自可替换：换引擎只改实现类与注册表，parse_video 主链路不动；通道不可用时该阶段记 SKIPPED，视频仍可 SUCCEEDED。</text>
+<text x="46" y="758" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">② 四类产物是同一插拔点的四个实现，不是四段硬编码；证据链在 ItemDraft 阶段已绑定（channel 区分 asr / ocr / both）。</text>
+<text x="46" y="780" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="11" font-weight="normal" fill="#334155" text-anchor="start">③ 代码块当前由画面通道产出：ctx.ocr 为空则返回空列表，需 OCR_ENGINE=rapid 且视频确有画面文字；缺失时如实为空。</text>
+<text x="46" y="810" font-family="Source Han Sans CN, Microsoft YaHei, PingFang SC, Noto Sans CJK SC, sans-serif" font-size="10.5" font-weight="normal" fill="#64748B" text-anchor="start">识别结果仅供参考。同源依据：backend/app/artifacts.py、engines/、llm.py、enums.py。</text>
+</svg>

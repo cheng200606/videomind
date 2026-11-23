@@ -20,12 +20,21 @@ AGENTS.md
 # 其他工具的记忆目录
 .workbuddy/
 .qoder/
+.zcode/
 
 # ── 依赖与构建产物 ───────────────────────────────────────────
 node_modules/
 dist/
 build/
 .vite/
+# 桌面版 electron-builder 输出（安装包/更新产物不入库，走 GitHub Release）
+desktop/release/
+# 本地手动下载的安装包与下载器临时文件（如迅雷 .xltd），一律不入库
+VideoMind-Setup-*.exe
+*.xltd
+*.xltd.cfg
+# 解包/安装出来的桌面版程序目录（pak/dll/exe，数百 MB），不入库
+videomind/
 *.log
 npm-debug.log*
 yarn-error.log*
@@ -54,6 +63,9 @@ data/frames/
 data/cache/
 data/outputs/
 data/tmp/
+# 后端运行时目录：SQLite 库、上传落盘、缓存、引擎设置快照，整目录不入库
+backend/data/
+backend/tests/.pytest_tmp/
 samples/
 *.mp4
 *.mkv
@@ -68,3 +80,23 @@ samples/
 Thumbs.db
 desktop.ini
 ~$*
+
+# 本地测试产物（浏览器自动化截图 / playwright-cli 快照）
+output/
+.playwright-cli/
+
+# 飞书任务板本地快照（个人工作稿，不入课程仓库）
+VideoMind三周任务板.*
+
+# ── 本地过程稿（个人工作文件，不入课程仓库）──────────────────
+# 排期 / 分工 / 任务表 / 看板 / 远端复核：均为个人过程材料，结论已在本地留档
+# 注意：只拦仓库根目录，不影响 docs/ 下的正式交付文档
+/*任务体系*
+/*分工细化方案*
+/*两日*
+/*ABC三天任务*
+/*代码变更解读*
+/*远端复核*
+/*VideoMind任务看板*
+# PowerDesigner 本地建模工程（练习用，源文件不入库；导出图走 docs/figures/）
+/大作业/

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>视析原型 · 目录与视觉规范</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.dir:hover .dn{color:#E4002B}
+@media (max-width:900px){.w{padding-left:16px!important;padding-right:16px!important}.g12>*{grid-column:1 / -1!important}.big{font-size:140px!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:900px;box-sizing:border-box;display:flex;flex-direction:column">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A">
+    <strong style="font-weight:900;font-size:16px">视析</strong>
+    <span style="color:#6B6B6B">高保真原型 · W4</span>
+    <span style="flex:1"></span>
+    <span class="n" style="font-weight:800">00 / 12</span>
+  </header>
+
+  <main class="w" style="flex:1;padding:28px 64px 56px;display:flex;flex-direction:column;gap:36px;box-sizing:border-box">
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:end">
+      <span class="n big" style="grid-column:1 / span 4;font-weight:900;font-size:240px;line-height:.74">12</span>
+      <div style="grid-column:5 / span 8;display:flex;flex-direction:column;gap:12px;padding-bottom:6px">
+        <h1 style="margin:0;font-size:52px;line-height:1.08;font-weight:900">把每条视频画成一把尺子</h1>
+        <p style="margin:0;font-size:16px;max-width:60ch;color:#3A3A3A">知识点是尺子上的刻度，讲错的地方是一段红色斜线。学习者不用看完视频，扫一眼尺子就知道哪里讲了什么、哪里讲错了、哪里最该复习。</p>
+      </div>
+    </section>
+
+    <section aria-label="刻度尺示例" style="position:relative;height:96px;border-top:2px solid #0A0A0A;padding-top:12px">
+      <div style="position:absolute;left:0;right:0;top:14px;height:22px;display:flex;gap:2px">
+        <span style="flex:200 1 0;background:#0A0A0A;color:#FFFFFF;font-size:11px;padding:3px 6px">章节</span>
+        <span style="flex:385 1 0;background:#5A5A5A"></span><span style="flex:325 1 0;background:#0A0A0A"></span>
+        <span style="flex:380 1 0;background:#E4002B;color:#FFFFFF;font-size:11px;padding:3px 6px;font-weight:900">当前章节</span>
+        <span style="flex:275 1 0;background:#0A0A0A"></span><span style="flex:129 1 0;background:#5A5A5A"></span>
+      </div>
+      <div style="position:absolute;left:45.75%;width:20.37%;top:40px;height:30px;background:repeating-linear-gradient(135deg,rgba(228,0,43,.22) 0 6px,transparent 6px 12px)"></div>
+      <div style="position:absolute;left:0;right:0;top:40px;height:2px;background:#0A0A0A"></div>
+      <div style="position:absolute;left:0;right:0;top:42px;height:10px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px 3.5419%)"></div>
+      <span style="position:absolute;left:14.3%;top:58px;margin-left:-11px;width:22px;height:22px;border-radius:50%;background:#0A0A0A;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:12px">1</span>
+      <span style="position:absolute;left:36.5%;top:58px;margin-left:-11px;width:22px;height:22px;border-radius:50%;border:2px solid #0A0A0A;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:12px">2</span>
+      <span style="position:absolute;left:66.1%;top:56px;margin-left:-14px;width:28px;height:28px;border-radius:50%;background:#E4002B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:900;font-size:14px">3</span>
+      <span style="position:absolute;left:87.8%;top:58px;margin-left:-11px;width:22px;height:22px;border-radius:50%;border:2px dashed #0A0A0A;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:12px">4</span>
+    </section>
+
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:20px;font-size:13.5px">
+      <div style="grid-column:span 3;display:flex;flex-direction:column;gap:6px"><b style="font-size:15px">实心 / 空心 / 虚线</b><span style="color:#3A3A3A">刻度编号的笔画就是置信度：明述、推断、低置信。不靠颜色也分得清。</span></div>
+      <div style="grid-column:span 3;display:flex;flex-direction:column;gap:6px"><b style="font-size:15px;color:#E4002B">红色只有一种意思</b><span style="color:#3A3A3A">易错、讲错、当前位置。整套界面除此之外只用黑白灰。</span></div>
+      <div style="grid-column:span 3;display:flex;flex-direction:column;gap:6px"><b style="font-size:15px">大数字说真话</b><span style="color:#3A3A3A">每页最大的那个数字都是用户最想知道的量：几条完成、几条命中、占多少空间。</span></div>
+      <div style="grid-column:span 3;display:flex;flex-direction:column;gap:6px"><b style="font-size:15px">没有卡片</b><span style="color:#3A3A3A">用 2px 黑线分区，12 栏网格对齐；直角，无投影，无圆角。字体 Inter Tight 配思源黑体。</span></div>
+    </section>
+
+    <section aria-label="12 页目录" class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;border-top:2px solid #0A0A0A">
+      <a class="dir" href="P02Upload.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">02</span><span>批量上传</span></a>
+      <a class="dir" href="P03Progress.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">03</span><span>批次进度</span></a>
+      <a class="dir" href="Workbench.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px;color:#E4002B">04</span><span><b>知识工作台</b> · 可点击</span></a>
+      <a class="dir" href="P05Evidence.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">05</span><span>证据链</span></a>
+      <a class="dir" href="P09Export.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">09</span><span>导出</span></a>
+      <a class="dir" href="P01Library.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">01</span><span>视频库</span></a>
+      <a class="dir" href="P08Search.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">08</span><span>标签与检索</span></a>
+      <a class="dir" href="P07Notes.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">07</span><span>笔记编辑</span></a>
+      <a class="dir" href="P06Uml.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">06</span><span>UML 草稿</span></a>
+      <a class="dir" href="P11Settings.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">11</span><span>设置</span></a>
+      <a class="dir" href="P10Admin.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">10</span><span>批次后台</span></a>
+      <a class="dir" href="P12Errors.dc.html" style="grid-column:span 3;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid #E0E0E0"><span class="n dn" style="font-weight:900;font-size:28px;width:44px">12</span><span>异常态</span></a>
+    </section>
+    <p style="margin:0;font-size:12px;color:#6B6B6B">示例数据为虚构的「Vue3 组合式 API 速通」课程批次。识别结果仅供参考。</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

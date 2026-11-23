@@ -50,3 +50,439 @@
 - **C**：可行性分析章初稿 + 辅图 1 技术路线图
 
 > 模板：每人只写自己的条目，逐条署名，不合注。
+
+---
+
+## [v0.3] — W2 收尾开发冲刺（2026-11-05/06）
+
+### 垂直切片阻断修复（组长直推，按新规留痕；commit 9dadcaf..a75f0c6）
+
+- **程夏（组长）**：`.gitignore` 补 `backend/data/`（运行时库/上传落盘/缓存/设置快照）、`backend/tests/.pytest_tmp/`、`.zcode/`——运行时数据与工具目录不入库（红线 1 加固）
+- **程夏（组长）**：修复 SSE 进度端点——路由补 `response_class=EventSourceResponse`（此前输出 application/jsonl，浏览器 EventSource 收不到），订阅先探测批次终态，页面刷新重连即补推终态并收流，不再空转 ping
+- **程夏（组长）**：解析幂等——`parse_video` 入口按外键依赖清空该视频上次派生数据，重试/整批重跑不再使转写与条目翻倍；补重跑两次行数不翻倍断言
+- **程夏（组长）**：证据帧可达——关键帧统一复制进 `media_root/frames/{video_id}/` 再落缓存，`Evidence.frame_path` 存 `/media` URL（此前真实引擎的帧写在临时目录，前端不可达、重启后缓存路径失效）；冲突记录改挂离 source_a 时间点最近的条目
+- **程夏（组长）**：引擎设置持久化——`PUT /api/settings/engines` 落盘 `data/settings.json`，lifespan 启动读回，重启不丢（不新增 ER 表）
+- **程夏（组长）**：上传反馈——响应带回 rejected 清单（格式不支持/批内重复），前端弹提示，非法文件不再静默丢弃
+- **程夏（组长）**：后端小修四处——LLM 代码围栏剥离正则化（容错大小写与前置文字）；`GET /tags` 支持目标过滤返回 bound 标记；标签再绑一次视为「采纳」；讲义修订空跳转 422 拒绝；`type` 参数改别名不遮蔽内建
+- **程夏（组长）**：前端工具链修正——typescript 由 7.0.2（Go 原生版，无 lib/tsc JS API）降到 6.0.3 兼容 vue-tsc 3.3.14；tsconfig 移除已弃用 baseUrl；`package-lock.json` 首次入库；补 @vue/test-utils 与 jsdom，vitest 环境接入 vite.config
+- **程夏（组长）**：前端补 B5/B6 入口——视频库页新增「跨视频检索」折叠区（标签+关键词过滤条目，点行跳工作台）；工作台产物面板新增标签条（AI 建议可采纳/驳回、手动绑定）；工作台三接口并行加载并补失败错误态
+- **程夏（组长）**：前端小修——SSE 连接生命周期挂到进度页 onUnmounted（原挂在根组件泄漏）；导出页检查 resp.ok 给错误态；证据抽屉直读 /media 帧 URL；el-upload 类型按 UploadRawFile 收窄；空产物文案改指上传页解析参数区
+- **程夏（组长）**：测试补齐——后端新增 SSE 终态流与上传 rejected 断言（12 例全绿）；前端新增 vitest 单测 8 例（client URL 拼装 / ConfidenceTag 三档映射 / 批次 store 终态刷新），`npm run test` 首次真实通过；`npm run build`（vue-tsc + vite）与本地 uvicorn+vite 冒烟全链路验证通过
+
+### 待交付（不动原排期）
+
+- **B**：W4 解析链路 demo——`yueying==0.2.1 → DeepSeek → 结构化 JSON`，2 条视频跑通 + 2 种产物（本冲刺未装重引擎、未配 Key，全链路走 mock/fallback 兜底）
+- **A / C**：W3 图与章节交付物按原任务卡推进
+
+---
+
+## [v0.4] — W2 收尾迭代 2：演示完整度与健壮性（2026-11-06）
+
+### 组长直推，按新规留痕
+
+- **程夏（组长）**：上传全拒不再落空批次——422 带回逐文件原因（格式不支持/批内重复），前端拦截器直接提示
+- **程夏（组长）**：`Video.error` 多阶段失败改为换行累加不覆盖，失败定位仍以四阶段状态矩阵为准
+- **程夏（组长）**：跨视频检索新增置信度过滤（`explicit / inferred / low`，非法值 422）——F4「按可信度找条目」前后端贯通
+- **程夏（组长）**：LLM 代码围栏块改全文正则提取，容错 JSON 前后的说明性文字，减少一次无效重试调用
+- **程夏（组长）**：证据抽屉新增 F2 冲突提示条——条目详情先占位后补拉，`ConflictRecord` 此前只在导出文稿渲染，前端首次可见
+- **程夏（组长）**：知识要点 tab 新增「只看易错点」过滤（F3，按 `payload.pitfall`），筛选无结果给占位文案
+- **程夏（组长）**：进度页新增「整批重跑」按钮，接通一直未接线的 `reparseBatch`（后端 v0.3 幂等保障不翻倍）
+- **程夏（组长）**：测试 12 → 23 例全绿——新增 `test_llm.py`（围栏大小写/前后闲话/垃圾输入、fallback 形状、无 Key 断言）、冲突锚点就近、标签采纳与驳回语义、HTTP 整批重跑幂等、全拒 422、置信度过滤；前端 vue-tsc / vitest / build 回归通过；uvicorn 冒烟（422 带原因、置信度 12 命中、真实后台重跑条目 14→14）通过
+
+---
+
+## [v0.5] — W2 收尾迭代 3：桌面发行版与自动更新（2026-11-06）
+
+### 目标：GitHub Release 可下载安装包，运行软件，内置自动更新（组长直推，按新规留痕）
+
+- **程夏（组长）**：后端产物化——新增 `backend/run_server.py` 桌面入口（环境变量先行：端口/数据目录/包内 fixtures，再 import app）；`app/main.py` 挂 SPA 同源路由（打包态读包内 `frontend_dist`，历史路由回落 index.html，注册顺序保证不吞 `/api`）
+- **程夏（组长）**：PyInstaller 打包后端 sidecar——`VideoMindBackend.spec` 入库（onedir，datas：tests/fixtures → app_fixtures、frontend/dist → frontend_dist，hiddenimports：uvicorn 全家），构建依赖单列 `requirements-build.txt`（pyinstaller 6.22.3）；打包产物独立验证：health / SPA 首页 / 历史路由 / 包内 fixture 四阶段解析 14 条目
+- **程夏（组长）**：新增 `desktop/` Electron 壳——main.js 选空闲端口 → 拉起 `resources/backend/VideoMindBackend.exe` → 轮询健康 → BrowserWindow 加载同源页面；单实例锁、进程随窗口退出、日志落 `%APPDATA%/VideoMind/data/logs`
+- **程夏（组长）**：内置自动更新——electron-updater 6.8.11 + electron-builder 26 的 GitHub Releases 通道（cheng200606/videomind），启动检查、autoDownload、autoInstallOnAppQuit，更新事件全量落 updater.log
+- **程夏（组长）**：NSIS 安装包构建与发布——`VideoMind-Setup-0.5.0.exe`（183MB，含后端 sidecar 与前端）+ latest.yml + blockmap 发布至 Release v0.5.0；Pillow 生成应用图标（desktop/resources/icon.ico）
+- **程夏（组长）**：v0.5.1 验证自动更新 E2E——静默安装 0.5.0 → 启动检测到 0.5.1 → **blockmap 差分下载仅 736KB**（全量 179MB）→ 优雅退出静默安装 → ProductVersion 升至 0.5.1.0；两个 Release 均已公开可下载
+- **程夏（组长）**：conftest 测试库一次性（标签采纳/驳回跨运行污染断言的根因修复，23 例保持全绿）；`.gitignore` 补 `desktop/release/`
+- **程夏（组长）**：构建网络策略——Electron 与 builder 二进制走 npmmirror 镜像（`ELECTRON_MIRROR` / `ELECTRON_BUILDER_BINARIES_MIRROR`），GitHub 只承担 Release 发布
+
+### 后续（v0.5.x 候选）
+
+- **C**：安装包代码签名（消除 SmartScreen 提示）；设置页 Key 配置写入数据目录 .env
+- **A**：桌面版关于页 / 更新进度条 UI
+
+---
+
+## [v0.6] — W2 收尾迭代 4：端到端全流程测试与修复（2026-11-06）
+
+### 目标：完整走查核心场景与关键交互路径，按专业产品/工程口径评估并迭代优化（组长直推，按新规留痕）
+
+测试覆盖：API 边界（上传/解析/检索/导出/设置/404/422/幂等/并发 SSE）、浏览器端到端（上传→SSE 进度→工作台溯源与标签→笔记状态机→跨视频检索→导出文稿）、响应式截图评审（1280/800 窗宽）。测试证据（截图/抓包/导出样例）本地留档不入库。
+
+- **程夏（组长）**：修复批内同名上传的破坏性去重——重复文件与首份写同一目标路径，去重分支删除时连带毁掉首份文件，批次必然转写失败（WinError 2）；改为同名先拒收，实测复现 → 修复 → 回归通过
+- **程夏（组长）**：修复 SSE 终态后浏览器自动重连无限重复收终态事件——前端收到终态主动 close EventSource；后端订阅不存在的批次回 404（此前空流只发 ping），订阅超时先复探终态再 ping
+- **程夏（组长）**：修复未知 /api 路径被 SPA catch-all 吞成 index.html（HTTP 200）——调用方把 HTML 当响应体解析；现在回 404 JSON
+- **程夏（组长）**：导出文稿中文化——视频状态/置信度/讲义状态枚举不再直出英文原值，生成时间改本地时区（此前直出 UTC）
+- **程夏（组长）**：前端统一枚举中文映射（api/labels.ts）——批次状态、四阶段矩阵、事件流、产物类型、讲义状态全部中文名 + 正确配色（失败/部分成功不再灰色），事件流与版本记录时间戳本地化
+- **程夏（组长）**：讲义状态机四个跳转按钮按当前态禁用（与后端转移表同源），非法流转不再点击后才报错；笔记页补加载失败错误态（此前条目不存在时骨架屏挂死）
+- **程夏（组长）**：新增批次删除能力——后端 DELETE /api/batches/{id}（仅终态可删，级联清条目/证据/片段/绑定/上传文件/帧目录，Tag 本体跨视频共享保留）+ 库页删除按钮（确认框，解析中禁用）
+- **程夏（组长）**：工作台三列改弹性网格 + 1080px 断点单列堆叠（800px 窗宽下结构化产物列此前完全不可达）；侧栏非激活菜单项提高对比度；补 favicon；SSE 事件流不再暴露本机绝对路径；批次名补服务端 80 字上限
+- **程夏（组长）**：无 Key 兜底标签由字面量「待标注」改「视频讲解」，不再把噪音标签绑满全部条目并带进导出文稿
+- **程夏（组长）**：测试 23 → 29 例（后端）、8 → 14 例（前端）全绿；`npm run build` 回归通过；修复后浏览器复测——中文状态/本地时间/删除流/窄屏堆叠/SSE 单条终态均验证通过
+
+### 评估结论摘要（详单见当次测试记录）
+
+- 功能层：主链路（上传→解析→溯源→检索→笔记→导出）真实可用，异常路径（全拒 422、非法引擎/置信度、幂等重跑、并发 SSE）表现正确；缺陷集中在重复数据破坏、SSE 生命周期与错误响应形态
+- 美观层：布局与信息架构清晰、克制；不足为枚举英文直出、UTC 时间直出、深底菜单对比度、窄屏无断点、favicon 缺失
+
+### 后续（v0.6.x 候选）
+
+- **C**：安装包代码签名（消除 SmartScreen 提示）；设置页 Key 配置写入数据目录 .env
+- **A**：桌面版关于页 / 更新进度条 UI；检索结果分页或条数上限展示
+
+---
+
+## [v0.7] — 迭代 5：真实引擎端到端测试、自定义模型设置与交互优化（2026-11-06）
+
+### 目标：在真实 ASR/OCR/DeepSeek 下走完整链路，补齐界面内自定义大模型能力，按 P0/P1/P2 修复正确性、交互与响应式问题（组长直推，按新规留痕）
+
+测试覆盖：后端 API 边界/异常/幂等/SSE/导出/设置；浏览器真实上传→四阶段→证据帧→检索深链→笔记状态机→导出→删除；1280/800 两档 7 个视图截图；真实 DeepSeek 2 分钟片段与完整 27:56 视频；本地 OpenAI 兼容 mock LLM 确定性回归。证据本地留档 `output/e2e-v0.7/`，不入库。
+
+- **程夏（组长）**：新增设置页与自定义大模型——`/settings` 视图 + `GET/PUT /api/settings/model` + `POST /api/settings/model/test`；支持 DeepSeek 与自定义 OpenAI 兼容接口，保存/测试连接/清除 Key，GET 只返回 `has_key`、不回显明文；Key 仅写本机 `backend/data/model_settings.json`
+- **程夏（组长）**：改造 `app/llm.py` 使用运行时模型配置，兼容自定义 base_url/model/key；JSON mode 不受支持时自动降级重试；新增 `app/model_config.py`、`app/routers/settings.py`、`app/net.py` 与本机代理环境规范化
+- **程夏（组长）**：校准 yueying 0.2.1 真实适配器——实际 CLI 为 `--out` + `manifest.json`（含 segments/frames），替换旧 `--frames-dir`/`transcript.json` 假设；修复 Windows `shlex` 吃掉路径反斜杠；失败时 UI 展示最后一行异常而非 traceback 前 500 字
+- **程夏（组长）**：锁定真实引擎兼容版本——`requirements-engines.txt` 补 `faster-whisper==1.2.1` 与 `av==18.1.0`（av 19 移除 `metadata_errors` 导致 yueying 失败）
+- **程夏（组长）**：修复 RapidOCR 3.10 返回 numpy 数组时 `_unwrap` 布尔歧义异常，OCR 阶段不再误报失败；真实 8 帧 OCR 产出代码块
+- **程夏（组长）**：修复解析阶段④异常穿出后台任务导致批次永久 RUNNING/不可删除；新增 `_recompute_batch_status`、逐条兜底、finally 终态 emit、启动恢复孤儿 RUNNING/PENDING 行；单条重试后批次状态重算
+- **程夏（组长）**：重跑/重试守卫——非终态 409，提交前同步置 RUNNING/重置阶段，避免前端 POST 后立即订阅收到旧终态；前端重跑/重试按钮禁用 + 二次确认（提示笔记/修订会被清除）
+- **程夏（组长）**：边界修复——空产物集 422；transcript/items 不存在视频 404、非法 type 422；非终态导出/结构化 409；structured 去绝对路径；F2 冲突时间戳化；导出空批次明确说明；小时时间戳进位
+- **程夏（组长）**：上传健壮性——同名 casefold、单文件 2GB 上限、写盘异常清理、空 PENDING 可删；前端上传进度与大小预检
+- **程夏（组长）**：前端批次 store 事件驱动——SSE 阶段矩阵实时更新、video_start/单条失败事件、切换批次清旧状态、open 失败错误态、终态快照重拉；进度页补状态列/失败原因/错误态/返回/fixed 操作列
+- **程夏（组长）**：笔记去重——工作台不再预创建，已有笔记跳转 `?note=`，笔记页编辑指定/最新一条并提示多条；后端 notes 稳定排序
+- **程夏（组长）**：时间/证据/错误展示统一——`pct` clamp、共享 `clock`、编辑者中文、产物类型中文、视频 error 展示；时间轴 aria/键盘/播放器错误覆盖层；检索结果 `?item=` 深链自动打开证据抽屉
+- **程夏（组长）**：响应式与视觉一致性——新增 `styles/theme.css` 统一主色与文字对比度；笔记 1080 断点、工作台窄屏播放器优先、进度/导出/库页头部换行、150px 侧栏、笔记编辑器工具栏换行；1280/800 共 14 张截图无页面级溢出
+- **程夏（组长）**：状态与导航——库页 loading/error/empty、进度/导出/工作台/笔记错误态与返回入口、未知路由 catch-all、document.title、侧栏设置入口与高亮
+- **程夏（组长）**：前端 Dockerfile 静态修正——使用 lockfile + `npm ci`，preview 端口与 compose/CORS 统一 5173（未做 Docker 运行验证）
+- **程夏（组长）**：测试 29 → 65 例（后端）、14 → 18 例（前端）全绿；`npm run build` 通过；真实 DeepSeek 2 分钟片段 13 条产物、完整 27:56 视频重跑成功 29 条产物、导出 5856 字符
+- **程夏（组长）**：安全修复——发现 `backend/.env.example` 被写入真实 DeepSeek Key，已恢复 `sk-xxxx` 占位符且未提交；建议轮换该 Key；真实 Key 仅保存在本机隔离测试数据目录，正常启动需在设置页重新填写或放入本机 `backend/.env`
+
+### 评估结论摘要（详单见 `docs/测试与迭代报告_v0.7.md`）
+
+- 功能层：核心链路在真实 ASR/RapidOCR/DeepSeek 下跑通；修复永久 RUNNING、状态不重算、重跑竞态、空产物、非终态导出、上传孤儿、笔记重复等 P0；长视频第一次内存分配失败可在重跑后恢复
+- 美观层：主色/对比度/中文枚举/时间格式统一；加载/错误/空态、返回、深链、键盘、800 宽堆叠补齐；剩余扣分为长视频内存边界、LLM 12k 截断与单进程 SSE 限制
+
+### 后续（v0.7.x 候选）
+
+- **程夏（组长）**：长视频 ASR 分片/流式与自动重试；LLM 长转写分段结构化后再合并
+- **程夏（组长）**：移除 `get_batch`/`get_video` 的绝对 `path` 兼容字段；Docker 运行验证与依赖锁文件复核
+- **程夏（组长）**：真实移动端/全站 WCAG 审计；历史旧标签与旧导出稿迁移
+
+---
+
+## [v0.7.1] — 修复：真实视频笔记串样例 + 桌面检查更新（2026-11-06）
+
+### 原因与修复（组长直推，按新规留痕）
+
+- **程夏（组长）**：修复「真实本地视频生成的笔记/纪要与内容无关」——根因是 `MockAsr` 对任意视频静默回退到内置 `lecture_transcript.json`（Vue3 样例），而桌面版只内置 mock、旧 `settings.json` 又把 `mock` 持久化成了默认引擎；现 mock 只接受同名内置样例，遇到真实视频直接报可执行的切换提示，不再用样例冒充转写
+- **程夏（组长）**：新增本地真实转写引擎 `whisper`（faster-whisper / ctranslate2，CPU int8，默认 tiny 模型，首次约 75MB），引擎注册表按实际依赖过滤可用项；`ASR_ENGINE` 默认改为 `auto`，优先 whisper/yueying，未安装重引擎时才退回 mock
+- **程夏（组长）**：桌面 sidecar 内置 whisper 依赖（faster-whisper/ctranslate2/av/tokenizers/huggingface_hub/numpy/httpx2），仍排除 yueying/RapidOCR/Paddle/FunASR/torch；因 ctranslate2 与 onnxruntime 的 OpenMP 运行库冲突，桌面不打包 onnxruntime，Whisper 在无 VAD 依赖时自动关闭 VAD
+- **程夏（组长）**：旧数据迁移——`data/settings.json` 无 `schema_version` 且为 `mock` 时一次性改为 `auto` 并回写；升级后引擎不可用时同样回 `auto`，避免启动即 500
+- **程夏（组长）**：设置页/上传页显式标注「演示样例（mock）不读取视频」，当前解析引擎显示实际解析结果（如 auto → whisper）；mock 下给出切换与整批重跑提示
+- **程夏（组长）**：新增桌面「应用更新」入口——preload + IPC 暴露 `getAppInfo / getUpdateState / checkForUpdates / downloadUpdate / installUpdate / onUpdateState`；设置页显示当前版本、检查结果、更新说明、下载进度与「重启并安装」
+- **程夏（组长）**：更新器改为手动可控流程（`autoDownload=false`，用户点「下载更新」），启动后静默检查一次但不自动下载；支持 `VMIND_UPDATE_URL` 指向本地 generic 源做联调，生产走 electron-builder `publish: github`
+- **程夏（组长）**：OCR 引擎可用性按实际依赖过滤（桌面只显示 `none`），阶段 SKIPPED 的降级说明不再写入 `video.error` 伪装成失败
+- **程夏（组长）**：验证——后端 68 例、前端 18 例全绿；`npm run build` 通过；本地 generic 更新源检测到 9.9.9 → 下载完成 → 显示「重启并安装」；打包 sidecar（含 whisper）用 2 分钟真实视频跑通，转写 49 段、产物 8 条且内容与 UML 视频相关；桌面安装包版本升至 0.7.1
+
+### 已知限制
+
+- 桌面版默认 tiny 模型（精度低于 small，识别结果仅供参考）；如需更高精度可在源码环境设置 `VMIND_WHISPER_MODEL` 并安装对应模型
+- 旧版本用 mock 生成的批次不会被自动改写，需在批次页执行「整批重跑」
+
+---
+
+## [v0.8.1] — 解析管线段：UML 建模与链路走读（B 补录，2026-11-15 追记）
+
+> 本节按「逐版本、逐人署名、不代拟」规则由 **B** 补录：管线段代码由组长合入，B 承担模型表达与代码走读核对，故只记 B 本人交付的部分，版本号沿用 v0.8 序列。
+
+### UML 建模交付（矢量源 + 导出图，均落 `docs/figures/`）
+
+- **B**：图 1 用例图 `fig1-usecase.drawio/.svg`——10 条用例 UC-01～UC-10 与 `docs/产品定义.md` 4.1 的 B1～B10 一一对应；参与者只画学习者（主）与 AI 助手插件（第三方，边界外虚线框，标预留接口）；UC-01 «include» 导入预检（格式校验与批内重复检测合并为一个用例，代码中本是一体），UC-03 «extend» UC-02（仅单条失败时才触发）；ASR / OCR / LLM 不入图，图注说明其为可替换的实现依赖
+- **B**：图 2 数据流图 `fig2-dataflow-context.svg`（0 层）+ `fig2-dataflow-level1.svg`（1 层）——0 层把系统视为单一处理「0」，外部实体 E1～E5 编号跨图一致；1 层六个处理（上传预检 / 音频转写 / 画面识别 / LLM 结构化 / 产物生成落库 / 检索导出）与四处存储（媒体库、业务库、解析缓存、进度事件总线），父子图按六条对外数据流平衡
+- **B**：图 3 顺序图 A `fig3-sequence-task-submit.svg`——五泳道（前端 / 接口层 / 管线 / 引擎 / 存储）；上传预检画在 `ParseMutex.claim` 之前，强调落盘前拒绝、不留孤儿批次；`alt` 分支覆盖第二批次 409；阶段③逐块回调 `progress(i, n)` → `emit`「结构化 i/N 段」；`failed_chunks` 非空时阶段与视频同为 `PARTIAL`
+- **B**：图 4 顺序图 B `fig4-sequence-note.svg`——三泳道继承图 3 命名；章节数据随条目一次取回（`summary` 产物 `payload.chapters`），不另设接口；大纲跳转只赋值 `video.currentTime`，无网络往返；笔记 `anchor_ms` 默认继承条目锚点，时间码可反向跳回原片
+- **B**：图 7 状态机 `fig7-state-machine.drawio/.svg`——一张画布三层，**15 个具名状态 = 视频 5 + 阶段 6 + 讲义 4**，全部按 `enums.py` 逐字实现、不合并：① 视频级 `VideoStatus` 5 态（PENDING / RUNNING / SUCCEEDED / PARTIAL / FAILED）加结束圆；② 阶段级 `StageStatus` 6 态（PENDING / RUNNING / DONE / PARTIAL / FAILED / **SKIPPED**），画面通道关闭或无关键帧时该阶段 `PENDING → SKIPPED` 直接降级、不经 RUNNING，且 `SKIPPED` 不计入不完整判定（`bad = FAILED, PARTIAL`），故该条视频仍可判 `SUCCEEDED`；③ 讲义级 `RevisionState` 4 态（DRAFT / PENDING_CONFIRM / CONFIRMED / REVISED），含驳回与回退重写，不在 `REVISION_TRANSITIONS` 中的跳转一律 422。重试不画状态内自环（`/videos/{id}/retry` 先把四阶段统一重置为 PENDING 再重入 RUNNING）；进程重启兜底 `recover_orphan_runs` 以虚线区分；批次 `VideoBatch` 状态由 `_recompute_batch_status` 聚合派生，不另画状态机，理由写入图注
+- **B**：`.gitignore` 拦截本地安装包与解包目录（`VideoMind-Setup-*.exe`、`videomind/`、`*.xltd`，合计约 150MB），并限定根目录规则，不影响 `docs/` 正式交付文档
+
+### 解析链路走读结论（阶段边界，依据 `backend/app/pipeline.py`）
+
+- **B**：阶段① 音频通道——原片 → `Segment` 逐句入库；缓存键含引擎名与档位（`asr:{name}:{variant}`），命中则不重跑
+- **B**：阶段② 画面通道——关键帧先复制进 `media_root/frames/{video_id}/` 再落缓存；OCR 关闭或无关键帧时置 `SKIPPED`，降级说明不写入 `video.error` 伪装成失败
+- **B**：阶段③ 结构化——长转写按段边界分块逐段调用，失败段记入 `failed_chunks` 并把阶段与视频置 `PARTIAL`；画面文本不落库，直接进上下文
+- **B**：阶段④ 产物生成——四个 `OutputSchemaStrategy` 分别产出总结 / UML 草稿 / 知识要点 / 代码块，落 `Evidence` + `KnowledgeItem` + `Artifact` + `Revision(草稿)` + 标签绑定；冲突记录挂到离 `source_a` 最近的条目
+- **B**：边界结论——单批互斥（`ParseMutex`）、顺序处理、不做队列持久化；单条失败不中断整批，重试只重跑该条；进程重启由 `recover_orphan_runs` 把未完成标失败并允许重试
+
+---
+
+## [v0.9] — 界面重设计：信息架构重组与视觉统一（2026-11-06）
+
+### 信息架构（组长直推，按规留痕）
+
+- **程夏（组长）**：侧边栏重排为「工作区 / 系统」两组并补齐图标（新增 @element-plus/icons-vue，按 SFC 具名导入保持按需加载）——工作区按使用频率排布 视频库 → 批量上传 → 知识检索，低频配置沉到「系统」组；详情页不入侧栏、由面包屑定位（入口冗余防线），侧栏高亮跟随面包屑根节点
+- **程夏（组长）**：跨视频检索从视频库折叠面板升级为独立侧边栏入口 /search（复用 LibrarySearchPanel 组件，异步加载与 ?item= 深链行为不变）；视频库回归「按批次管理」单一职责，并新增状态筛选（全部/解析中/成功/部分成功/失败，带计数、纯前端过滤）
+- **程夏（组长）**：新增统一页头组件 PageHeader——语义化面包屑（nav aria）+ 页标题 + 状态 tag + 动作区，接入批次进度 / 工作台 / 笔记 / 导出四个详情页；面包屑按真实实体层级（视频库 / 批次名 / 视频名），移除三处手拼 crumb 与散落的「返回视频库 / 返回批次」按钮（错误态恢复按钮保留）
+
+### 视觉与交互
+
+- **程夏（组长）**：设计令牌收敛——theme.css 新增语义文字色（--vm-warning-text / --vm-danger-text）、--vm-surface、圆角与 hover 阴影 token，全站约 30 处硬编码 hex 改走 token；新增 .vm-card 统一白卡配方，替换工作台三列、导出预览、产物列表三处手写白卡；el-card 圆角对齐 8px
+- **程夏（组长）**：媒体断点收敛为三档 1280 / 900 / 700（清除 1140 / 860 / 800 游离值），与移动端顶部导航切换点（900）对齐；移动端顶栏 4 个入口在 ≤390px 改为可横向滑动（滚动条隐藏），修复「设置」被挤出视口的问题
+- **程夏（组长）**：上传页改三段式分区（选择视频 → 解析参数 → 开始解析）；导出页 API 说明拆分为标题 + 描述；产物面板 ⚠ unicode 换 Warning 图标；讲义状态机区块标注「当前状态」；空态规范统一（image-size 60 + 一句话 + 可选 CTA）；时间戳/时长/计数统一等宽数字
+- **程夏（组长）**：品牌区补 favicon 标识，侧栏菜单图标 18px、按钮内联图标 16px
+
+### 验证
+
+- **程夏（组长）**：前端 vitest 28 例全绿（新增 PageHeader 渲染断言与 /search 路由断言）、`npm run build`（vue-tsc + vite）通过；后端零改动
+- **程夏（组长）**：playwright（msedge）全动线走查——库页筛选 → 上传三分区 → 进度页面包屑与四阶段矩阵 → 工作台三列 → 笔记 → 导出 → 检索（关键词 → 结果行 → ?item= 深链自动开证据抽屉）→ 设置；390px 移动端顶栏可滑动到全部入口
+
+---
+
+## [v0.10] — 视觉升级：「时间码即溯源」设计系统精修（2026-11-07）
+
+### 设计签名与令牌（组长直推，按规留痕）
+
+- **程夏（组长）**：确立界面签名元素——时间码芯片 `.vm-ts`（墨蓝底 + 亮文字，与播放器/代码块深色岛同族），全站可跳转的时间锚点统一此样式：工作台章节大纲/原话转写、产物要点、检索锚点列、证据抽屉时间点；纯展示的时间用主色等宽数字（安静档），收敛此前 3 份不一致的 `.ts` 局部样式
+- **程夏（组长）**：配色令牌化——侧栏换「夜空」渐变（向墨蓝偏色）、内容区顶部淡洗层、页面底色微调 #f4f6fa；播放器深色岛 11 个裸 hex 全部收敛为 --vm-player-* / --vm-tick-* 令牌（三色刻度观感不变），引用块、Mermaid 白底等浅色区残留裸值清零
+
+### 组件细节与动效
+
+- **程夏（组长）**：排版与间距——页标题 20px（≤900px 回落 18）、卡片标题 600、卡内边距 20px（≤900px 回落 16）、内容区内边距 24px、控件圆角统一 6px，时间码与计数一律等宽数字
+- **程夏（组长）**：组件打磨——主按钮轻渐变 + 贴地投影（plain/link/text 变体不参与）、输入聚焦 3px 柔光圈、白卡静置阴影、侧栏菜单项胶囊化（激活态主色弱底）、品牌区分隔线
+- **程夏（组长）**：动效系统——页面切换过渡（进入上浮淡入 180ms、离开 120ms），全局 prefers-reduced-motion 一票关闭（实测 reduce 模式下过渡压至 0.01ms、复位恢复 0.18s）；修正 el-link 下划线 API 弃用告警（布尔改 'never'）
+
+### 验证
+
+- **程夏（组长）**：前端 vitest 28 例全绿、`npm run build` 通过；零新依赖、零功能改动，桌面 + 390px 全页截图对比 v0.9 基线正常
+
+---
+
+## [v0.11] — 双视角审视与健壮性迭代（2026-11-07）
+
+### P0 正确性（组长直推，按规留痕）
+
+- **程夏（组长）**：LLM 长视频截断诚实化——`structure()` 以 report 回传截断事实，超 12000 字符时事件流发「结构化·部分成功」、摘要产物 payload 携带 notice，工作台顶部横幅提示「后半段内容可能缺失」；提示词内显式声明截断；此前长视频后半段静默丢失且无任何提示
+- **程夏（组长）**：检索防全量——空条件（标签/关键词/置信度全空）返回 422「至少提供一个检索条件」；命中数上限 200 并返回 `{total, items}` 契约；LIKE 通配符转义（搜「100%」不再命中任意文本）；前端无条件禁用检索按钮、显示「共 N 条，已显示前 200 条」
+- **程夏（组长）**：错误面收敛——main.py 新增全局处理器：pydantic 校验 422 中文化（「video_id：应为整数」），未捕获异常统一中文 500（堆栈只进服务端日志）；pipeline 新增 `sanitize_error`，阶段失败/单条失败/事件流消息写入前剥掉本机绝对路径（Windows 盘符与 /tmp 等 POSIX 路径）与控制字符
+
+### P1 高频体验
+
+- **程夏（组长）**：解析互斥——新增进程级 `ParseMutex`，同一时间只允许一个批次解析，新批次创建/整批重跑/单条重试在占用时返回 409「已有批次正在解析」；消除多批并发解析在 SQLite 下的写锁冲突与批次状态被提前置终态的风险
+- **程夏（组长）**：库页批次卡状态分布——列表接口一次 group by 返回 `video_status_counts`，部分成功/失败批次在卡片上直接显示「成功 2 · 失败 1」，不必逐个点进详情
+- **程夏（组长）**：上传边界预检——单批文件数上限 20（超出 422）、Content-Length 预检（超 20GB 上限在落盘前 413）、流式累计总量超 20GB 记入 rejected；前端提交前同规则拦截并提示
+- **程夏（组长）**：工作台同批次视频切换器——页头动作区下拉列出批内全部视频（当前项标「当前 ·」），一键跳转，不再退回进度页换视频
+
+### P2 打磨
+
+- **程夏（组长）**：N+1 消减——条目摘要的 Evidence/Artifact/Video 改为 chunked IN 批量预取（search / 视频条目 / structured 三条路径），标签清单一次分组；数据量增长后核心接口不再逐条 3 查询
+- **程夏（组长）**：转写端点封顶 5000 段（防巨型响应），工作台命中上限时显示「仅显示前 5000 段」
+- **程夏（组长）**：导出页新增「复制 Markdown」到剪贴板；检索页增加空条件引导文案；前端对坏深链（/videos/abc 等）不再发请求，直接显示「链接无效：ID 必须是数字」
+
+### 验证
+
+- **程夏（组长）**：后端 pytest 83 例全绿（71 → 83），前端 vitest 29 例全绿（28 → 29），`npm run build` 通过；浏览器实测坏深链中文提示、检索禁用态与总数展示、工作台切换器
+- **程夏（组长）**：审视结论与验收记录见 docs/测试与迭代报告_v0.11.md；明确不做：分块结构化、向量检索、暗色模式（范围外）
+- **程夏（组长）**：发布 GitHub Release [v0.11.0](https://github.com/cheng200606/videomind/releases/tag/v0.11.0)——NSIS 安装包 + latest.yml + blockmap 三资产齐全，桌面端在「设置 → 应用更新」点「检查更新」即可从 v0.7.1 升级
+
+---
+
+## [v0.12] — 完整度迭代：双通道入包 + 长视频完整结构化（2026-11-07）
+
+### 背景：从「能跑的切片」到「可正常使用的正式发布」
+
+- **程夏（组长）**：以「真实用户拿到安装包能否完整用起来」为口径审视 v0.11.0，确认三处完整性缺口：① 超过 12000 字符的转写被整体截断（约 20 分钟后的内容不参与结构化），讲座类核心场景产出不完整；② 桌面安装包为控体积把 RapidOCR/onnxruntime 整套排除，且 Whisper 引擎不产关键帧——「ASR+OCR 双通道」这一核心差异化在正式发布物里缺席，设置页只剩「关闭」一个选项；③ Electron 55 个语言包只用到 2 个，安装包有无谓膨胀
+
+### P0 完整性（组长直推，按规留痕）
+
+- **程夏（组长）**：LLM 分块结构化——`structure()` 按段边界把长转写切块（每块渲染后 ≤12000 字符，不打断一句话），逐块调用后按时间序合并章节/条目/冲突，画面 OCR 文本按时间归属到对应块（不重复计费）；合并后用章节清单做一次收尾调用补全局 one_line 与 tags（失败保持合并结果）；个别块失败不拖垮整条——report 记 `failed_chunks`，结构化阶段置 PARTIAL、视频随之 PARTIAL，事件流与摘要 notice 写明「第 N 段失败，对应区间内容可能缺失」；单段自身超长才物理截断，截断事实照旧上报。新增 `StageStatus.PARTIAL`（前端 labels.ts 既有映射，零前端改动）
+- **程夏（组长）**：独立关键帧抽样——新增 `app/engines/frames.py`：av 解码视频流按间隔（默认 30s，`VMIND_FRAME_INTERVAL_S` 可调）采样，16x16 灰度均值差丢弃相邻相似帧（numpy 手写，不为去重引入 imagehash+scipy 约 120MB 依赖）；Whisper/FunASR 等纯音频引擎解析时自动补齐关键帧，结果走独立缓存（键含采样间隔）；抽样失败只让画面通道降级 SKIPPED，不影响音频通道
+- **程夏（组长）**：桌面版内置 RapidOCR 画面通道——`VideoMindBackend.spec` 对 rapidocr/onnxruntime/cv2/PIL/shapely/pyclipper `collect_all`（模型随 wheel 内置，离线可用），excludes 相应收窄；实测 ctranslate2 只带 `libiomp5md.dll`、onnxruntime 无 OpenMP DLL，无同名冲突；`run_server.py` 默认 OCR 引擎改为「rapidocr 可导入即 rapid，否则 none」；设置页 OCR 下拉在安装包里显示「关闭 / RapidOCR」
+
+### P1 发布质量
+
+- **程夏（组长）**：安装包体积 A 级优化——`electron-builder.yml` 增 `electronLanguages: [zh-CN, en-US]`（语言包 55→2）与 `compression: maximum`（NSIS LZMA 最高压缩），抵消画面通道带来的部分体积增量
+- **程夏（组长）**：设置页 OCR 引擎下新增说明——「列表只显示当前环境可用的引擎……」，与 ASR 提示风格对齐，消除「为什么只有关闭」的困惑
+
+### 验证
+
+- **程夏（组长）**：后端 pytest 91 例全绿（83 → 91：分块/截断/块失败容忍/收尾/OCR 时间归属 6 例 + av 合成视频抽帧/去重/坏文件降级 3 例）；前端 vitest 29 例全绿，`npm run build` 通过
+- **程夏（组长）**：打包烟雾验证（三轮，对最终 sidecar）：`/api/settings/engines` 列出 whisper+rapid；上传合成视频（h264+静音 aac）走完四阶段——faster-whisper(ctranslate2) 推理、VAD(onnxruntime)、av 抽帧、RapidOCR 识别在同一冻结进程内共存无冲突，批次 succeeded；打包产物上以 Edge 实测库页/设置页/工作台渲染与提示文案
+- **程夏（组长）**：审视结论与验收记录见 docs/测试与迭代报告_v0.12.md；桌面版从 v0.11.0 经「检查更新」或重新安装升级
+- **程夏（组长）**：发布 GitHub Release [v0.12.0](https://github.com/cheng200606/videomind/releases/tag/v0.12.0)——安装包 259MB + latest.yml + blockmap 三资产齐全；线上 latest.yml 已核验（version 0.12.0 + sha512），桌面端「检查更新」可从 v0.11.0 升级
+
+---
+
+## [v0.13] — 检索体验、暗色主题与长列表性能（2026-11-13，未发布 Release）
+
+### P0 检索从「能查」到「好查」（组长直推，按规留痕）
+
+- **程夏（组长）**：检索相关度排序——`/api/search` 关键词查询在 SQL 内按命中强度计分（标题命中 ×3、内容命中 ×1、双命中叠加）降序排列，同分按视频与时间锚点稳定序；无关键词（仅标签/置信度过滤）保持稳定序；`{total, items}` 契约不变，仍是标签过滤而非语义检索
+- **程夏（组长）**：检索结果高亮与摘要列——新增 `api/highlight.ts` 纯函数（分段渲染不做 HTML 拼接规避 XSS，正则元字符转义、`%`/`_` 按字面）；结果表新增「摘要」列（围绕首个命中截取），标题与摘要命中片段高亮；提示「按相关度排序（标题命中优先）」
+
+### P1 体验
+
+- **程夏（组长）**：暗色模式——main.ts 引入 Element Plus dark 变量表，新增 `useTheme` 组合式（localStorage 持久化、挂载前应用防闪烁）与 index.html 预绘脚本；theme.css 新增 `:root:root.dark` 令牌层（实测 `html.dark` 特异性不足会被 `:root:root` 亮值压制，已提级）；亮色态为 WCAG AA 压深的标签/警告文字出暗色对位；设置页「外观与关于」卡提供开关；时间码芯片/播放器深色岛/侧栏夜空两套主题共用
+- **程夏（组长）**：工作台转写渐进渲染——新增 `useProgressiveList` 组合式（首屏 400 段，哨兵滚动加载 + 「显示更多」按钮兜底，零新依赖），2000+ 段的真实讲座不再一次性挂全量 DOM；跳转/刻度仍读全量转写
+
+### P2
+
+- **程夏（组长）**：设置页「外观与关于」卡——深色开关、桌面端当前版本号（Web 模式隐藏）、项目仓库与许可信息
+
+### 验证
+
+- **程夏（组长）**：后端 pytest 92 例全绿（91 → 92，新增相关度排序用例），前端 vitest 38 例全绿（29 → 38：高亮 5 + 渐进渲染 4），`npm run build` 通过
+- **程夏（组长）**：Edge 暗色走查设置/视频库/知识检索/工作台/批次进度五页，检索「vue3」确认暗色高亮可读且前三行均为标题命中；方案与结果见 docs/迭代方案_v0.13.md；本版**未发布 Release**
+
+---
+
+## [v0.14] — 交付诚实性与口径一致性收口（2026-11-13，未发布 Release）
+
+### 目标：让「可信 / 可带走」在导出物上自洽，清掉多次列为遗留的路径泄露与静默降级债，把第一入口文档拉回实况（改动留在 develop 工作区，待提交）
+
+### P0 正确性（组长留痕）
+
+- **程夏（组长）**：解析覆盖提示贯通导出物——`app/export.py` 新增 `coverage_notices()` 单一口径（视频终态非成功 + 摘要产物 `payload.notice`）；批次级 Markdown 在批次头汇总非「成功」视频、各视频段输出「解析覆盖提示」区块与「请回看原片核对」；`/api/batches/{id}/structured` 每条视频新增 `coverage_notice`，外部插件快照与文稿同源；此前工作台横幅里的「第 N 段失败 / 内容可能缺失」在导出后完全丢失
+- **程夏（组长）**：移除 API 本机绝对路径——`parse.py::_video_view` 删 `path` 字段，`/api/batches/{id}` 与 `/api/videos/{id}` 只给 `file_name` + `media_url`；`types.ts` 的 `VideoState` 两字段转必填，`BatchProgressView.vue` / `WorkbenchView.vue` 共 5 处 `file_name || path.split(...)` 历史 fallback 收敛；`test_api.py` 两处落盘断言改用 `get_settings().media_root` + `{batch_id}_{filename}`。v0.7 §9-4、v0.8 §八-8 两次列为「后续移除」的遗留至此清掉
+- **程夏（组长）**：OCR 帧去重不再静默失效——`frames.py` 公开 `SIMILAR_THRESHOLD` / `abs_diff` 并新增 `file_thumbnail`，`ocr.py::dedupe_frames` 改用同一套 16×16 灰度均值差（Pillow + numpy，桌面包内已有），移除对 `imagehash` 的依赖；读图失败只保留该帧并记 warning；`requirements.txt` 删 imagehash 行、Pillow 注释校准，`VideoMindBackend.spec` 注释同步。旧写法在桌面发行版（spec 排除 imagehash/scipy）里等于没去重且无任何提示
+
+### P1 口径与体验
+
+- **程夏（组长）**：README 全文校准——技术栈改为 SQLite/FastAPI/原生 video/faster-whisper + RapidOCR/Electron 实况，进度改为代码线版本状态并指向分工任务卡，桌面版说明改为手动更新流程 + 全量通道预期，澄清 mock 只回放同名内置样例、真实视频需本地引擎与 Key；保留合规声明与逐人署名，无红线禁用的无据表述
+- **程夏（组长）**：`.env.example` 修正「用 openai SDK 指过来」的错误表述（实际为 httpx 直连 OpenAI 兼容协议），并补默认本地 SQLite 说明；导出页 API 说明补 `coverage_notice` 与覆盖提示
+- **程夏（组长）**：测试卫生——`pageheader.spec.ts` / `ConfidenceTag.spec.ts` 注册 `el-*` 轻量 stub，`useProgressiveList.ts` 用 `getCurrentInstance()` 守卫卸载钩子，消除 vitest 的组件解析与生命周期告警
+
+### P2 留痕
+
+- **程夏（组长）**：新增 `docs/迭代方案_v0.14.md`（含现状盘点、验收标准、实施结果与关键决策）；`AGENTS.md` 同步三条新契约（覆盖提示随交付物、视频视图无绝对路径、OCR 去重不依赖 imagehash）
+
+### 验证
+
+- **程夏（组长）**：后端 pytest **92 → 99 例全绿**（导出覆盖提示 3 + 路径脱敏 1 + OCR 去重 3）；前端 vitest **38 例全绿**且 `[Vue warn]` 计数为 **0**；`npm run build`（vue-tsc + vite）通过；`git diff --check` 通过
+- **程夏（组长）**：契约残留复核——全仓无 `video.path` 消费、无 `_abs_diff`/`_SIMILAR_THRESHOLD` 引用；`/structured` 为外部插件端点，前端不消费，新增可选字段无需同步 `types.ts`
+- **程夏（组长）**：明确不做——真实 Key 长视频回归、阶段 2 增量更新应用端（周会件）、C 级引擎分离、CHANGELOG v0.8/v0.8.1 缺口（逐人署名红线，不代组员补录）；**未发 Release、未改 desktop 版本号、未提交推送**；方案与决策详见 `docs/迭代方案_v0.14.md`
+
+---
+
+## [v0.15] — 真 Key 全链路验证：分块结构化实测与三处修复（2026-11-13，未发布 Release）
+
+### P0 真 Key 端到端实证（组长直推，按规留痕）
+
+- **程夏（组长）**：以离线 TTS 合成 36.7 分钟中文技术讲座（五段并行 SAPI + av 拼接，素材不入库），真 Key 跑通「上传 → whisper 转写（101 秒）→ 分块结构化（2 块）→ 产物 → 导出」全链路：33 条产物（置信度 26 明述 / 5 推断 / 2 低置信）、12+ 章节大纲、Mermaid 草稿、证据链与「解析覆盖提示」完整
+- **程夏（组长）**：修复**输出截断**——结构化调用 max_tokens 4000 → 8000（实测稠密转写在 4000 处 JSON 断裂、原样重试必然再失败）；解析失败且截断时抢救已完整条目（`_salvage_truncated` + `report.output_salvaged` + 用户可见提示）；重试消息改为「精简条目重新输出」；system 提示词加输出规模约束。新增 2 例单测
+- **程夏（组长）**：修复**分块锚点相对化**——实测两轮提示词约束均不可靠（相对化、甚至把分钟数当毫秒），改为确定性设计：分块输入时间归零（相对本段开始），模型只输出相对毫秒，合并前 `_rebase_draft` 按块起点回移并夹取范围。第四轮实测 17 章节全绝对、严格有序、无缝覆盖全片。新增 1 例单测
+- **程夏（组长）**：修复 `.env.example` 自相矛盾——MySQL/Redis 行改为默认注释（与「可选覆盖」注释对齐），消除「照抄示例填 Key 后应用起不来」的坑（本轮实测踩中）
+
+### 验证
+
+- **程夏（组长）**：后端 pytest **102 例全绿**（99 → 102），前端 vitest 38 例全绿；四轮真 Key E2E 数据与决策记录见 docs/迭代方案_v0.15.md；测试批次落在 dev 库（可删）；**本版未发布 Release**
+
+---
+
+## [v0.16] — 可达性全量扫描、图表暗色适配与转写档位实测（2026-11-14，未发布 Release）
+
+### P0 可达性与暗色补全（组长直推，按规留痕）
+
+- **程夏（组长）**：axe 可达性全量扫描——引入 axe-core（devDependency），亮/暗 × 8 页全量扫描并修复全部 violation：菜单分组容器按 WAI-ARIA 惯例 `role="none"`（critical 四类同根因，断点切换后重打补丁）；PageHeader 标题 h2→h1、section 标题 h3→h2（heading-order）；占位符与 error/success alert 标题对比度 AA 对位；aside/main 加 aria-label。**亮/暗 × 8 页最终 0 violation**
+- **程夏（组长）**：Mermaid 图表暗色适配——v0.13 暗色上线时未回访该组件（主题变量硬编码亮色）；改为主题感知渲染（监听主题切换、按 `:root:root.dark` 同值变量重新 initialize），并用 v0.15 真 Key 产物（批次 2 真实 UML 草稿）亮/暗双截图验证；新增 3 例组件测试（含渲染失败降级）
+
+### P1 转写档位实测
+
+- **程夏（组长）**：whisper tiny vs base 同素材对比（36.7min 合成讲座）：tiny 101s / 562 段 vs base 210s（2.1×）/ 330 段，质量接近（传统字 609 vs 595、关键术语 7/7 vs 6/7）——**维持默认 tiny**，数据入档供答辩引用
+- **程夏（组长）**：修复**转写缓存键不含模型档位**的隐患（换 VMIND_WHISPER_MODEL 会命中旧缓存）：`_asr_cache_name` 让档位参与键；新增 1 例单测
+
+### 验证
+
+- **程夏（组长）**：后端 pytest **103 例全绿**（102 → 103），前端 vitest **41 例全绿**（38 → 41），`npm run build` 通过；axe 亮/暗 × 8 页 0 violation；暗色真实 UML 渲染截图确认。方案与数据见 docs/迭代方案_v0.16.md；**本版未发布 Release**
+
+---
+
+## [develop 设计线合入] — 成员分支合并（2026-11-15，未发布 Release）
+
+### 组长评审与合并（feature 分支 → develop，直推留痕）
+
+- **程夏（组长）**：评审并合入 `feature/A-prototype-ia`（bc6838d）——墨刀 12 页与现网页面映射底稿 `docs/prototype-ia-map.html`；评审结论与跟进项见合并提交 1dc0148（页 1–6 W3 节点已过期、11/19 硬节点按「作品本体 + 设计说明 + AI 使用声明」标准重新验收）。CHANGELOG 条目由 A 本人补录
+- **程夏（组长）**：评审并合入 `feature/b-uml-diagrams`（1b974ba..1b974ba）——图 1 用例图（图源 drawio + SVG 矢量导出，与 §七 表格逐条对齐，include/extend 语义正确、核心差异化用例视觉强调）；评审结论见合并提交 cdd0d7b。CHANGELOG 条目由 B 本人补录
+- **程夏（组长）**：产品定义 §七 用例数口径修正——标题「图 1，9 条」与表格 10 行不一致（第 10 行为预留插件用例），改为「图 1，10 条，含 1 条预留」；属口径勘误，非范围改动
+
+---
+
+## [v0.17] — 交付文档体系、可信边界收口与可复现质量门（2026-11-21，未发布 Release）
+
+> 本节汇总 v0.17 全部工作线的交付，基线 `develop 3365bb1`，本轮不发 Release。各线条目分别署名（A / C / 架构设计师 / 程夏（组长）），逐条单人事事、无合注。前端线与质量线未逐笔写条目，由组长依据两线提交历史与验收记录补录并注明。
+
+### 原型线（A）
+
+> 本节由 **A** 本人署名；交付物落 `docs/prototype/`，对应 `docs/交付与排期.md` §4.1 的 12 页清单，不新增第 13 页。
+
+- **A**：`docs/prototype/README.md`（58 行）——交付物索引、墨刀与设计画布两个链接、页面清单、重新导出步骤
+- **A**：`docs/prototype/设计说明.md`（193 行）——视觉系统、页面优先级分级、逐页「用户任务 / 首屏主角 / 取舍与隐藏理由 / 热区」
+- **A**：`docs/prototype/AI使用声明.md`（27 行）——AI 参与范围与注意事项，符合红线中「AI 产出统一标注」的要求
+- **A**：`docs/prototype/exports/` 22 张 PNG——13 张界面图（`p00-cover` + `p01`–`p12`，2880 px 宽 = 1440 设计宽 × 2）与 9 张交互状态图（`p04b`/`p04c`/`p04d`/`p04e`/`p04f`/`p06b`/`p06c`/`p06d`/`p08b`）
+- **A**：`docs/prototype/source/` 14 个 `.dc.html` 设计画布源文件 + `canvas.json` / `export-2x.mjs` / `flow.mjs` / `make-states.mjs` / `modao-import.html` 五个辅助文件
+- **A**：墨刀原型 https://modao.cc/proto/WwJjWSTVtou53lgllCjdSJ/sharing ——项目「视析 · 高保真原型」22 页（12 页主页面 + 封面 + 9 张交互状态页），演示设备「网页 1440」；分享权限设为「拿到链接的人都能查看」，2026-11-21 以无登录态浏览器复验 22 页均可打开，导出操作需登录
+- **A**：页 4 动线 3 条、证据链抽屉、页 6 图种切换与全局顶栏跳转均为墨刀原生「单击 → 跳转页面」交互，改热区时改 `source/flow.mjs` 坐标表重新导入
+- **A**：声明复现性缺口——`source/export-2x.mjs` 重新导出依赖设计画布的运行时文件 `support.js`，该文件属画布工具、不入库；已在 `docs/prototype/README.md` 写明，故 `exports/` 为交付物、`source/` 为可编辑源稿而非可独立重建的工程
+
+### 设计图线（C，2026-11-16）
+
+- **C（Al）**：图 5 类图 `fig5-class.puml` / `fig5-class.py` / `fig5-class.svg`——11 个实体全画（`VideoBatch`、`Video`、`Segment`、`Evidence`、`KnowledgeItem`、`Artifact`、`ConflictRecord`、`Tag`、`TagBinding`、`Note`、`Revision`）；`OcrEngine` 三实现、`OutputSchemaStrategy` 四实现、`AsrVocabularyCrossChecker` 标「仅设计」；`AsrEngine` 作为转写接缝单列，四个实现用注释收敛
+- **C（Al）**：图 6 ER 图 `fig6-er.puml` / `fig6-er.svg` 与 `docs/数据字典.md`——按 11 表口径，鸦脚记法；图中只放主键 / 外键 / 关键字段，完整字段、枚举、索引与多态绑定说明入字典
+- **C（Al）**：图 8 部署图 `fig8-deployment.puml` / `fig8-deployment.svg`——Electron 主进程 + FastAPI sidecar + SQLite / media / cache / logs；内置 faster-whisper（默认 tiny）与 RapidOCR；外部 DeepSeek；第三方插件走预留 REST；不画 Docker / MySQL / Redis 备选路径
+- **C（Al）**：按 2026-11-16 确认口径，同步 `docs/产品定义.md` §六、`docs/交付与排期.md`、`docs/分工与任务卡.md` 与 `docs/数据字典.md` 的 ER 表数：9–10 表 → 11 表（`tag` 与 `tag_binding` 分列）；仅口径勘误，不改范围
+- **C（Al）**：按组长 review 整改——图 5 将不存在的 `ParseService` / `LlmGateway` / `ExportService` 改为 `pipeline.py` / `llm.py` / `export.py` 的 «module» 表示；`ParseMutex` 改 `claim/release`、`ProgressBus` 改 `emit/forget/reset`、`llm.structure` 签名对齐；移除框间基数标签并写入图注，消除 Video/Segment/Evidence 类名遮挡；图 8 ASR 标注改为 `faster-whisper（默认 tiny）` 并对齐配色
+- **C（Al）**：图 5 图注补「`AsrVocabularyCrossChecker` 本期不实现」——该类在产品定义中标「F5 课程版只做设计」，代码里只有配置开关无实现，图注须写明避免合稿时被当成既有实体
+
+### 辅图线（架构设计师）
+
+- **架构设计师**：新增 `docs/figures/src/fig-aux1-tech-roadmap.py`（260 行）与 `docs/figures/svg/fig-aux1-tech-roadmap.svg`——辅图 1 技术路线图：上排五个环节「选题与范围锁定 → 双通道解析 → 结构化 → 证据链 → 导出与交付」，每条能力按 ● 已实现并入库 / ○ 设计中或本期不实施标注；下排 12 个版本里程碑（v0.5 → v0.17）；底部五行「读图与口径」
+- **架构设计师**：新增 `docs/figures/src/fig-aux3-multimodal-artifacts.py`（258 行）与 `docs/figures/svg/fig-aux3-multimodal-artifacts.svg`——辅图 3 多模态 + 多产物示意图：左「输入通道」两个可插拔接缝，中「结构化」分块与合并及无 Key 降级标注，右「输出产物」`OutputSchemaStrategy` 四实现与契约签名
+- **架构设计师**：本机无 PlantUML 运行时，两张辅图沿用纯 Python 生成 SVG 路线，源文件与导出物成对可复现、不手改 SVG，按 LF 写入与 `.gitattributes` 一致
+- **架构设计师**：辅图 3 如实标注「代码块只由画面通道产出」为代码实测约束（`CodeBlocksStrategy` 在 `ctx.ocr` 为空时返回空列表、`channel` 固定 `Channel.OCR`），两图均标「识别结果仅供参考」
+
+### 文档体系（程夏（组长））
+
+- **程夏（组长）**：新建 `docs/delivery/排版规范.md`——A4 页面设置、三级标题字体字号与段距、正文宋体小四 1.5 倍行距、三线表规格、图表编号与图注、代码块样式、封面目录页码、六章固定节名表、合稿施工顺序（用例数须注明采集时刻与 commit 短号）、禁止事项
+- **程夏（组长）**：新增 `tools/make_docx_skeleton.py` 作为交付文档骨架的可重建来源，产出 `docs/delivery/VideoMind_交付文档_v0.17.docx`——4 个 section、六章 Heading 1 与固定子节 Heading 2、素材锚点与待补标记
+- **程夏（组长）**：新建 `docs/delivery/v0.17_ch5_系统实现与测试.md` 作为章节体例样板——四阶段主链路、三个可插拔策略、`ParseMutex`、长转写分块、证据链，11 表数据字典、8 个枚举与 `REVISION_TRANSITIONS`、质量门、迭代轨迹与已知缺口；§5.3.7 记录三条实现层面的诚实边界
+- **程夏（组长）**：新建 `docs/delivery/v0.17_ch2_可行性分析.md`——技术可行性逐条挂可核证据、经济可行性两套调用次数口径（表 2-8 双列）、操作可行性三条运行路径、进度可行性对照七周倒排
+- **程夏（组长）**：新建 `docs/delivery/v0.17_ch6_小组讨论记录.md`——记录规则、轮值署名表、单次讨论模板、归档区与决议跟踪表；截至 2026-11-21 无已确认正式纪要，归档区标「待补」，不预填、不补写既往会议
+- **程夏（组长）**：新增 `docs/delivery/交付前检查单.md`——五组共 24 项：核对脚本、用例数采集、体例排版、内容与诚信红线、图表配套
+- **程夏（组长）**：新增四个文档核对脚本 `tools/check_doc_refs.py`、`tools/check_figure_refs.py`、`tools/check_doc_banned.py`（禁用词，白名单须写理由，支持 `--full` 全仓模式）、`tools/check_doc_numbers.py`（与当日实跑同源）；退出码 0/1，明细落 `output/v017/`
+
+### 口径勘误（程夏（组长））
+
+- **程夏（组长）**：`CONTRIBUTING.md` §八 章节文档路径由 `docs/chapters/<章节号>-<名称>.md` 改为 `docs/delivery/v0.17_ch<章节号>_<名称>.md`——`docs/chapters/` 从未建立过，v0.17 起统一落 `docs/delivery/`
+- **程夏（组长）**：`docs/交付与排期.md` §4.2 辅图 4「须体现 F2/F3 各增一次 LLM 调用」与实现不符——F2（`StructuredDraft.conflicts`）与 F3（`DraftItem.pitfall`）是同一 schema 的两个字段，`_structure_chunk` 每块只发一次请求，调用次数增量 0，成本增量转为输出 token 与重试概率；改为「设计估算口径 / 实现实测口径」双列。另厘清原文把 F3 写作「多产物」之误（多产物对应 `OutputSchemaStrategy`，纯本地计算）
+- **程夏（组长）**：表 5-23 / 表 2-3 / 表 2-4 / 检查单第 18 项可达性口径统一为「axe 亮 / 暗 × 8 页**默认态** 0 violation」，并记一条诚实边界：v0.16 基线只覆盖默认态，导出页终态与上传页已选文件态未纳入，v0.17 起由 `tools/` 脚本按双状态覆盖
+
+### 后端技术债收口（程夏（组长），v0.17 P0-1 ~ P0-6）
+
+- **程夏（组长）**：修复零条目冒充成功（P0-2，`8026a98`）——`backend/app/artifacts.py` 新增 `normalize_schemas()` 显式返回未知产物类型、`resolve()` 静默丢弃改为告警不吞；`backend/app/pipeline.py` 把 `resolve()` 挪进 `try`、产物集为空时双 `FAILED`、合法但零 draft 时双 `PARTIAL`；`backend/app/main.py` 启动读回与 `PUT` 共用同一套归一，新增 `backend/app/config.py::DEFAULT_OUTPUT_SCHEMAS`。新增 5 例，零 draft 用例断言 SSE 事件而非 `video.error`（不改既有 `_set_stage` 语义）
+- **程夏（组长）**：修复缓存损坏冒充解析失败（P0-3，`871995c`）——`backend/app/cache.py` 文件分支裸 `json.loads` 改为读坏当未命中并 `discard()`，新增 `validate` 校验回调，`put()` 改「先写 tmp 再 `replace`」原子替换；`backend/app/pipeline.py` 新增 `_asr_cache_ok` / `_frames_cache_ok` 接通两处 `cache.get`。新增 7 例
+- **程夏（组长）**：修复测试连接失败原因漏本机路径（P0-4，`6b29c55`）——`backend/app/routers/settings.py::_safe_error()` 末尾接 `pipeline.sanitize_error(text, limit=300)`，顺序为先抹密钥再剥路径。新增 2 例覆盖 Windows 与 POSIX 路径
+- **程夏（组长）**：修复关键帧目录只增不减 + 抽帧间隔死配置（P0-5，`61f76dc`）——`backend/app/pipeline.py::_clear_video_data` 新增 `_prune_frame_dir()` 按本轮帧集清理；新增 `backend/app/engines/frames.py::effective_interval_s()` 作唯一取值口径，同一变量实例既做 `sample_frames` 实参又进缓存键；非法/零/负值回退 30s；顺带修 `backend/tests/conftest.py` 隔离缺陷。新增 5 例
+- **程夏（组长）**：`backend/app/models.py:1` docstring 口径勘误 + 3 例守卫（P0-1，`29a1e06`）——由「9–10 表」改为「11 张表」并保留成因说明；新增 `backend/tests/test_models.py` 3 例，其中 `test_models_docstring_states_eleven_tables` 要求「11 张表」与「9–10 表」同时存在，保留历史口径说明
+- **程夏（组长）**：修复后端版本号与代码线脱节（P0-6，`ae00284`）——新增 `backend/app/config.py::APP_VERSION = "0.17.0"` 作单一来源，`FastAPI` 与 `/api/health` 同取一处；新增 1 例同时钉 health 与 `/openapi.json` 的 `info.version`
+
+### 前端线（程夏（组长），依据提交历史与验收记录补录；本线未逐笔写条目）
+
+- **程夏（组长）**：前端 v0.17 单链 12 笔无 merge，依次 P0-1 `dd902a9`（`labels.ts` 补 `video_start` 类型，进度页事件着色不再走灰）→ P0-2 `c636129`（`EvidenceDrawer` 自建 `CHANNEL` 收归 `labels.ts::CHANNEL_LABEL`）→ P0-4 `04c816c`/`2661e13`（批次级事件单走「更新批次头」路径，`types.ts` 补 `StructuredVideo`/`StructuredBatch` 与 `coverage_notice` 可选字段）→ P0-3 `5a7383c`（进度页 `aria-live` + 时间轴命名，单测先红后绿）→ P1-1 `fe84978`（`flowchart-elk` 首行归一化，节点定义不动）
+- **程夏（组长）**：暗色对比度修复（P1 清单外第九条，`2f7b6a3`）——`ExportView`/`NotesView` 三处 `MdPreview`/`MdEditor` 绑 `:theme="mode"`，撤销 `!important` 改按 `data-theme` 分流，radio 选中态改用 `--el-color-primary-light-3` 底，不改全站主色；导出页与首页两处暗色违规归零
+- **程夏（组长）**：`4e18ba5` 终态列表收敛、P1-4 `6d708e6` 上传页分组标题与 `.no` 徽标 token 化（对比度 4.44→4.8、2.96→4.73）、P1-3 `c50a611` 新增 `tools/check_limits.py`（前后端 `SEARCH_LIMIT`/`TRANSCRIPT_LIMIT` 同源核对，不一致 exit 1）、P1-5 `7e73a42` mermaid 主题双源断言、P2 `2e088a6` 渐进渲染评估注释。vitest 44→60（11 文件）、build exit 0
+- **程夏（组长）**：更正草案错判——上传拖拽区本就有可访问名称（Element Plus `upload-content` 自带 `role=button` 与名称），P0-3 未加冗余标签；另发现 axe 盲区：含 `linear-gradient` 背景元素的 `color-contrast` 落入 incomplete 桶不判定，「0 violation ≠ 对比度过关」，实测比值需按渐变位置插值
+
+### 质量线（程夏（组长），依据提交历史与验收记录补录；本线未逐笔写条目）
+
+- **程夏（组长）**：`a9c4450` 新增质量门脚本与回归用例——`tools/check_a11y.py`、SSE 收流单测（`frontend/src/__tests__/progress.spec.ts`，终态必须 close / 非终态不 close）、视觉通道冒烟（`backend/tests/test_visual_channel.py`，不改 conftest 全局 `OCR_ENGINE`，断言 `channel=="both"` 且 `frame_path` 非空）；`tools/check_enum_sync.py` 契约同源核对
+- **程夏（组长）**：`e28ee7a` 裁定落地——G5 统一到文档线权威脚本 `tools/check_doc_banned.py`（撤自产 `check_forbidden_words.py`，修误报非放松门）；G4 把 incomplete 桶的 `color-contrast` 单列、按渐变位置插值算实测比值（暗色上传页 11 节点 8.7–15.26:1 全 pass）、算不了标待人工，均不计入 violations=0
+- **程夏（组长）**：G4 双方法对照证明检测手段修复未放宽判定——未修复构建旧/新方法均报 1 处 1.84:1；已修复构建旧方法报 0 但 `mdThemes=[light]` 是假绿、新方法报 0 且 `mdThemes=[dark]` 才是真暗色。`g4.json` 24 组全覆盖、uncovered=0、ok=true；G6 差异 0、G7 README 去写死例数
+
+### 合并与验证（v0.17 → develop）
+
+- **程夏（组长）**：七条工作线（前端 / 后端 / 质量 / A 原型 / 辅图 / C 图 / 文档）按序 `--no-ff` 合入 `develop`，各线合并前对 develop `merge-tree` 干跑 code=0；图 blob 跨线完全相同不冲突，内容冲突仅 `CHANGELOG.md` 与 `docs/交付与排期.md`，均按口径解决；作者署名保留原样（C=Alhazredal、A=Crubeens）
+- **程夏（组长）**：合并后全量验证——后端 `pytest`、前端 `npm.cmd run test` 与 `npm.cmd run build`、文档四脚本（refs / figure / banned / numbers）须全绿，例数以合稿当日实跑为准（基线 `3365bb1` 为 108 / 44，仅作对照）

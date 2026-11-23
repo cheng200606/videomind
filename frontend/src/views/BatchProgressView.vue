@@ -1,0 +1,252 @@
+<script setup lang="ts">
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+import { reparseBatch, retryVideo } from '../api/client'
+import {
+  EVENT_STAGE_LABEL, STAGE_LABEL, STAGE_STATUS_LABEL, STAGE_STATUS_TYPE, STATUS_LABEL, STATUS_TYPE, fmtTime
+} from '../api/labels'
+import { isRunningStatus, isTerminalStatus } from '../api/types'
+import type { Stage, StageStatus, VideoState } from '../api/types'
+import PageHeader from '../components/PageHeader.vue'
+import { useBatchStore } from '../stores/batch'
+
+const route = useRoute()
+const router = useRouter()
+const store = useBatchStore()
+
+const id = computed(() => Number(route.params.id))
+const rerunning = ref(false)
+onMounted(() => { if (Number.isFinite(id.value)) void store.open(id.value) })
+watch(id, (v) => {
+  if (!Number.isFinite(v)) {
+    // 坏深链（/batches/abc）：不发起请求，直接给中文提示
+    store.error = '链接无效：批次 ID 必须是数字'
+    return
+  }
+  void store.open(v)
+})
+// SSE 连接跟着进度页走：离开页面就断开，别挂在根组件上泄漏
+onUnmounted(() => store.stopProgress())
+
+const isRunning = computed(() => isRunningStatus(store.current?.status ?? ''))
+const isTerminal = computed(() => isTerminalStatus(store.current?.status ?? ''))
+
+/**
+ * 读屏播报文本：事件流是纯视觉的 el-timeline，推进过程对屏幕阅读器完全静默。
+ * 这里只取最新一条拼成一句话，交给下面那个隐藏的 live region 播报——
+ * 若把 aria-live 直接挂在时间轴上，每次 push 都会把整条时间轴重播一遍，吵得没法用。
+ */
+const liveAnnouncement = computed(() => {
+  const e = store.events[store.events.length - 1]
+  if (!e) return ''
+  const stage = EVENT_STAGE_LABEL[e.stage] ?? e.stage
+  const status = STAGE_STATUS_LABEL[e.status] ?? STATUS_LABEL[e.status] ?? e.status
+  return e.message ? `${stage}：${status}，${e.message}` : `${stage}：${status}`
+})
+
+/** 表格插槽里的 row 是 DefaultRow，经这里收窄成 VideoState，避免 any 下标撞 Record */
+function statusOf(row: unknown, stage: Stage): StageStatus {
+  return (row as VideoState).stages[stage]
+}
+
+function retryRow(row: unknown) {
+  void retry(row as VideoState)
+}
+
+function openWorkbench(row: unknown) {
+  void router.push(`/videos/${(row as VideoState).id}`)
+}
+
+async function confirm(message: string, title: string): Promise<boolean> {
+  try {
+    await ElMessageBox.confirm(message, title, {
+      type: 'warning', confirmButtonText: '继续', cancelButtonText: '取消'
+    })
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** 整批重跑：后端已幂等（先清派生数据再逐条解析），单条失败不拖批；会清掉笔记/修订 */
+async function reparseAll() {
+  if (!await confirm('整批重跑会重建所有条目，并清除已有笔记与修订记录。确认继续？', '整批重跑')) return
+  rerunning.value = true
+  try {
+    await reparseBatch(id.value)
+    ElMessage.success('已开始整批重跑，进度见下方事件流')
+    await store.open(id.value)
+  } catch (err) {
+    ElMessage.error(`重跑失败：${err instanceof Error ? err.message : err}`)
+  } finally {
+    rerunning.value = false
+  }
+}
+
+/** 单条重试：只重置这一条的四个阶段，不动整批（用例 3）；同样会清掉该条笔记/修订 */
+async function retry(row: VideoState) {
+  if (!await confirm(`重试「${row.file_name ?? '该视频'}」会重建它的条目，并清除该条已有笔记与修订。确认继续？`, '单条重试')) return
+  try {
+    await retryVideo(row.id)
+    ElMessage.success('已提交单条重试，进度见下方事件流')
+    await store.open(id.value)
+  } catch (err) {
+    ElMessage.error(`重试失败：${err instanceof Error ? err.message : err}`)
+  }
+}
+</script>
+
+<template>
+  <div v-if="store.current">
+    <PageHeader :title="store.current.name" :crumbs="[{ label: '视频库', to: '/' }]">
+      <template #tag>
+        <el-tag :type="STATUS_TYPE[store.current.status] ?? 'info'">{{ STATUS_LABEL[store.current.status] ?? store.current.status }}</el-tag>
+      </template>
+      <template #actions>
+        <span :title="isTerminal ? '' : '批次尚未解析完成'">
+          <el-button size="small" :disabled="!isTerminal" @click="router.push(`/batches/${id}/export`)">导出文稿</el-button>
+        </span>
+        <el-button size="small" :loading="rerunning" :disabled="!isTerminal" @click="reparseAll">整批重跑</el-button>
+      </template>
+    </PageHeader>
+
+    <el-alert
+      v-if="store.current.status === 'partial'"
+      type="warning"
+      :closable="false"
+      show-icon
+      title="批次部分成功：失败条目可单条重试，已成功的结果不会重跑"
+      class="alert"
+    />
+    <el-alert
+      v-if="store.connectionLost"
+      type="warning"
+      :closable="false"
+      show-icon
+      title="实时连接中断，已切换为快照刷新；后端恢复后会自动继续"
+      class="alert"
+    >
+      <el-button size="small" @click="store.open(id)">重新连接</el-button>
+    </el-alert>
+
+    <el-table :data="store.current.videos" border class="desktop-table">
+      <el-table-column label="视频" min-width="220">
+        <template #default="{ row }">
+          <div class="file" :title="row.file_name">{{ row.file_name }}</div>
+          <div v-if="row.error" class="err" :title="row.error">{{ row.error }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="96" align="center">
+        <template #default="{ row }">
+          <el-tag size="small" :type="STATUS_TYPE[row.status] ?? 'info'" disable-transitions>
+            {{ STATUS_LABEL[row.status] ?? row.status }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column
+        v-for="(label, key) in STAGE_LABEL"
+        :key="key"
+        :label="label"
+        width="120"
+        align="center"
+      >
+        <template #default="{ row }">
+          <el-tag size="small" :type="STAGE_STATUS_TYPE[statusOf(row, key as Stage)]" disable-transitions>
+            {{ STAGE_STATUS_LABEL[statusOf(row, key as Stage)] }}
+          </el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="190" align="center" fixed="right">
+        <template #default="{ row }">
+          <el-button size="small" :disabled="isRunning || row.status === 'running'" @click="retryRow(row)">重试本条</el-button>
+          <el-button size="small" type="primary" :disabled="row.status === 'pending' || row.status === 'running'" @click="openWorkbench(row)">
+            工作台
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <div class="mobile-list">
+      <el-card v-for="v in store.current.videos" :key="v.id" shadow="never" class="vcard">
+        <div class="vhead">
+          <span class="file">{{ v.file_name }}</span>
+          <el-tag size="small" :type="STATUS_TYPE[v.status] ?? 'info'">{{ STATUS_LABEL[v.status] ?? v.status }}</el-tag>
+        </div>
+        <div class="stages">
+          <el-tag
+            v-for="(label, key) in STAGE_LABEL" :key="key" size="small"
+            :type="STAGE_STATUS_TYPE[statusOf(v, key as Stage)]" disable-transitions
+          >{{ label }} · {{ STAGE_STATUS_LABEL[statusOf(v, key as Stage)] }}</el-tag>
+        </div>
+        <div v-if="v.error" class="err">{{ v.error }}</div>
+        <div class="vacts">
+          <el-button size="small" :disabled="isRunning || v.status === 'running'" @click="retry(v)">重试本条</el-button>
+          <el-button
+            size="small" type="primary"
+            :disabled="v.status === 'pending' || v.status === 'running'"
+            @click="openWorkbench(v)"
+          >工作台</el-button>
+        </div>
+      </el-card>
+    </div>
+
+    <el-card class="stream" shadow="never">
+      <template #header><b>解析事件流</b><span class="muted">（SSE 实时推送）</span></template>
+      <!-- 进度播报：屏幕阅读器靠这条 live region 感知推进，视觉上不可见 -->
+      <p class="vm-sr-only" role="status" aria-live="polite" aria-atomic="true">{{ liveAnnouncement }}</p>
+      <el-timeline class="tl" aria-label="解析事件流，最新事件在最上方">
+        <el-timeline-item
+          v-for="(e, i) in store.events.slice(-12)" :key="e.seq ?? i"
+          :type="STAGE_STATUS_TYPE[e.status] ?? 'info'"
+          :timestamp="fmtTime(e.ts)"
+          placement="top"
+        >
+          <div class="evt">
+            <el-tag size="small" :type="STAGE_STATUS_TYPE[e.status] ?? 'info'" disable-transitions>
+              {{ EVENT_STAGE_LABEL[e.stage] ?? e.stage }} ·
+              {{ STAGE_STATUS_LABEL[e.status] ?? STATUS_LABEL[e.status] ?? e.status }}
+            </el-tag>
+            <span>{{ e.message }}</span>
+          </div>
+        </el-timeline-item>
+      </el-timeline>
+      <el-empty
+        v-if="!store.events.length"
+        description="暂无事件：解析开始后自动推送，刷新页面会回放本次运行的事件"
+        :image-size="60"
+      />
+    </el-card>
+  </div>
+  <el-alert
+    v-else-if="store.error"
+    type="error"
+    :closable="false"
+    show-icon
+    :title="`批次加载失败：${store.error}`"
+    class="alert"
+  >
+    <el-button size="small" @click="router.push('/')">返回视频库</el-button>
+  </el-alert>
+  <el-skeleton v-else :rows="6" animated />
+</template>
+
+<style scoped>
+.alert { margin-bottom: 12px; }
+.file { font-size: 13px; word-break: break-all; }
+.err { margin-top: 4px; color: var(--vm-danger-text, #b42318); font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.stream { margin-top: 16px; }
+.tl { padding-left: 2px; }
+.tl .evt { display: flex; align-items: center; gap: 10px; font-size: 12px; flex-wrap: wrap; }
+.muted { color: var(--vm-muted, #5f6b7d); }
+.mobile-list { display: none; }
+@media (max-width: 700px) {
+  /* 四阶段矩阵在窄屏会被固定操作列挤掉，改为卡片逐条展示 */
+  .desktop-table { display: none; }
+  .mobile-list { display: flex; flex-direction: column; gap: 10px; }
+  .vhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .stages { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .vacts { display: flex; gap: 8px; margin-top: 10px; }
+}
+</style>

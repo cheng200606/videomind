@@ -1,0 +1,200 @@
+@startuml
+' 语义源：11 个实体 + 三类策略 + 解析服务，类与关系同 fig5-class.svg。
+' SVG 采用手工排版（见同目录 fig5-class.py），以保证 1800x1240 内的可读性；
+' 若用 PlantUML 重排，类与关系不变，布局会不同。
+skinparam backgroundColor #FFFFFF
+skinparam defaultFontName "Source Han Sans CN"
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam ArrowColor #64748B
+skinparam ClassBackgroundColor #FFFFFF
+skinparam ClassBorderColor #4338CA
+skinparam ClassHeaderBackgroundColor #EEF2FF
+skinparam InterfaceBackgroundColor #F5F3FF
+skinparam InterfaceBorderColor #7C3AED
+skinparam InterfaceHeaderBackgroundColor #EDE9FE
+hide circle
+hide empty members
+
+class VideoBatch {
+  +id : int
+  +name : str
+  +status : BatchStatus
+  +videoCount : int
+}
+class Video {
+  +id : int
+  +batchId : int
+  +durationMs : int
+  +status : VideoStatus
+}
+class Segment {
+  +id : int
+  +videoId : int
+  +startMs : int
+  +endMs : int
+  +text : str
+}
+class KnowledgeItem {
+  +id : int
+  +type : ArtifactType
+  +title : str
+  +content : str
+  +confidence : Confidence
+  +anchorMs : int
+}
+class Evidence {
+  +id : int
+  +startMs : int
+  +endMs : int
+  +quote : str
+  +framePath : str
+  +channel : Channel
+}
+class Artifact {
+  +id : int
+  +schemaType : ArtifactType
+  +payload : dict
+}
+class ConflictRecord {
+  +id : int
+  +sourceA : str
+  +sourceB : str
+  +description : str
+}
+class Tag {
+  +id : int
+  +name : str
+  +suggestedByAi : bool
+}
+class TagBinding {
+  +id : int
+  +tagId : int
+  +targetType : TagTarget
+  +targetId : int
+}
+class Note {
+  +id : int
+  +userId : str
+  +itemId : int
+  +content : str
+  +anchorMs : int
+}
+class Revision {
+  +id : int
+  +itemId : int
+  +state : RevisionState
+  +editor : str
+  +editedAt : datetime
+}
+
+interface "AsrEngine\n转写引擎接缝" as AsrEngine {
+  +name : str
+  +isAvailable() : bool
+  +transcribe(path : str) : AsrResult
+}
+interface "OcrEngine\n画面通道策略" as OcrEngine <<策略>> {
+  +name : str
+  +recognize(frames) : FrameText[]
+}
+class RapidOcr
+class PaddleOcr
+class VisionModelOcr
+interface "OutputSchemaStrategy\n产物输出策略" as OutputSchemaStrategy <<策略>> {
+  +atype : ArtifactType
+  +payloadModel : type
+  +build(ctx) : ItemDraft[]
+}
+class SummaryStrategy
+class UmlDraftStrategy
+class KeyPointsStrategy
+class CodeBlocksStrategy
+interface "AsrVocabularyCrossChecker\n语音-视觉交叉校验" as AsrVocabularyCrossChecker <<策略 · 仅设计>> {
+  +crossCheck(asr, ocr) : Correction[]
+}
+
+class "pipeline.py" as pipeline <<module>> {
+  +parse_video(session, video, settings=None) : Video
+  +parse_batch(session, batch)
+  +retry_video(session, video_id) : Video
+  +recover_orphan_runs(session)
+}
+class ProgressBus {
+  +subscribe(batch_id)
+  +unsubscribe(q)
+  +reset(batch_id)
+  +forget(batch_id)
+  +emit(batch_id, video_id, stage, status, message)
+}
+class ParseMutex {
+  +claim(batch_id) : bool
+  +release(batch_id)
+}
+class "llm.py" as llm <<module>> {
+  +structure(transcript, ocr_text, duration_ms, report=None, progress=None) : StructuredDraft
+  +test_connection(cfg=None) : tuple
+}
+class "export.py" as export <<module>> {
+  +build_batch_markdown(session, batch_id) : str
+  +coverage_notices(session, video, items) : str[]
+}
+class StructuredDraft {
+  +chapters : Chapter[]
+  +items : DraftItem[]
+  +conflicts : Conflict[]
+}
+
+VideoBatch "1" *-- "0..*" Video
+Video "1" *-- "0..*" Segment
+Video "1" *-- "0..*" KnowledgeItem
+KnowledgeItem "0..*" --> "0..1" Evidence : 引用
+KnowledgeItem "1" *-- "0..*" Artifact
+KnowledgeItem "1" *-- "0..*" ConflictRecord
+KnowledgeItem "1" *-- "0..*" Note
+KnowledgeItem "1" *-- "0..*" Revision
+Tag "1" *-- "0..*" TagBinding
+TagBinding "0..*" ..> "0..1" Video : targetType=video
+TagBinding "0..*" ..> "0..1" KnowledgeItem : targetType=item
+
+RapidOcr ..|> OcrEngine
+PaddleOcr ..|> OcrEngine
+VisionModelOcr ..|> OcrEngine
+SummaryStrategy ..|> OutputSchemaStrategy
+UmlDraftStrategy ..|> OutputSchemaStrategy
+KeyPointsStrategy ..|> OutputSchemaStrategy
+CodeBlocksStrategy ..|> OutputSchemaStrategy
+
+pipeline ..> AsrEngine : 转写
+pipeline ..> OcrEngine : 画面
+pipeline ..> OutputSchemaStrategy : 产物
+pipeline ..> llm : 结构化
+pipeline ..> ProgressBus
+pipeline ..> ParseMutex
+pipeline ..> KnowledgeItem : 落库
+llm ..> StructuredDraft
+export ..> KnowledgeItem : 导出
+export ..> Evidence : 附证据
+AsrVocabularyCrossChecker ..> AsrEngine : 读转写
+AsrVocabularyCrossChecker ..> OcrEngine : 读画面
+
+note right of AsrEngine
+  实现：MockAsr / WhisperAsr /
+  YueyingAsr / FunAsr
+end note
+note bottom of AsrVocabularyCrossChecker
+  课程版仅设计，本期不实现
+end note
+note bottom of pipeline
+  DTO：AsrResult / TranscriptSegment /
+  KeyFrame / FrameText / ParseContext /
+  ItemDraft / Correction（设计级）
+end note
+note bottom of TagBinding
+  多态绑定，target_id 不设外键
+end note
+note bottom of Revision
+  11 个实体全画；完整字段与索引见图 6 数据字典
+end note
+
+@enduml

@@ -1,0 +1,49 @@
+# 一键启动：docker compose up -d
+# 运行前先 cp backend/.env.example backend/.env（真实 Key 只留本机，红线 2）
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: videomind
+      MYSQL_USER: videomind
+      MYSQL_PASSWORD: videomind
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports: ["3306:3306"]
+    volumes: [vmind_db:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -prootpw --silent"]
+      interval: 10s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  backend:
+    build: ./backend
+    env_file: backend/.env            # 已被 .gitignore 拦截，真实 Key 不入库
+    environment:
+      DATABASE_URL: mysql+pymysql://videomind:videomind@mysql:3306/videomind?charset=utf8mb4
+      REDIS_URL: redis://redis:6379/0
+      MEDIA_ROOT: /srv/data/media
+      CACHE_ROOT: /srv/data/cache
+      CORS_ORIGINS: http://localhost:5173
+      # 镜像只装 requirements.txt（不含重引擎），默认 mock 转写即可跑通切片与出截图
+      ASR_ENGINE: mock
+      OCR_ENGINE: none
+    volumes: ["./data:/srv/data"]
+    ports: ["8000:8000"]
+    depends_on:
+      mysql: { condition: service_healthy }
+      redis: { condition: service_started }
+
+  frontend:
+    build: ./frontend
+    environment:
+      VMIND_API: http://backend:8000
+    ports: ["5173:5173"]
+    depends_on: [backend]
+
+volumes:
+  vmind_db:

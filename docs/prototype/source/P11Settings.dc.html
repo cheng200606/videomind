@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>11 设置</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;font-weight:900;font-size:14px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.in{font-family:inherit;font-size:16px;font-weight:500;height:44px;border:0;border-bottom:2px solid #0A0A0A;padding:0;background:transparent;border-radius:0;color:#0A0A0A;width:100%;box-sizing:border-box}
+.lab{display:flex;flex-direction:column;gap:2px;font-size:12px;font-weight:500;color:#6B6B6B}
+.opt{all:unset;cursor:pointer;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px 16px;box-shadow:inset 0 0 0 2px #E0E0E0}
+.opt:hover{box-shadow:inset 0 0 0 2px #0A0A0A}
+.opt.on{box-shadow:inset 0 0 0 3px #0A0A0A}
+.opt:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.pill{all:unset;cursor:pointer;box-sizing:border-box;font-size:14px;font-weight:900;padding:8px 14px;box-shadow:inset 0 0 0 2px #E0E0E0;color:#6B6B6B}
+.pill.on{background:#0A0A0A;color:#FFFFFF;box-shadow:none}
+.pill:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+summary{cursor:pointer}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav on" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:28px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:0">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;padding-bottom:18px">
+      <h1 style="margin:0;font-size:46px;line-height:1.05;font-weight:900">设置</h1>
+      <span style="font-size:14px;color:#3A3A3A">第一次使用按 1 → 2 → 3 配好，之后基本不用再来。配置只存在本机。</span>
+    </div>
+
+    <section class="g12" aria-labelledby="h1x" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:16px;border-top:2px solid #0A0A0A;padding:22px 0 30px">
+      <span class="n" style="grid-column:1 / span 2;font-weight:900;font-size:120px;line-height:.78">1</span>
+      <div style="grid-column:3 / span 10;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;flex-direction:column;gap:2px"><h2 id="h1x" style="margin:0;font-size:24px;font-weight:900">大模型</h2><span style="font-size:13.5px;color:#3A3A3A">没配置时只能用规则兜底，结论质量明显下降。</span></div>
+        <div class="g12" style="display:grid;grid-template-columns:repeat(10,minmax(0,1fr));column-gap:24px;row-gap:18px">
+          <label class="lab" style="grid-column:span 3">提供方<select class="in"><option>DeepSeek</option><option>自定义（OpenAI 兼容）</option></select></label>
+          <label class="lab" style="grid-column:span 3">模型名<input class="in" value="deepseek-chat"></label>
+          <label class="lab" style="grid-column:span 4">API Key<input class="in m" type="password" value="sk-placeholder-0000000000" aria-describedby="kh"><span id="kh" style="font-size:12px">保存后不再回显明文。</span></label>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <button class="b" onClick="{{test}}">{{testLabel}}</button>
+          <button class="b o">保存</button>
+          <sc-if value="{{tested}}" hint-placeholder-val="{{ false }}">
+            <span role="status" style="display:flex;align-items:baseline;gap:8px"><b>连接成功</b><span class="n" style="font-weight:900;font-size:24px">612</span><span>ms · deepseek-chat</span></span>
+          </sc-if>
+        </div>
+      </div>
+    </section>
+
+    <section class="g12" aria-labelledby="h2x" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:16px;border-top:2px solid #0A0A0A;padding:22px 0 30px">
+      <span class="n" style="grid-column:1 / span 2;font-weight:900;font-size:120px;line-height:.78">2</span>
+      <div style="grid-column:3 / span 10;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;flex-direction:column;gap:2px"><h2 id="h2x" style="margin:0;font-size:24px;font-weight:900">画面识别</h2><span style="font-size:13.5px;color:#3A3A3A">识别屏幕上的代码和文字。</span></div>
+        <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px" role="radiogroup" aria-label="OCR 引擎">
+          <sc-for list="{{ocr}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}"><b style="font-size:16px">{{o.name}}</b><span style="font-size:13px;color:#3A3A3A">{{o.desc}}</span></button></sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;padding:14px 0;border-top:1px dashed #6B6B6B;border-bottom:1px dashed #6B6B6B;flex-wrap:wrap">
+          <span style="display:flex;flex-direction:column;gap:2px;max-width:62ch">
+            <b>用讲师的话校正屏幕上的专有名词 <span style="font-size:11px;font-weight:500;box-shadow:inset 0 0 0 1px #0A0A0A;padding:0 5px;margin-left:4px">设计态</span></b>
+            <span style="font-size:13px;color:#3A3A3A">讲师念出的变量名、函数名用来修正识别错字，比如把 toRef5 校正为 toRefs。</span>
+          </span>
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900"><input type="checkbox" checked="{{vocab}}" onChange="{{toggleVocab}}" style="width:20px;height:20px;accent-color:#0A0A0A">{{vocabLabel}}</label>
+        </div>
+      </div>
+    </section>
+
+    <section class="g12" aria-labelledby="h3x" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:16px;border-top:2px solid #0A0A0A;padding:22px 0 30px">
+      <span class="n" style="grid-column:1 / span 2;font-weight:900;font-size:120px;line-height:.78">3</span>
+      <div style="grid-column:3 / span 10;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;flex-direction:column;gap:2px"><h2 id="h3x" style="margin:0;font-size:24px;font-weight:900">默认生成的产物</h2><span style="font-size:13.5px;color:#3A3A3A">同一份解析结果按产物类型分别整理；少选一项可以省一次大模型调用。</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap" role="group" aria-label="默认产物集">
+          <sc-for list="{{arts}}" as="a" hint-placeholder-count="4"><button class="{{a.cls}}" aria-pressed="{{a.on}}" onClick="{{a.pick}}">{{a.name}}</button></sc-for>
+        </div>
+      </div>
+    </section>
+
+    <details style="border-top:2px solid #0A0A0A;padding-top:14px">
+      <summary style="font-size:14px"><b>更多</b> <span style="color:#6B6B6B">· 应用更新、深色模式、关于</span></summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;font-size:13.5px;color:#3A3A3A">
+        <span>当前版本 v0.16 · 已是最新</span>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox">深色模式</label>
+        <span>软件工程课程项目。只处理本地视频，不下载、不分发第三方内容。</span>
+      </div>
+    </details>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tested: false, testing: false, ocr: 'local', vocab: false, arts: ['summary', 'points', 'uml', 'code'] }; }
+  renderVals() {
+    const s = this.state;
+    const O = [['auto', '自动', '优先用已安装的本地引擎'], ['local', '本地 OCR', '离线识别，速度快'], ['vision', '视觉模型', '更准，需要联网和额度']];
+    const A = [['summary', '内容总结'], ['points', '知识点要点'], ['uml', 'UML 草稿'], ['code', '代码块']];
+    return {
+      test: () => { this.setState({ testing: true }); setTimeout(() => this.setState({ testing: false, tested: true }), 700); },
+      testLabel: s.testing ? '测试中…' : '测试连接', tested: s.tested,
+      ocr: O.map(([k, n, d]) => ({ name: n, desc: d, on: s.ocr === k ? 'true' : 'false', cls: 'opt' + (s.ocr === k ? ' on' : ''), pick: () => this.setState({ ocr: k }) })),
+      vocab: s.vocab, vocabLabel: s.vocab ? '已开启' : '未开启', toggleVocab: () => this.setState({ vocab: !s.vocab }),
+      arts: A.map(([k, n]) => {
+        const on = s.arts.includes(k);
+        return { name: n, on: on ? 'true' : 'false', cls: 'pill' + (on ? ' on' : ''), pick: () => this.setState({ arts: on ? s.arts.filter((x) => x !== k) : [...s.arts, k] }) };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

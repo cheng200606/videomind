@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>01 视频库首页</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,select:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;font-weight:900;font-size:15px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.lk{font-size:13px;font-weight:900;border-bottom:2px solid #0A0A0A;background:none;border-top:0;border-left:0;border-right:0;padding:0;cursor:pointer}
+.lk:hover{color:#E4002B;border-bottom-color:#E4002B}
+.tg{all:unset;cursor:pointer;font-size:14px;padding:4px 0 2px;color:#6B6B6B;border-bottom:3px solid transparent;font-weight:500}
+.tg:hover{color:#0A0A0A}
+.tg.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.tg:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.vl{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:20px;padding:7px 0;border-bottom:1px solid #E0E0E0;font-size:14px}
+.vl:hover .vn{color:#E4002B}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}.vl{grid-template-columns:minmax(0,1fr)!important;gap:0!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav on" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:28px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:26px">
+    <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:end">
+      <span class="n" style="grid-column:1 / span 3;font-weight:900;font-size:200px;line-height:.74">12</span>
+      <div style="grid-column:4 / span 6;display:flex;flex-direction:column;gap:8px;padding-bottom:4px">
+        <h1 style="margin:0;font-size:46px;line-height:1.05;font-weight:900">条视频，3 个批次</h1>
+        <span style="font-size:15px">每条都有一句话结论，不用打开就知道讲了什么</span>
+      </div>
+      <div style="grid-column:10 / span 3;display:flex;justify-content:flex-end;padding-bottom:4px"><a class="b" href="P02Upload.dc.html">批量上传</a></div>
+    </section>
+
+    <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;border-bottom:2px solid #0A0A0A;padding-bottom:8px" role="group" aria-label="按标签筛选">
+      <span style="font-size:12px;color:#6B6B6B;font-weight:500">标签</span>
+      <sc-for list="{{tags}}" as="t" hint-placeholder-count="7"><button class="{{t.cls}}" onClick="{{t.pick}}" aria-pressed="{{t.on}}">{{t.name}}</button></sc-for>
+      <span style="flex:1"></span>
+      <label style="font-size:13px;display:flex;align-items:center;gap:6px;color:#6B6B6B">状态
+        <select style="font-family:inherit;font-size:13px;height:32px;border:2px solid #0A0A0A;background:#FFFFFF;border-radius:0;color:#0A0A0A"><option>全部</option><option>解析中</option><option>部分成功</option><option>成功</option><option>失败</option></select>
+      </label>
+    </div>
+
+    <div style="display:flex;flex-direction:column">
+      <sc-for list="{{batches}}" as="b" hint-placeholder-count="3">
+        <section class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:12px;padding:20px 0 24px;border-bottom:2px solid #0A0A0A" aria-label="{{b.name}}">
+          <div style="grid-column:1 / span 3;display:flex;flex-direction:column;gap:6px">
+            <a href="P03Progress.dc.html" style="font-size:22px;font-weight:900;line-height:1.25">{{b.name}}</a>
+            <span style="font-size:13px"><b style="color:{{b.stC}}">{{b.status}}</b> · <span class="n" style="font-weight:800">{{b.count}}</span> 条 · <span class="n" style="font-weight:800">{{b.date}}</span></span>
+            <span style="font-size:12.5px;color:#6B6B6B">{{b.tagText}}</span>
+            <span style="display:flex;gap:14px;margin-top:6px"><a class="lk" href="P03Progress.dc.html">进度</a><a class="lk" href="P09Export.dc.html">导出</a><button class="lk" aria-label="更多操作（删除批次）">更多</button></span>
+          </div>
+          <div style="grid-column:4 / span 9;display:flex;flex-direction:column;gap:8px;min-width:0">
+            <div aria-hidden="true" style="display:flex;flex-direction:column;gap:0">
+              <div style="display:flex;gap:2px;height:16px"><sc-for list="{{b.reel}}" as="r" hint-placeholder-count="5"><i style="{{r.style}}"></i></sc-for></div>
+              <div style="height:6px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px {{b.tick}})"></div>
+            </div>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{b.videos}}" as="v" hint-placeholder-count="3">
+                <a class="vl" href="Workbench.dc.html"><span class="vn" style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{v.name}}</span><span style="{{v.style}}">{{v.one}}</span></a>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+      </sc-for>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}"><p style="padding:28px 0;margin:0;color:#6B6B6B">没有带这个标签的批次。</p></sc-if>
+    </div>
+    <p style="margin:0;font-size:12px;color:#6B6B6B">每个批次一把尺子，每格 5 分钟，色块长短就是视频时长。黑 完成 · 斜线 解析中 · 红 失败 · 灰 排队。一句话结论由 AI 生成，仅供参考。</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { tag: '全部' }; }
+  renderVals() {
+    const HATCH = 'background:repeating-linear-gradient(135deg,#0A0A0A 0 2px,#FFFFFF 2px 6px);box-shadow:inset 0 0 0 1px #0A0A0A';
+    const C = { done: 'background:#0A0A0A', run: HATCH, fail: 'background:#E4002B', wait: 'background:#E0E0E0' };
+    const B = [
+      { name: 'Vue3 组合式 API 速通', status: '部分成功', stC: '#E4002B', date: '11-17', tags: ['Vue3', '前端', '考试周'],
+        v: [['01 为什么要用组合式 API', 742, 'done', '选项式 API 在大组件里逻辑分散，组合式按功能聚合'],
+            ['02 setup 与生命周期', 1265, 'done', 'setup 在 beforeCreate 之前执行，没有 this'],
+            ['03 ref 与 reactive 的区别', 1694, 'done', 'ref 管基本类型，reactive 管对象，解构前先 toRefs'],
+            ['04 computed 与 watch', 1508, 'run', '解析中…'],
+            ['05 组合式函数封装', 1980, 'fail', '解析失败，可在进度页重试']] },
+      { name: '软件工程 · 需求分析录播', status: '成功', stC: '#0A0A0A', date: '11-12', tags: ['软工', '需求', 'UML'],
+        v: [['第 5 讲 用例建模', 2860, 'done', '用例描述参与者的目标，不描述界面操作步骤'],
+            ['第 6 讲 活动图与泳道', 2410, 'done', '泳道按职责划分，判定节点必须写出口条件'],
+            ['第 7 讲 需求评审', 2155, 'done', '评审看可验证性：每条需求都要能写出测试']] },
+      { name: '数据库系统概论 第 6–8 周', status: '解析中', stC: '#0A0A0A', date: '今天', tags: ['数据库', '考试周'],
+        v: [['第 6 周 关系代数', 3120, 'done', '选择、投影、连接是查询优化的基本单元'],
+            ['第 7 周 范式', 2980, 'run', '解析中…'],
+            ['第 8 周 事务与并发', 3305, 'wait', '排队中'],
+            ['第 8 周 习题课', 1820, 'wait', '排队中']] }
+    ];
+    const allTags = ['全部', '考试周', 'Vue3', '前端', '软工', 'UML', '数据库'];
+    const shown = B.filter((b) => this.state.tag === '全部' || b.tags.includes(this.state.tag));
+    return {
+      tags: allTags.map((t) => ({ name: t, on: this.state.tag === t ? 'true' : 'false', cls: 'tg' + (this.state.tag === t ? ' on' : ''), pick: () => this.setState({ tag: t }) })),
+      batches: shown.map((b) => {
+        const tot = b.v.reduce((a, x) => a + x[1], 0);
+        return {
+          name: b.name, status: b.status, stC: b.stC, count: b.v.length, date: b.date,
+          tagText: b.tags.map((t) => '#' + t).join('   '),
+          tick: (300 / tot * 100).toFixed(3) + '%',
+          reel: b.v.map((x) => ({ style: 'flex:' + x[1] + ' 1 0;box-sizing:border-box;' + C[x[2]] })),
+          videos: b.v.slice(0, 3).map((x) => ({ name: x[0], one: x[3], style: x[2] === 'done' ? 'font-weight:500' : (x[2] === 'fail' ? 'color:#E4002B' : 'color:#6B6B6B') }))
+            .concat(b.v.length > 3 ? [{ name: '还有 ' + (b.v.length - 3) + ' 条', one: '进入批次查看', style: 'color:#6B6B6B' }] : [])
+        };
+      }),
+      empty: shown.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

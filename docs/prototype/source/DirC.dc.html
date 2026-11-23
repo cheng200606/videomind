@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>方向 C · 刻度尺</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#0A0A0A}
+a:hover{color:#E4002B}
+</style>
+</helmet>
+<div style="width:1440px;height:900px;box-sizing:border-box;background:#FFFFFF;color:#0A0A0A;font-family:'Noto Sans SC',-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;display:flex;flex-direction:column;overflow:hidden">
+
+  <header style="display:flex;align-items:center;gap:26px;height:48px;padding:0 64px;border-bottom:2px solid #0A0A0A;font-size:14px;font-weight:500">
+    <strong style="font-size:16px;font-weight:900">视析</strong>
+    <span>视频库</span><span style="color:#8C8C8C">上传</span><span style="color:#8C8C8C">检索</span>
+    <span style="flex:1"></span>
+    <span style="font-family:'Inter Tight',sans-serif;font-weight:800">03 / 05</span>
+    <span style="color:#8C8C8C">Vue3 组合式 API 速通</span>
+  </header>
+
+  <section style="display:grid;grid-template-columns:300px minmax(0,1fr);gap:32px;padding:26px 64px 0;align-items:end">
+    <span style="font-family:'Inter Tight',sans-serif;font-weight:900;font-size:250px;line-height:.74;letter-spacing:-.06em">03</span>
+    <div style="display:flex;flex-direction:column;gap:12px;padding-bottom:6px">
+      <h1 style="margin:0;font-size:58px;line-height:1.05;font-weight:900;letter-spacing:-.01em">ref 与 reactive 的区别</h1>
+      <div style="display:flex;gap:28px;font-size:15px;align-items:baseline">
+        <span><b style="font-family:'Inter Tight',sans-serif;font-weight:800;font-size:22px">28:14</b> 时长</span>
+        <span><b style="font-family:'Inter Tight',sans-serif;font-weight:800;font-size:22px">6</b> 条要点</span>
+        <span style="color:#E4002B"><b style="font-family:'Inter Tight',sans-serif;font-weight:800;font-size:22px">2</b> 处易错</span>
+        <span style="color:#8C8C8C">识别结果仅供参考</span>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="刻度尺时间线" style="position:relative;margin:34px 64px 0;height:150px">
+    <div style="position:absolute;left:0;right:0;top:0;height:26px;display:flex;gap:2px">
+      <span style="flex:200 1 0;background:#0A0A0A;color:#FFFFFF;font-size:11px;padding:4px 6px;overflow:hidden;white-space:nowrap">开场</span>
+      <span style="flex:385 1 0;background:#5A5A5A;color:#FFFFFF;font-size:11px;padding:4px 6px;overflow:hidden;white-space:nowrap">ref</span>
+      <span style="flex:325 1 0;background:#0A0A0A;color:#FFFFFF;font-size:11px;padding:4px 6px;overflow:hidden;white-space:nowrap">reactive</span>
+      <span style="flex:380 1 0;background:#E4002B;color:#FFFFFF;font-size:11px;padding:4px 6px;overflow:hidden;white-space:nowrap;font-weight:900">解构陷阱与 toRefs</span>
+      <span style="flex:275 1 0;background:#0A0A0A;color:#FFFFFF;font-size:11px;padding:4px 6px;overflow:hidden;white-space:nowrap">computed / watch</span>
+      <span style="flex:129 1 0;background:#5A5A5A;color:#FFFFFF;font-size:11px;padding:4px 6px;overflow:hidden;white-space:nowrap">小结</span>
+    </div>
+    <div style="position:absolute;left:45.75%;width:20.37%;top:30px;height:44px;background:repeating-linear-gradient(135deg,rgba(228,0,43,.22) 0 6px,transparent 6px 12px)"></div>
+    <span style="position:absolute;left:45.75%;top:76px;font-size:11px;color:#E4002B;font-weight:500;padding-left:4px">12:55 – 18:40 讲师说法前后不一致</span>
+    <div style="position:absolute;left:0;right:0;top:30px;height:2px;background:#0A0A0A"></div>
+    <div style="position:absolute;left:0;right:0;top:32px;height:12px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 1px,transparent 1px 46.47px)"></div>
+    <div style="position:absolute;left:0;right:0;top:32px;height:20px;background-image:repeating-linear-gradient(90deg,#0A0A0A 0 2px,transparent 2px 232.35px)"></div>
+    <span style="position:absolute;top:54px;left:0;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px">00</span>
+    <span style="position:absolute;top:54px;left:17.71%;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px">05</span>
+    <span style="position:absolute;top:54px;left:35.42%;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px">10</span>
+    <span style="position:absolute;top:54px;left:53.13%;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px">15</span>
+    <span style="position:absolute;top:54px;left:70.84%;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px">20</span>
+    <span style="position:absolute;top:54px;left:88.55%;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px">25</span>
+
+    <span style="position:absolute;left:14.29%;top:32px;width:1px;height:66px;background:#0A0A0A"></span><span style="position:absolute;left:14.29%;top:98px;margin-left:-13px;width:26px;height:26px;border-radius:50%;background:#0A0A0A;color:#FFFFFF;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">1</span>
+    <span style="position:absolute;left:36.48%;top:32px;width:1px;height:66px;background:#0A0A0A"></span><span style="position:absolute;left:36.48%;top:98px;margin-left:-13px;width:26px;height:26px;border-radius:50%;background:#0A0A0A;color:#FFFFFF;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">2</span>
+    <span style="position:absolute;left:66.12%;top:20px;width:3px;height:78px;background:#E4002B;margin-left:-1px"></span><span style="position:absolute;left:66.12%;top:98px;margin-left:-17px;width:34px;height:34px;border-radius:50%;background:#E4002B;color:#FFFFFF;font-family:'Inter Tight',sans-serif;font-weight:900;font-size:16px;display:flex;align-items:center;justify-content:center">3</span>
+    <span style="position:absolute;left:68.6%;top:32px;width:1px;height:66px;background:#0A0A0A"></span><span style="position:absolute;left:68.6%;top:98px;margin-left:5px;width:26px;height:26px;border-radius:50%;border:2px solid #0A0A0A;box-sizing:border-box;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">4</span>
+    <span style="position:absolute;left:81.76%;top:32px;width:1px;height:66px;background:#0A0A0A"></span><span style="position:absolute;left:81.76%;top:98px;margin-left:-13px;width:26px;height:26px;border-radius:50%;border:2px solid #0A0A0A;box-sizing:border-box;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">5</span>
+    <span style="position:absolute;left:87.84%;top:32px;width:1px;height:66px;background:#E4002B"></span><span style="position:absolute;left:87.84%;top:98px;margin-left:-13px;width:26px;height:26px;border-radius:50%;border:2px dashed #E4002B;box-sizing:border-box;color:#E4002B;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center">6</span>
+  </section>
+
+  <section style="flex:1;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;padding:18px 64px 36px;border-top:2px solid #0A0A0A;margin-top:4px">
+    <div style="grid-column:1 / span 4;display:flex;flex-direction:column;gap:10px">
+      <div style="aspect-ratio:16/9;background:#0A0A0A;display:flex;flex-direction:column;justify-content:center;gap:8px;padding:0 22px;position:relative">
+        <span style="color:#FFFFFF;font-weight:900;font-size:16px">解构陷阱与 toRefs</span>
+        <pre style="margin:0;font-family:'JetBrains Mono',monospace;color:#BDBDBD;font-size:11.5px">const { count } = toRefs(state)</pre>
+        <span style="position:absolute;left:0;bottom:0;background:#E4002B;color:#FFFFFF;font-family:'Inter Tight',sans-serif;font-weight:800;font-size:13px;padding:3px 8px">▶ 18:40</span>
+      </div>
+      <span style="font-size:13px;color:#5A5A5A">「刚才说错了，解构 reactive 会丢失响应性」</span>
+    </div>
+
+    <ol style="grid-column:5 / span 4;margin:0;padding:0;list-style:none;display:flex;flex-direction:column">
+      <li style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px solid #E0E0E0"><b style="font-family:'Inter Tight',sans-serif;font-weight:900;font-size:20px">1</b><span style="font-size:14.5px">ref 用 .value，模板自动解包</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#5A5A5A">04:02</span></li>
+      <li style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px solid #E0E0E0"><b style="font-family:'Inter Tight',sans-serif;font-weight:900;font-size:20px">2</b><span style="font-size:14.5px">reactive 只接受对象</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#5A5A5A">10:18</span></li>
+      <li style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:7px 0;border-bottom:2px solid #E4002B"><b style="font-family:'Inter Tight',sans-serif;font-weight:900;font-size:20px;color:#E4002B">3</b><span style="font-size:14.5px;font-weight:900">解构 reactive 会丢失响应性</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#E4002B;font-weight:600">18:40</span></li>
+      <li style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:7px 0;border-bottom:1px solid #E0E0E0"><b style="font-family:'Inter Tight',sans-serif;font-weight:500;font-size:20px">4</b><span style="font-size:14.5px">先 toRefs 再解构</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#5A5A5A">19:22</span></li>
+      <li style="display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;align-items:baseline;padding:7px 0"><b style="font-family:'Inter Tight',sans-serif;font-weight:500;font-size:20px;color:#E4002B">6</b><span style="font-size:14.5px;color:#5A5A5A">computed 里别改别的状态</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#5A5A5A">24:48</span></li>
+      <li style="font-size:11.5px;color:#8C8C8C;padding-top:8px">实心编号 = 明述 · 空心 = 推断 · 虚线 = 低置信</li>
+    </ol>
+
+    <div style="grid-column:9 / span 4;display:flex;flex-direction:column;gap:16px">
+      <p style="margin:0;font-size:30px;line-height:1.3;font-weight:900">ref 管基本类型，reactive 管对象，解构前先 toRefs。</p>
+      <div style="background:#E4002B;color:#FFFFFF;padding:12px 14px;font-size:14px;display:flex;flex-direction:column;gap:2px">
+        <b>考前注意</b>
+        <span>12:55 的说法被讲师自己在 18:40 推翻了，以后者为准。</span>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:auto">
+        <a href="#" style="display:inline-flex;align-items:center;height:44px;padding:0 20px;background:#0A0A0A;color:#FFFFFF;text-decoration:none;font-weight:900">回放 18:40</a>
+        <a href="#" style="display:inline-flex;align-items:center;height:44px;padding:0 20px;border:2px solid #0A0A0A;box-sizing:border-box;text-decoration:none;font-weight:900">记笔记</a>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

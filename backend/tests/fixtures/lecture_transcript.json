@@ -1,0 +1,19 @@
+{
+  "duration_ms": 240000,
+  "segments": [
+    {"index": 0, "start_ms": 1000, "end_ms": 6000, "text": "今天我们讲 Vue3 的组合式 API，先把 ref 和 reactive 的区别说清楚", "confidence": 0.94},
+    {"index": 1, "start_ms": 6000, "end_ms": 12000, "text": "基本类型用 ref，对象和数组用 reactive，这是官方推荐的做法", "confidence": 0.91},
+    {"index": 2, "start_ms": 12000, "end_ms": 19000, "text": "注意，ref 拿到的是引用，在 script 里必须写 .value，模板里不用", "confidence": 0.88},
+    {"index": 3, "start_ms": 19000, "end_ms": 27000, "text": "很多同学第一次用就漏了 .value，页面不刷新，就是这个坑，我再写一遍", "confidence": 0.9},
+    {"index": 4, "start_ms": 27000, "end_ms": 35000, "text": "const count = ref(0); count.value++", "confidence": 0.72},
+    {"index": 5, "start_ms": 35000, "end_ms": 44000, "text": "接下来看计算属性，computed 返回的是只读的派生值，有缓存", "confidence": 0.93},
+    {"index": 6, "start_ms": 44000, "end_ms": 52000, "text": "前面说的 reactive 解构会丢响应式，这里更正一下：用 toRefs 包一层就保住了", "confidence": 0.85},
+    {"index": 7, "start_ms": 52000, "end_ms": 61000, "text": "再说侦听器 watch 和 watchEffect，watchEffect 依赖自动收集，但可读性差", "confidence": 0.89},
+    {"index": 8, "start_ms": 61000, "end_ms": 70000, "text": "实际项目里我建议优先 watch，明确写了监听谁，出问题好排查", "confidence": 0.87},
+    {"index": 9, "start_ms": 70000, "end_ms": 79000, "text": "生命周期钩子对应到 onMounted、onUpdated、onUnmounted", "confidence": 0.9},
+    {"index": 10, "start_ms": 79000, "end_ms": 88000, "text": "子组件通信还是 props 往下、emit 往上，跨层级用 provide 和 inject", "confidence": 0.92},
+    {"index": 11, "start_ms": 88000, "end_ms": 96000, "text": "最后提醒，provide 传响应式对象要包一层 computed，否则更新不下发", "confidence": 0.86},
+    {"index": 12, "start_ms": 96000, "end_ms": 104000, "text": "今天的重点就三个：ref 的 .value、reactive 的解构、provide 的响应式包装", "confidence": 0.95}
+  ],
+  "frames": []
+}

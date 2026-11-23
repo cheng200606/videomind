@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>07 笔记编辑</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;800;900&amp;family=JetBrains+Mono:wght@400;600&amp;family=Noto+Sans+SC:wght@400;500;900&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#0A0A0A;font-family:"Noto Sans SC",-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;font-size:14px;line-height:1.6}
+a{color:#0A0A0A;text-decoration:none}
+a:hover{color:#E4002B}
+a:focus-visible,button:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+button{font-family:inherit;color:inherit}
+.n{font-family:"Inter Tight",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.m{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.nav{display:inline-flex;align-items:center;height:48px;color:#6B6B6B;font-weight:500;border-bottom:3px solid transparent;box-sizing:border-box;padding-top:3px}
+.nav:hover{color:#0A0A0A}
+.nav.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.b{all:unset;cursor:pointer;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 20px;font-weight:900;font-size:14px;background:#0A0A0A;color:#FFFFFF;white-space:nowrap}
+.b:hover{background:#E4002B;color:#FFFFFF}
+.b.o{background:#FFFFFF;color:#0A0A0A;box-shadow:inset 0 0 0 2px #0A0A0A}
+.b.o:hover{box-shadow:inset 0 0 0 2px #E4002B;color:#E4002B}
+.b.s{height:34px;padding:0 14px;font-size:13px}
+.b:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.tab{all:unset;cursor:pointer;padding:10px 0 8px;font-size:15px;color:#6B6B6B;border-bottom:3px solid transparent;font-weight:500}
+.tab:hover{color:#0A0A0A}
+.tab.on{color:#0A0A0A;font-weight:900;border-bottom-color:#E4002B}
+.tab:focus-visible{outline:3px solid #E4002B;outline-offset:2px}
+.ts{font-family:"JetBrains Mono",ui-monospace,Consolas,monospace;font-size:12.5px;font-weight:600;border-bottom:2px solid #0A0A0A;margin:0 4px}
+.ts:hover{color:#E4002B;border-bottom-color:#E4002B}
+@media (max-width:1000px){.g12>*{grid-column:1 / -1!important}.w{padding-left:16px!important;padding-right:16px!important}.ed{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+</helmet>
+<div style="width:100%;min-height:1000px;box-sizing:border-box">
+  <header class="w" style="display:flex;align-items:center;gap:28px;padding:0 64px;min-height:48px;border-bottom:2px solid #0A0A0A;flex-wrap:wrap">
+    <a href="Main.dc.html" style="font-weight:900;font-size:16px">视析</a>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="工作区"><a class="nav on" href="P01Library.dc.html">视频库</a><a class="nav" href="P02Upload.dc.html">批量上传</a><a class="nav" href="P08Search.dc.html">知识检索</a></nav>
+    <span style="flex:1"></span>
+    <nav style="display:flex;gap:24px;flex-wrap:wrap" aria-label="系统"><a class="nav" href="P10Admin.dc.html">批次后台</a><a class="nav" href="P11Settings.dc.html">设置</a></nav>
+  </header>
+
+  <main class="w" style="padding:18px 64px 56px;box-sizing:border-box;display:flex;flex-direction:column;gap:22px">
+    <nav style="font-size:13px;color:#6B6B6B" aria-label="面包屑"><a href="P01Library.dc.html" style="color:#6B6B6B">视频库</a> / <a href="Workbench.dc.html" style="color:#6B6B6B">03 ref 与 reactive 的区别</a> / 笔记</nav>
+
+    <section class="g12" aria-label="来源条目" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;align-items:center;border-top:3px solid #E4002B;padding-top:14px">
+      <span style="grid-column:1 / span 1;width:64px;height:64px;border-radius:50%;background:#E4002B;color:#FFFFFF;display:flex;align-items:center;justify-content:center;font-family:'Inter Tight',sans-serif;font-weight:900;font-size:30px">3</span>
+      <div style="grid-column:2 / span 8;display:flex;flex-direction:column;gap:4px">
+        <h1 style="margin:0;font-size:30px;line-height:1.2;font-weight:900">解构 reactive 对象会丢失响应性</h1>
+        <span style="font-size:14px;color:#3A3A3A">「刚才说错了，解构 reactive 会丢失响应性」<a class="ts" href="Workbench.dc.html">18:40</a> · <span style="color:#E4002B;font-weight:500">讲师 12:55 曾说相反的话</span></span>
+      </div>
+      <label style="grid-column:10 / span 3;display:flex;flex-direction:column;font-size:12px;color:#6B6B6B">本条的笔记
+        <select style="font-family:inherit;font-size:13.5px;height:36px;border:2px solid #0A0A0A;background:#FFFFFF;border-radius:0;color:#0A0A0A"><option>#1 考前要背的写法</option><option>#2 和 props 解构对比</option></select>
+      </label>
+    </section>
+
+    <div style="display:flex;gap:28px;border-bottom:2px solid #0A0A0A" role="tablist">
+      <button class="{{tabNote}}" role="tab" onClick="{{goNote}}">我的笔记</button>
+      <button class="{{tabLec}}" role="tab" onClick="{{goLec}}">讲义 · {{stateLabel}}</button>
+    </div>
+
+    <sc-if value="{{isNote}}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <button class="b" onClick="{{insert}}">插入时间锚点 <span class="n" style="font-weight:800">{{now}}</span></button>
+        <span style="font-size:13px;color:#6B6B6B">锚点取工作台当前的播放位置，预览里点锚点就回到原片。</span>
+        <span style="flex:1"></span>
+        <span style="font-size:13px;font-weight:900;color:{{saveColor}}">{{saveText}}</span>
+        <button class="b o" onClick="{{save}}">保存</button>
+      </div>
+      <div class="ed" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);box-shadow:inset 0 0 0 2px #0A0A0A;min-height:470px">
+        <div style="display:flex;flex-direction:column;border-right:2px solid #0A0A0A">
+          <label for="md" style="font-size:12px;font-weight:500;color:#6B6B6B;padding:10px 18px;border-bottom:1px solid #E0E0E0">Markdown</label>
+          <textarea id="md" value="{{text}}" onChange="{{edit}}" style="flex:1;border:0;resize:none;padding:18px;font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:14px;line-height:1.8;color:#0A0A0A;outline:none;min-height:410px;background:transparent"></textarea>
+        </div>
+        <div style="display:flex;flex-direction:column">
+          <span style="font-size:12px;font-weight:500;color:#6B6B6B;padding:10px 22px;border-bottom:1px solid #E0E0E0">预览</span>
+          <div style="padding:18px 24px;display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{preview}}" as="p" hint-placeholder-count="6">
+              <div style="{{p.style}}"><sc-for list="{{p.seg}}" as="s" hint-placeholder-count="1"><sc-if value="{{s.ts}}" hint-placeholder-val="{{ false }}"><a class="ts" href="Workbench.dc.html">{{s.t}}</a></sc-if><sc-if value="{{s.txt}}" hint-placeholder-val="{{ true }}">{{s.t}}</sc-if></sc-for></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isLec}}" hint-placeholder-val="{{ false }}">
+      <div class="g12" style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr));column-gap:24px;row-gap:24px;align-items:start">
+        <div style="grid-column:1 / span 8;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;gap:2px" aria-label="讲义状态">
+            <sc-for list="{{steps}}" as="st" hint-placeholder-count="4">
+              <span style="flex:1;display:flex;flex-direction:column;gap:4px;padding:10px 12px;box-sizing:border-box;{{st.style}}"><span class="n" style="font-weight:900;font-size:22px;line-height:1">{{st.n}}</span><span style="font-size:13px;font-weight:900">{{st.label}}</span></span>
+            </sc-for>
+          </div>
+          <p style="margin:0;font-size:13.5px;color:#3A3A3A">讲义是导出文稿的正文。保存正文会追加一条版本记录，只有已确认和已修订的版本会进入导出。</p>
+          <div style="border-top:2px solid #0A0A0A;padding-top:14px;font-size:16px;line-height:1.85">
+            <b>解构陷阱：</b>reactive 返回的代理对象被解构后，取出的是普通值，失去响应性。正确写法是 <code class="m" style="background:#F0F0F0;padding:1px 5px;font-size:14px">toRefs(state)</code> 后再解构。<a class="ts" href="Workbench.dc.html">18:40</a>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <sc-for list="{{flows}}" as="f" hint-placeholder-count="2"><button class="{{f.cls}}" onClick="{{f.go}}">{{f.label}}</button></sc-for>
+          </div>
+        </div>
+        <section style="grid-column:9 / span 4;display:flex;flex-direction:column;border-top:2px solid #0A0A0A;padding-top:12px" aria-label="版本记录">
+          <b style="font-size:16px;padding-bottom:6px">版本记录</b>
+          <sc-for list="{{versions}}" as="v" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:1px solid #E0E0E0;font-size:13.5px">
+              <span><b>{{v.state}}</b> · {{v.who}} · <span class="n" style="font-weight:800">{{v.at}}</span></span>
+              <span style="color:#3A3A3A">{{v.snap}}</span>
+              <a href="#" style="font-size:12.5px;font-weight:900;border-bottom:2px solid #0A0A0A;align-self:flex-start">载入此版本</a>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+    </sc-if>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tab: 'note', saved: true, rev: 'confirmed', extra: 0,
+      text: '## 考前要背的写法\n\nreactive 解构会丢响应性 [▶ 18:40]\n老师 12:55 说的是错的，后面更正了 [▶ 12:55]\n\n正确写法：先 toRefs 再解构 [▶ 19:22]\n- props 同理，用 toRefs(props)' };
+  }
+  renderVals() {
+    const s = this.state;
+    const now = ['19:45', '20:10', '21:02'][s.extra % 3];
+    const preview = s.text.split('\n').map((line) => {
+      const head = line.startsWith('## '), li = line.startsWith('- ');
+      const body = head ? line.slice(3) : li ? '— ' + line.slice(2) : line;
+      const seg = body.split(/(\[▶ \d\d:\d\d\])/).filter((x) => x).map((x) => {
+        const m = x.match(/^\[▶ (\d\d:\d\d)\]$/);
+        return m ? { t: m[1], ts: true, txt: false } : { t: x, ts: false, txt: true };
+      });
+      return { seg, style: head ? 'font-size:22px;font-weight:900;line-height:1.3' : (line ? 'font-size:15px' : 'height:4px') };
+    });
+    const ORDER = ['draft', 'pending', 'confirmed', 'revised'];
+    const LBL = { draft: '草稿', pending: '待确认', confirmed: '已确认', revised: '已修订' };
+    const NEXT = { draft: ['pending'], pending: ['confirmed', 'draft'], confirmed: ['revised'], revised: ['pending'] };
+    const FL = { pending: '提交待确认', confirmed: '确认', draft: '退回草稿', revised: '修订并保存' };
+    const cur = ORDER.indexOf(s.rev);
+    return {
+      tabNote: 'tab' + (s.tab === 'note' ? ' on' : ''), tabLec: 'tab' + (s.tab === 'lec' ? ' on' : ''),
+      goNote: () => this.setState({ tab: 'note' }), goLec: () => this.setState({ tab: 'lec' }),
+      isNote: s.tab === 'note', isLec: s.tab === 'lec', stateLabel: LBL[s.rev],
+      now, text: s.text, preview,
+      edit: (e) => this.setState({ text: e.target.value, saved: false }),
+      insert: () => this.setState({ text: s.text + '\n新的理解 [▶ ' + now + ']', extra: s.extra + 1, saved: false }),
+      save: () => this.setState({ saved: true }),
+      saveText: s.saved ? '已保存' : '未保存', saveColor: s.saved ? '#6B6B6B' : '#E4002B',
+      steps: ORDER.map((k, i) => ({ n: i + 1, label: LBL[k],
+        style: i === cur ? 'background:#E4002B;color:#FFFFFF' : (i < cur ? 'background:#0A0A0A;color:#FFFFFF' : 'box-shadow:inset 0 0 0 2px #E0E0E0;color:#6B6B6B') })),
+      flows: NEXT[s.rev].map((k, i) => ({ label: FL[k], cls: 'b' + (i === 0 ? '' : ' o'), go: () => this.setState({ rev: k }) })),
+      versions: [
+        { state: '已确认', who: '我', at: '11-17 21:40', snap: '解构陷阱：reactive 返回的代理对象被解构后…' },
+        { state: '待确认', who: 'AI 生成', at: '11-17 14:29', snap: '解构 reactive 对象会丢失响应性。' },
+        { state: '草稿', who: 'AI 生成', at: '11-17 14:29', snap: 'reactive 可以直接解构（与 18:40 冲突）' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

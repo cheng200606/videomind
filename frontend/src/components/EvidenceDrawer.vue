@@ -1,0 +1,101 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import { ARTIFACT_LABEL, CHANNEL_LABEL, clock } from '../api/labels'
+import type { ItemDetail } from '../api/types'
+import ConfidenceTag from './ConfidenceTag.vue'
+
+const props = defineProps<{ item: ItemDetail | null; modelValue: boolean }>()
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: boolean): void
+  (e: 'seek', ms: number): void
+}>()
+
+function conflictClock(value: string): string {
+  const n = Number(String(value).replace(/ms$/, ''))
+  return Number.isFinite(n) ? clock(n) : value
+}
+
+/** 后端已把帧复制进 media_root，frame_path 是 /media 开头的 URL；历史绝对路径保留 frames 子目录 */
+const frameUrl = computed(() => {
+  const p = props.item?.evidence?.frame_path ?? ''
+  if (p.startsWith('/media/')) return p
+  const norm = p.replace(/\\/g, '/')
+  const marker = '/media/'
+  const idx = norm.indexOf(marker)
+  return idx >= 0 ? `/media/${norm.slice(idx + marker.length)}` : ''
+})
+</script>
+
+<template>
+  <el-drawer
+    :model-value="modelValue"
+    title="证据链"
+    size="420px"
+    @update:model-value="emit('update:modelValue', $event)"
+  >
+    <div v-if="item" class="body">
+      <div class="row">
+        <span class="k">类型</span><span>{{ ARTIFACT_LABEL[item.type] ?? item.type }}</span>
+        <ConfidenceTag :confidence="item.confidence" />
+      </div>
+      <h4 class="title">{{ item.title }}</h4>
+      <p class="content">{{ item.content }}</p>
+
+      <el-alert
+        v-if="item.conflicts.length"
+        type="warning"
+        :closable="false"
+        show-icon
+        class="conflict"
+        title="检出前后不一致（F2 教学一致性校验，识别结果仅供参考）"
+      >
+        <div v-for="(c, i) in item.conflicts" :key="i" class="conflict-line">
+          {{ c.description }}（{{ conflictClock(c.source_a) }} ↔ {{ conflictClock(c.source_b) }}）
+        </div>
+      </el-alert>
+
+      <template v-if="item.evidence">
+        <el-divider content-position="left">溯源</el-divider>
+        <div class="row"><span class="k">时间点</span>
+          <el-link underline="never" @click="emit('seek', item.evidence.start_ms)">
+            <span class="vm-ts">{{ clock(item.evidence.start_ms) }}</span>
+            <span class="arrow">→</span>
+            <span class="vm-ts">{{ clock(item.evidence.end_ms) }}</span>
+          </el-link>
+        </div>
+        <div class="row"><span class="k">通道</span><span>{{ CHANNEL_LABEL[item.evidence.channel] ?? item.evidence.channel }}</span></div>
+        <blockquote class="quote">{{ item.evidence.quote }}</blockquote>
+        <el-image
+          v-if="frameUrl"
+          :src="frameUrl"
+          :alt="`${item.title} 的关键帧证据`"
+          fit="contain"
+          class="frame"
+          :preview-src-list="[frameUrl]"
+        />
+        <el-image v-else-if="item.evidence.frame_path" :src="''" class="frame missing">
+          <template #error><div class="missing-tip">片段帧未挂载到 /media</div></template>
+        </el-image>
+      </template>
+
+      <p class="disclaimer">识别结果仅供参考，请回看原片核对。</p>
+    </div>
+    <el-empty v-else description="未选择条目" />
+  </el-drawer>
+</template>
+
+<style scoped>
+.body { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; align-items: center; gap: 10px; }
+.k { color: var(--vm-muted, #5f6b7d); width: 56px; font-size: 13px; }
+.title { margin: 0; font-size: 16px; }
+.content { margin: 0; line-height: 1.7; }
+.quote { margin: 0; padding: 10px 12px; background: var(--vm-quote-bg, #f6f7f9); border-left: 3px solid var(--el-color-primary, #3d6fd6); color: var(--vm-text-secondary, #4b5563); }
+.arrow { color: var(--vm-muted, #5f6b7d); font-size: 12px; margin: 0 2px; }
+.conflict { margin: 2px 0; }
+.conflict-line { font-size: 12px; line-height: 1.6; }
+.frame { width: 100%; border-radius: 6px; }
+.missing-tip { font-size: 12px; color: var(--vm-muted, #5f6b7d); }
+.disclaimer { font-size: 12px; color: var(--vm-muted, #5f6b7d); margin-top: 6px; }
+</style>
