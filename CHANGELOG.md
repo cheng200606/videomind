@@ -486,3 +486,12 @@
 
 - **程夏（组长）**：七条工作线（前端 / 后端 / 质量 / A 原型 / 辅图 / C 图 / 文档）按序 `--no-ff` 合入 `develop`，各线合并前对 develop `merge-tree` 干跑 code=0；图 blob 跨线完全相同不冲突，内容冲突仅 `CHANGELOG.md` 与 `docs/交付与排期.md`，均按口径解决；作者署名保留原样（C=Alhazredal、A=Crubeens）
 - **程夏（组长）**：合并后全量验证——后端 `pytest`、前端 `npm.cmd run test` 与 `npm.cmd run build`、文档四脚本（refs / figure / banned / numbers）须全绿，例数以合稿当日实跑为准（基线 `3365bb1` 为 108 / 44，仅作对照）
+
+---
+
+## [v0.17.0] — 2026-11-23
+
+### 版本冻结与发布（develop → main）
+
+- **程夏（组长）**：执行 v0.17.0 冻结——创建 develop→main 冻结 PR（**#8**，mergeCommit `1507dfa1`）并以管理员权限合并；`main` 自 v0.2（`8abb663`，2026-11-05）以来首次基线更新，冻结范围 = `8abb663..80b88fa` 全部 63 个提交。本条目为冻结记账提交，因推送时网络中断未赶上 #8 合并，随后以**组长直推合并**补入 main（权限矩阵允许，commit 即留痕）
+- **程夏（组长）**：在 main 冻结后最终提交上打 tag `v0.17.0`（带注释；后端 `APP_VERSION=0.17.0` 同源）并发布 GitHub Release，Release Notes 含交付物清单（8 张 UML + 辅图 1/3、22 页高保真原型、ch2/5/6 + Word 骨架、质量门 G1–G7、tools 四脚本）与已知边界声明
